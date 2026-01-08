@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Kernel Agent (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Kernel Agent (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
