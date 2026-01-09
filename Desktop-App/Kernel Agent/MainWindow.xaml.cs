@@ -1,31 +1,81 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using Microsoft.UI.Windowing;
+using WinRT.Interop;
+using System;
 
 namespace Kernel_Agent
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
         public MainWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
+
+            // 1. Extend the content into the title bar for a modern look
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar); // AppTitleBar is defined in your XAML
+
+            // Ensure MissionRoot (the MainWindow mission control UI) is visible by default
+            MissionRoot.Visibility = Visibility.Visible;
+            ContentFrame.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Handles switching between different AI agent screens
+        /// </summary>
+        private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        {
+            if (args.IsSettingsSelected)
+            {
+                // Optional: ContentFrame.Navigate(typeof(SettingsPage));
+            }
+            else
+            {
+                var selectedItem = args.SelectedItem as NavigationViewItem;
+                if (selectedItem?.Tag == null) return;
+
+                string? tag = selectedItem.Tag as string;
+                if (tag == null) return;
+
+                switch (tag)
+                {
+                    case "forge":
+                        // hide mission UI, show frame and navigate to ForgePage
+                        MissionRoot.Visibility = Visibility.Collapsed;
+                        if (ContentFrame.Visibility != Visibility.Visible)
+                        {
+                            ContentFrame.Visibility = Visibility.Visible;
+                        }
+
+                        // Avoid redundant navigation
+                        if (!(ContentFrame.Content is ForgePage))
+                        {
+                            ContentFrame.Navigate(typeof(ForgePage));
+                        }
+                        break;
+
+                    case "mission":
+                        // show mission UI, hide frame
+                        ContentFrame.Visibility = Visibility.Collapsed;
+                        MissionRoot.Visibility = Visibility.Visible;
+                        break;
+
+                    case "memory":
+                        MissionRoot.Visibility = Visibility.Collapsed;
+                        if (ContentFrame.Visibility != Visibility.Visible)
+                        {
+                            ContentFrame.Visibility = Visibility.Visible;
+                        }
+
+                        // Replace with actual MemoryPage when available
+                        // if (!(ContentFrame.Content is MemoryPage))
+                        // {
+                        //     ContentFrame.Navigate(typeof(MemoryPage));
+                        // }
+                        break;
+                }
+            }
         }
     }
 }

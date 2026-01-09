@@ -265,3 +265,14 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MultipleQualifiersPerDimensionFound.txt
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ProjectArchitectures.txt
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\.winmd_cache\$Microsoft.Web.WebView2.Core.winmd_638789222360000000.json
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.sourcelink.json
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xbf

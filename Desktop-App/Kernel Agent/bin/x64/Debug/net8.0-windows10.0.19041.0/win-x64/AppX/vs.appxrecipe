@@ -29,7 +29,7 @@
     <AppXManifest Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppxManifest.xml">
       <PackagePath>AppxManifest.xml</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
-      <Modified>2026-01-08T21:12:47.348</Modified>
+      <Modified>2026-01-09T13:13:57.949</Modified>
     </AppXManifest>
   </ItemGroup>
   <ItemGroup>
@@ -39,11 +39,11 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\apphost.exe">
       <PackagePath>Kernel Agent.exe</PackagePath>
-      <Modified>2026-01-08T21:12:44.166</Modified>
+      <Modified>2026-01-09T13:13:54.735</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.dll">
       <PackagePath>Kernel Agent.dll</PackagePath>
-      <Modified>2026-01-08T21:12:44.097</Modified>
+      <Modified>2026-01-09T13:13:54.685</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\microsoft.netcore.app.runtime.win-x64\8.0.22\runtimes\win-x64\lib\net8.0\Microsoft.CSharp.dll">
       <PackagePath>Microsoft.CSharp.dll</PackagePath>
@@ -927,7 +927,7 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.deps.json">
       <PackagePath>Kernel Agent.deps.json</PackagePath>
-      <Modified>2026-01-08T21:12:45.407</Modified>
+      <Modified>2026-01-09T13:13:56.430</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\Assets\LockScreenLogo.scale-200.png">
       <PackagePath>Assets\LockScreenLogo.scale-200.png</PackagePath>
@@ -963,7 +963,7 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.pri">
       <PackagePath>resources.pri</PackagePath>
-      <Modified>2026-01-08T21:12:46.274</Modified>
+      <Modified>2026-01-09T13:13:57.145</Modified>
     </AppxPackagedFile>
   </ItemGroup>
   <ItemGroup>
