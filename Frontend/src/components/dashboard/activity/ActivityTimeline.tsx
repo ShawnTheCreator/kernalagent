@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, RefreshCw } from 'lucide-react';
 import { useDashboardStore } from '@/stores/dashboardStore';
-import { startActivitySimulation, mockActivities } from '@/lib/mockApi';
+import { dashboardApi } from '@/lib/api';
 import { ActivityEvent } from './ActivityEvent';
+import type { ActivityEvent as ActivityEventType } from '@/stores/dashboardStore';
 
 interface ActivityTimelineProps {
     limit?: number;
@@ -14,17 +15,28 @@ interface ActivityTimelineProps {
 
 export function ActivityTimeline({ limit, showHeader = true }: ActivityTimelineProps) {
     const { activities, addActivity, currentState } = useDashboardStore();
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Start activity simulation on mount
+    // Fetch activities from backend
     useEffect(() => {
-        // Add initial mock activities
-        mockActivities.forEach((event, index) => {
-            setTimeout(() => addActivity(event), index * 100);
-        });
-
-        // Start real-time simulation
-        const cleanup = startActivitySimulation(addActivity);
-        return cleanup;
+        async function fetchActivities() {
+            try {
+                const data = await dashboardApi.getActivities();
+                // Transform backend data to match ActivityEvent interface
+                data.forEach((activity: any) => {
+                    addActivity({
+                        state: activity.state as ActivityEventType['state'],
+                        title: activity.title,
+                        description: activity.description,
+                    });
+                });
+            } catch (error) {
+                console.error('Failed to fetch activities:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchActivities();
     }, [addActivity]);
 
     const displayActivities = limit ? activities.slice(0, limit) : activities;

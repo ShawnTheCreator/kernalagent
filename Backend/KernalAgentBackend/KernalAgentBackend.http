@@ -1,0 +1,6 @@
+@KernalAgentBackend_HostAddress = http://localhost:5042
+
+GET {{KernalAgentBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

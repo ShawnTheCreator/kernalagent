@@ -1,15 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Sparkles } from 'lucide-react';
 import { SkillCard } from './SkillCard';
-import { mockSkills } from '@/lib/mockApi';
+import { dashboardApi } from '@/lib/api';
+import type { Skill } from '@/stores/dashboardStore';
 
 export function SkillsList() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [skills, setSkills] = useState<Skill[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const filteredSkills = mockSkills.filter(skill =>
+    useEffect(() => {
+        async function fetchSkills() {
+            try {
+                const data = await dashboardApi.getSkills();
+                // Transform backend data to match Skill interface
+                const transformedSkills: Skill[] = data.map((skill: any) => ({
+                    id: skill.id,
+                    name: skill.name,
+                    description: skill.description,
+                    confidence: skill.confidence,
+                    lastExecuted: new Date(skill.lastExecuted),
+                    executionCount: skill.executionCount,
+                }));
+                setSkills(transformedSkills);
+            } catch (error) {
+                console.error('Failed to fetch skills:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchSkills();
+    }, []);
+
+    const filteredSkills = skills.filter(skill =>
         skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         skill.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -21,7 +47,7 @@ export function SkillsList() {
                 <div className="flex items-center gap-2">
                     <Sparkles size={16} className="text-zinc-500" />
                     <h2 className="text-sm font-medium text-zinc-300">Learned Skills</h2>
-                    <span className="text-[10px] font-mono text-zinc-600">{mockSkills.length} total</span>
+                    <span className="text-[10px] font-mono text-zinc-600">{skills.length} total</span>
                 </div>
             </div>
 
@@ -38,26 +64,34 @@ export function SkillsList() {
             </div>
 
             {/* Skills Grid */}
-            <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                    hidden: {},
-                    visible: {
-                        transition: { staggerChildren: 0.05 }
-                    }
-                }}
-            >
-                {filteredSkills.map((skill) => (
-                    <SkillCard key={skill.id} skill={skill} />
-                ))}
-            </motion.div>
-
-            {filteredSkills.length === 0 && (
+            {isLoading ? (
                 <div className="text-center py-12">
-                    <p className="text-sm text-zinc-500">No skills found matching "{searchQuery}"</p>
+                    <p className="text-sm text-zinc-500">Loading skills...</p>
                 </div>
+            ) : (
+                <>
+                    <motion.div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                            hidden: {},
+                            visible: {
+                                transition: { staggerChildren: 0.05 }
+                            }
+                        }}
+                    >
+                        {filteredSkills.map((skill) => (
+                            <SkillCard key={skill.id} skill={skill} />
+                        ))}
+                    </motion.div>
+
+                    {filteredSkills.length === 0 && (
+                        <div className="text-center py-12">
+                            <p className="text-sm text-zinc-500">No skills found matching "{searchQuery}"</p>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

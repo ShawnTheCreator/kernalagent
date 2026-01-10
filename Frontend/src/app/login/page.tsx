@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Github, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { AuthInput } from '@/components/ui';
+import { authApi } from '@/lib/api';
 
 interface FormErrors {
     email?: string;
@@ -13,6 +15,7 @@ interface FormErrors {
 }
 
 export default function LoginPage() {
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +52,7 @@ export default function LoginPage() {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setTouched({ email: true, password: true });
 
@@ -58,12 +61,16 @@ export default function LoginPage() {
         setIsLoading(true);
         setErrors({});
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            await authApi.login({ email, password });
+            // Redirect to dashboard on success
+            router.push('/dashboard');
+        } catch (error) {
             setIsLoading(false);
-            // Simulate success or error
-            // setErrors({ general: 'Invalid email or password' });
-        }, 1500);
+            setErrors({
+                general: error instanceof Error ? error.message : 'Invalid email or password',
+            });
+        }
     };
 
     return (

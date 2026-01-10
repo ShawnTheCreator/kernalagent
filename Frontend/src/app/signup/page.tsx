@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User, Github, Check, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { AuthInput } from '@/components/ui';
+import { authApi } from '@/lib/api';
 
 interface FormErrors {
     name?: string;
@@ -14,6 +16,7 @@ interface FormErrors {
 }
 
 export default function SignupPage() {
+    const router = useRouter();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -60,7 +63,7 @@ export default function SignupPage() {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setTouched({ name: true, email: true, password: true });
 
@@ -69,10 +72,16 @@ export default function SignupPage() {
         setIsLoading(true);
         setErrors({});
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            await authApi.signup({ name, email, password });
+            // Redirect to dashboard on success
+            router.push('/dashboard');
+        } catch (error) {
             setIsLoading(false);
-        }, 1500);
+            setErrors({
+                general: error instanceof Error ? error.message : 'Failed to create account',
+            });
+        }
     };
 
     // Password strength indicators

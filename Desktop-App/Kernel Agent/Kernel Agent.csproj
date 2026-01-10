@@ -48,8 +48,11 @@
     <None Include="YourProject.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="dotenv.net" Version="4.0.0" />
+    <PackageReference Include="Google.Cloud.Speech.V1" Version="3.9.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
   <ItemGroup>
     <Page Update="SettingsPage.xaml">

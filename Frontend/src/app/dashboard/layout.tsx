@@ -1,15 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { SystemSidebar, TopBar, MobileBottomNav } from '@/components/dashboard/layout';
+import { isAuthenticated } from '@/lib/api';
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const router = useRouter();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    useEffect(() => {
+        if (!isAuthenticated()) {
+            router.push('/login');
+        }
+    }, [router]);
 
     return (
         <div className="min-h-screen bg-[#080808] text-zinc-300 font-sans flex flex-col lg:flex-row">

@@ -53,8 +53,8 @@
 
                     <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
                         <Grid>
-                            <Image x:ConnectionId='8' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
-                            <Canvas x:ConnectionId='9' x:Name="AiOverlayCanvas"/>
+                            <Image x:ConnectionId='9' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
+                            <Canvas x:ConnectionId='10' x:Name="AiOverlayCanvas"/>
                             <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
                                 <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="#34A853" FontWeight="Bold"/>
                                 <TextBlock Text="Target: Microsoft Excel" FontSize="12" Opacity="0.6"/>
@@ -73,11 +73,25 @@
                             <TextBlock Text="INTERNAL MONOLOGUE" FontSize="10" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,10"/>
 
                             <ScrollViewer Grid.Row="1">
-                                <StackPanel x:ConnectionId='7' x:Name="ThoughtLog"/>
+                                <StackPanel x:ConnectionId='8' x:Name="ThoughtLog"/>
                             </ScrollViewer>
 
-                            <TextBox x:ConnectionId='6' Grid.Row="2" PlaceholderText="Command Agent..." Margin="0,10,0,0" 
-                                     CornerRadius="8" x:Name="CommandInput"/>
+                            <Grid Grid.Row="2" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:ConnectionId='6' PlaceholderText="Command Agent..." 
+                                         CornerRadius="8" x:Name="CommandInput" Margin="0,0,8,0"/>
+                                <Button x:ConnectionId='7' Grid.Column="1" x:Name="InternalMonologueVoiceButton" 
+                                        ToolTipService.ToolTip="Record Voice for Internal Monologue" 
+                                        MinWidth="36" MinHeight="36" VerticalAlignment="Center" 
+                                        HorizontalAlignment="Right"
+                                                                      
+                                        Padding="8">
+                                    <FontIcon Glyph="&#xE720;" FontSize="18"/>
+                                </Button>
+                            </Grid>
                         </Grid>
                     </Border>
                 </Grid>
