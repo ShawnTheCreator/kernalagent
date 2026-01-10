@@ -13,13 +13,38 @@ if (File.Exists(".env"))
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CRITICAL: Configure Kestrel to listen on HTTP only (Render handles HTTPS at load balancer)
+// Get port from environment or default to 8080
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+var httpPort = int.Parse(port);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Explicitly bind to HTTP on all interfaces (0.0.0.0)
+    options.ListenAnyIP(httpPort, listenOptions =>
+    {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http;
+    });
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 // Add CORS - Load allowed origins from environment variables
-var allowedOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")?.Split(',')
-    ?? new[] { "http://localhost:3000", "http://localhost:3001" };
+var corsOriginsEnv = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+var allowedOrigins = string.IsNullOrWhiteSpace(corsOriginsEnv)
+    ? new[] { "http://localhost:3000", "http://localhost:3001" }
+    : corsOriginsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(o => o.Trim())
+                    .Where(o => !string.IsNullOrWhiteSpace(o))
+                    .ToArray();
+
+// Ensure we have at least one origin
+if (allowedOrigins.Length == 0)
+{
+    allowedOrigins = new[] { "http://localhost:3000" };
+}
 
 builder.Services.AddCors(options =>
 {
@@ -28,7 +53,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials(); // Only works with specific origins, not wildcard
     });
 });
 
@@ -83,8 +108,13 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Only use HTTPS redirection in development (cloud platforms handle HTTPS at load balancer)
-if (app.Environment.IsDevelopment())
+// CRITICAL: Never use HTTPS redirection in production/container environments
+// Render and other cloud platforms handle HTTPS at the load balancer level
+// Using HTTPS redirection here causes segmentation faults (Status 139)
+// Only enable in local development with actual certificates
+var isInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+if (app.Environment.IsDevelopment() && 
+    (isInContainer == null || !isInContainer.Equals("true", StringComparison.OrdinalIgnoreCase)))
 {
     app.UseHttpsRedirection();
 }
@@ -97,8 +127,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Get port from environment variable (for cloud platforms like Render)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-var urls = $"http://0.0.0.0:{port}";
-
-app.Run(urls);
+// Kestrel is already configured above, just run the app
+// The port binding is handled by ConfigureKestrel
+app.Run();

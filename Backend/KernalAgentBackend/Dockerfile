@@ -25,10 +25,12 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Copy published app
 COPY --from=publish /app/publish .
 
-# FORCE HTTP ONLY (Cloud platforms like Render handle HTTPS at load balancer)
+# FORCE HTTP ONLY - Hardcode to prevent HTTPS binding (prevents Status 139)
+# Cloud platforms like Render handle HTTPS at load balancer level
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_HTTP_PORTS=8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_RUNNING_IN_CONTAINER=true
 
 # Expose port
 EXPOSE 8080
