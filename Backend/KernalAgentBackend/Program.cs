@@ -52,10 +52,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); // Only works with specific origins, not wildcard
+              .AllowAnyMethod();
+        // Note: AllowCredentials() removed - not compatible with AllowAnyOrigin()
     });
 });
 
