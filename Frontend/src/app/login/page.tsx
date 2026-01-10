@@ -1,20 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Mail, Lock, Github } from 'lucide-react';
+import { Mail, Lock, Github, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { AuthInput } from '@/components/ui';
+
+interface FormErrors {
+    email?: string;
+    password?: string;
+    general?: string;
+}
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
+
+    const validateEmail = (email: string): string | undefined => {
+        if (!email) return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email';
+        return undefined;
+    };
+
+    const validatePassword = (password: string): string | undefined => {
+        if (!password) return 'Password is required';
+        if (password.length < 6) return 'Password must be at least 6 characters';
+        return undefined;
+    };
+
+    const validateForm = useCallback((): boolean => {
+        const newErrors: FormErrors = {
+            email: validateEmail(email),
+            password: validatePassword(password),
+        };
+        setErrors(newErrors);
+        return !newErrors.email && !newErrors.password;
+    }, [email, password]);
+
+    const handleBlur = (field: 'email' | 'password') => {
+        setTouched(prev => ({ ...prev, [field]: true }));
+        if (field === 'email') {
+            setErrors(prev => ({ ...prev, email: validateEmail(email) }));
+        } else {
+            setErrors(prev => ({ ...prev, password: validatePassword(password) }));
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setTouched({ email: true, password: true });
+
+        if (!validateForm()) return;
+
         setIsLoading(true);
-        setTimeout(() => setIsLoading(false), 1500);
+        setErrors({});
+
+        // Simulate API call
+        setTimeout(() => {
+            setIsLoading(false);
+            // Simulate success or error
+            // setErrors({ general: 'Invalid email or password' });
+        }, 1500);
     };
 
     return (
@@ -60,13 +109,22 @@ export default function LoginPage() {
                         </div>
 
                         {/* Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                            {errors.general && (
+                                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm" role="alert">
+                                    <AlertCircle size={16} />
+                                    <span>{errors.general}</span>
+                                </div>
+                            )}
                             <AuthInput
                                 type="email"
                                 placeholder="Email address"
                                 icon={<Mail size={18} />}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                onBlur={() => handleBlur('email')}
+                                error={touched.email ? errors.email : undefined}
+                                id="login-email"
                             />
                             <AuthInput
                                 type="password"
@@ -74,7 +132,10 @@ export default function LoginPage() {
                                 icon={<Lock size={18} />}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                onBlur={() => handleBlur('password')}
+                                error={touched.password ? errors.password : undefined}
                                 showPasswordToggle
+                                id="login-password"
                             />
 
                             {/* Forgot Password */}

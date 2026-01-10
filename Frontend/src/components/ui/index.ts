@@ -1,3 +1,2 @@
 export { AuthInput } from './AuthInput';
-export { InteractiveTerminal } from './InteractiveTerminal';
-export { Skeleton, CardSkeleton, SectionSkeleton, HeroSkeleton } from './Skeleton';
+export { Skeleton, SkeletonLine, SkeletonCircle, SkeletonCard, SkeletonBentoGrid, SkeletonHero, SkeletonStats } from './Skeleton';

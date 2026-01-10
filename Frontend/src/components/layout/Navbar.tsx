@@ -42,6 +42,8 @@ export function Navbar() {
                     <button
                         className="lg:hidden text-white p-2"
                         onClick={() => setMobileMenuOpen(true)}
+                        aria-label="Open mobile menu"
+                        aria-expanded={mobileMenuOpen}
                     >
                         <Menu size={24} />
                     </button>

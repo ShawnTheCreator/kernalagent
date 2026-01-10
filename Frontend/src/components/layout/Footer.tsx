@@ -15,15 +15,15 @@ export function Footer() {
                         <p className="text-sm text-zinc-500 max-w-sm">
                             A native cognitive agent that sees, understands, and executes across your operating system.
                         </p>
-                        <div className="flex gap-4 mt-6">
-                            <a href="#" className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center hover:border-white hover:text-white transition-colors">
-                                <span className="text-xs font-bold">X</span>
+                        <div className="flex gap-4 mt-6" role="list" aria-label="Social media links">
+                            <a href="#" className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center hover:border-white hover:text-white transition-colors" aria-label="Follow us on X (Twitter)">
+                                <span className="text-xs font-bold" aria-hidden="true">X</span>
                             </a>
-                            <a href="#" className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center hover:border-white hover:text-white transition-colors">
-                                <span className="text-xs font-bold">GH</span>
+                            <a href="#" className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center hover:border-white hover:text-white transition-colors" aria-label="View our GitHub repository">
+                                <span className="text-xs font-bold" aria-hidden="true">GH</span>
                             </a>
-                            <a href="#" className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center hover:border-white hover:text-white transition-colors">
-                                <span className="text-xs font-bold">DC</span>
+                            <a href="#" className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center hover:border-white hover:text-white transition-colors" aria-label="Join our Discord community">
+                                <span className="text-xs font-bold" aria-hidden="true">DC</span>
                             </a>
                         </div>
                     </div>

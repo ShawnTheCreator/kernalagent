@@ -1,21 +1,78 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Mail, Lock, User, Github, Check } from 'lucide-react';
+import { Mail, Lock, User, Github, Check, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { AuthInput } from '@/components/ui';
+
+interface FormErrors {
+    name?: string;
+    email?: string;
+    password?: string;
+    general?: string;
+}
 
 export default function SignupPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [touched, setTouched] = useState<{ name?: boolean; email?: boolean; password?: boolean }>({});
+
+    const validateName = (name: string): string | undefined => {
+        if (!name.trim()) return 'Name is required';
+        if (name.trim().length < 2) return 'Name must be at least 2 characters';
+        return undefined;
+    };
+
+    const validateEmail = (email: string): string | undefined => {
+        if (!email) return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email';
+        return undefined;
+    };
+
+    const validatePassword = (password: string): string | undefined => {
+        if (!password) return 'Password is required';
+        if (password.length < 8) return 'Password must be at least 8 characters';
+        return undefined;
+    };
+
+    const validateForm = useCallback((): boolean => {
+        const newErrors: FormErrors = {
+            name: validateName(name),
+            email: validateEmail(email),
+            password: validatePassword(password),
+        };
+        setErrors(newErrors);
+        return !newErrors.name && !newErrors.email && !newErrors.password;
+    }, [name, email, password]);
+
+    const handleBlur = (field: 'name' | 'email' | 'password') => {
+        setTouched(prev => ({ ...prev, [field]: true }));
+        if (field === 'name') {
+            setErrors(prev => ({ ...prev, name: validateName(name) }));
+        } else if (field === 'email') {
+            setErrors(prev => ({ ...prev, email: validateEmail(email) }));
+        } else {
+            setErrors(prev => ({ ...prev, password: validatePassword(password) }));
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setTouched({ name: true, email: true, password: true });
+
+        if (!validateForm()) return;
+
         setIsLoading(true);
-        setTimeout(() => setIsLoading(false), 1500);
+        setErrors({});
+
+        // Simulate API call
+        setTimeout(() => {
+            setIsLoading(false);
+        }, 1500);
     };
 
     // Password strength indicators
@@ -67,13 +124,22 @@ export default function SignupPage() {
                         </div>
 
                         {/* Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                            {errors.general && (
+                                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm" role="alert">
+                                    <AlertCircle size={16} />
+                                    <span>{errors.general}</span>
+                                </div>
+                            )}
                             <AuthInput
                                 type="text"
                                 placeholder="Full name"
                                 icon={<User size={18} />}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
+                                onBlur={() => handleBlur('name')}
+                                error={touched.name ? errors.name : undefined}
+                                id="signup-name"
                             />
                             <AuthInput
                                 type="email"
@@ -81,6 +147,9 @@ export default function SignupPage() {
                                 icon={<Mail size={18} />}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                onBlur={() => handleBlur('email')}
+                                error={touched.email ? errors.email : undefined}
+                                id="signup-email"
                             />
                             <AuthInput
                                 type="password"
@@ -88,7 +157,10 @@ export default function SignupPage() {
                                 icon={<Lock size={18} />}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                onBlur={() => handleBlur('password')}
+                                error={touched.password ? errors.password : undefined}
                                 showPasswordToggle
+                                id="signup-password"
                             />
 
                             {/* Password Strength */}

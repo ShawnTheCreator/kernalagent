@@ -1,77 +1,96 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { ReactNode } from 'react';
 
-interface SkeletonProps {
-    className?: string;
-    variant?: 'text' | 'card' | 'image' | 'button' | 'circle';
-    animate?: boolean;
+// Skeleton Shimmer Base
+export function Skeleton({ className = '', children }: { className?: string; children?: ReactNode }) {
+    return (
+        <div className={`skeleton-shimmer ${className}`}>
+            {children}
+        </div>
+    );
 }
 
-export function Skeleton({ className, variant = 'text', animate = true }: SkeletonProps) {
-    const baseClasses = 'bg-white/5 rounded';
-    const shimmerClasses = animate ? 'skeleton-shimmer' : '';
-
-    const variantClasses = {
-        text: 'h-4 w-full',
-        card: 'h-32 w-full rounded-xl',
-        image: 'aspect-video w-full rounded-xl',
-        button: 'h-12 w-32 rounded-full',
-        circle: 'h-12 w-12 rounded-full',
-    };
-
+// Skeleton Line (for text)
+export function SkeletonLine({ width = '100%', height = '1rem' }: { width?: string; height?: string }) {
     return (
         <div
-            className={cn(baseClasses, shimmerClasses, variantClasses[variant], className)}
+            className="skeleton-shimmer rounded"
+            style={{ width, height }}
         />
     );
 }
 
-// Card skeleton with multiple elements
-export function CardSkeleton() {
+// Skeleton Circle (for avatars)
+export function SkeletonCircle({ size = '3rem' }: { size?: string }) {
     return (
-        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-6 space-y-4">
-            <Skeleton variant="circle" className="h-8 w-8" />
-            <Skeleton className="w-1/2" />
-            <Skeleton className="w-full" />
-            <Skeleton className="w-3/4" />
-        </div>
+        <div
+            className="skeleton-shimmer rounded-full"
+            style={{ width: size, height: size }}
+        />
     );
 }
 
-// Section skeleton
-export function SectionSkeleton() {
+// Skeleton Card
+export function SkeletonCard({ className = '' }: { className?: string }) {
     return (
-        <div className="py-24 px-6">
-            <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-12 space-y-4">
-                    <Skeleton className="w-32 h-4 mx-auto" />
-                    <Skeleton className="w-64 h-8 mx-auto" />
-                </div>
-                <div className="grid md:grid-cols-3 gap-6">
-                    <CardSkeleton />
-                    <CardSkeleton />
-                    <CardSkeleton />
-                </div>
+        <div className={`skeleton-shimmer rounded-xl p-6 ${className}`}>
+            <SkeletonCircle size="2.5rem" />
+            <div className="mt-4 space-y-3">
+                <SkeletonLine width="60%" height="1.5rem" />
+                <SkeletonLine width="100%" height="0.875rem" />
+                <SkeletonLine width="80%" height="0.875rem" />
             </div>
         </div>
     );
 }
 
-// Hero skeleton
-export function HeroSkeleton() {
+// Skeleton Bento Grid
+export function SkeletonBentoGrid() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center px-6 space-y-8">
-            <Skeleton className="w-48 h-6 rounded-full" />
-            <div className="space-y-4 text-center">
-                <Skeleton className="w-[400px] h-16 mx-auto" />
-                <Skeleton className="w-[300px] h-16 mx-auto" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 md:row-span-2">
+                <SkeletonCard className="h-full min-h-[300px]" />
             </div>
-            <Skeleton className="w-[500px] h-6 mx-auto" />
-            <div className="flex gap-4 pt-8">
-                <Skeleton variant="button" className="w-48" />
-                <Skeleton className="w-32 h-12" />
+            <SkeletonCard className="h-[150px]" />
+            <SkeletonCard className="h-[150px]" />
+            <SkeletonCard className="h-[150px]" />
+            <SkeletonCard className="h-[150px]" />
+            <SkeletonCard className="h-[150px]" />
+        </div>
+    );
+}
+
+// Skeleton Hero
+export function SkeletonHero() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen px-6">
+            <SkeletonLine width="200px" height="2rem" />
+            <div className="mt-8 space-y-4 text-center">
+                <SkeletonLine width="80%" height="4rem" />
+                <SkeletonLine width="60%" height="4rem" />
             </div>
+            <div className="mt-8">
+                <SkeletonLine width="400px" height="1.25rem" />
+            </div>
+            <div className="mt-10 flex gap-4">
+                <div className="skeleton-shimmer rounded-full w-48 h-14" />
+                <div className="skeleton-shimmer rounded-full w-32 h-14" />
+            </div>
+        </div>
+    );
+}
+
+// Skeleton Stats
+export function SkeletonStats() {
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-16">
+            {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex flex-col items-center">
+                    <SkeletonLine width="120px" height="3rem" />
+                    <SkeletonLine width="80px" height="0.75rem" />
+                </div>
+            ))}
         </div>
     );
 }

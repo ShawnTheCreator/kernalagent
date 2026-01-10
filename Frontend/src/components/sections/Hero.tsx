@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Download, Play, ArrowRight, CircleDot, Terminal } from 'lucide-react';
 import { useMousePosition, useScrollProgress } from '@/hooks';
@@ -14,17 +14,45 @@ export function Hero() {
     const { x, y } = useMousePosition();
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
+    // RAF-throttled resize handler
     useEffect(() => {
+        let rafId: number | null = null;
+
+        const handleResize = () => {
+            if (rafId) return;
+            rafId = requestAnimationFrame(() => {
+                setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+                rafId = null;
+            });
+        };
+
+        // Initial size
         setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-        const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        window.addEventListener('resize', handleResize, { passive: true });
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (rafId) cancelAnimationFrame(rafId);
+        };
     }, []);
 
+    // RAF-throttled scroll handler
     useEffect(() => {
-        const handleScroll = () => setScrollY(window.pageYOffset);
+        let rafId: number | null = null;
+
+        const handleScroll = () => {
+            if (rafId) return;
+            rafId = requestAnimationFrame(() => {
+                setScrollY(window.pageYOffset);
+                rafId = null;
+            });
+        };
+
         window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (rafId) cancelAnimationFrame(rafId);
+        };
     }, []);
 
     useEffect(() => {
