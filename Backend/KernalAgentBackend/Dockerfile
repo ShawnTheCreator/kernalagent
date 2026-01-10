@@ -25,8 +25,9 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Copy published app
 COPY --from=publish /app/publish .
 
-# Set environment variables (can be overridden)
+# FORCE HTTP ONLY (Cloud platforms like Render handle HTTPS at load balancer)
 ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_HTTP_PORTS=8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Expose port

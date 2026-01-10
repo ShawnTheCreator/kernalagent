@@ -83,7 +83,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in development (cloud platforms handle HTTPS at load balancer)
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Use CORS
 app.UseCors("AllowFrontend");
@@ -93,4 +97,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+// Get port from environment variable (for cloud platforms like Render)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+var urls = $"http://0.0.0.0:{port}";
+
+app.Run(urls);
