@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  kernalagent-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kernalagent-backend
+    ports:
+      - "5042:8080"  # Map host port 5042 to container port 8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - JWT_KEY=${JWT_KEY}
+      - JWT_ISSUER=${JWT_ISSUER:-KernalAgentBackend}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-KernalAgentFrontend}
+      - DATABASE_CONNECTION_STRING=${DATABASE_CONNECTION_STRING:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+    volumes:
+      # Mount .env file if it exists (optional)
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    networks:
+      - kernalagent-network
+
+networks:
+  kernalagent-network:
+    driver: bridge
+

@@ -5,8 +5,11 @@ using System.Text;
 using KernalAgentBackend.Data;
 using DotNetEnv;
 
-// Load .env file
-Env.Load();
+// Load .env file (only if it exists - for Docker, use environment variables)
+if (File.Exists(".env"))
+{
+    Env.Load();
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
