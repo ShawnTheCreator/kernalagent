@@ -1,0 +1,64 @@
+<Page
+    x:Class="Kernel_Agent.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Kernel_Agent">
+
+    <ScrollViewer Padding="40">
+        <StackPanel Spacing="20" MaxWidth="800" HorizontalAlignment="Left">
+
+            <TextBlock Text="Settings" FontSize="28" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <TextBlock Text="Appearance" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
+
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="8" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <StackPanel>
+                    <Grid Padding="16" ColumnDefinitions="*, Auto">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="App Theme" FontWeight="Medium"/>
+                            <TextBlock Text="Select which app theme to display" FontSize="12" Opacity="0.6"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" SelectedIndex="2" Width="150">
+                            <ComboBoxItem Content="Light"/>
+                            <ComboBoxItem Content="Dark"/>
+                            <ComboBoxItem Content="Use System Setting"/>
+                        </ComboBox>
+                    </Grid>
+                    <MenuFlyoutSeparator/>
+                    <Grid Padding="16" ColumnDefinitions="*, Auto">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Mica Effects" FontWeight="Medium"/>
+                            <TextBlock Text="Enable translucent window background" FontSize="12" Opacity="0.6"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsOn="True"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="AI Engine" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
+
+            <Expander Header="LLM Configuration" HorizontalAlignment="Stretch" ExpandDirection="Down">
+                <StackPanel Spacing="15">
+                    <PasswordBox Header="API Key" Password="••••••••••••••••" PasswordChar="*"/>
+                    <ComboBox Header="Model Selection" HorizontalAlignment="Stretch" SelectedIndex="0">
+                        <ComboBoxItem Content="Gemini 1.5 Pro (Recommended)"/>
+                        <ComboBoxItem Content="Gemini 1.5 Flash (Fast)"/>
+                        <ComboBoxItem Content="Local Llama 3 (Private)"/>
+                    </ComboBox>
+                    <Slider Header="Temperature (Creativity)" Minimum="0" Maximum="1" StepFrequency="0.1" Value="0.7"/>
+                </StackPanel>
+            </Expander>
+
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="8" Margin="0,20,0,0" Padding="16">
+                <Grid ColumnDefinitions="Auto, *">
+                    <FontIcon Glyph="&#xE946;" FontSize="32" Foreground="{StaticResource GoogleBlue}" Margin="0,0,16,0"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Kernel Agent v1.0.4-Alpha" FontWeight="Bold"/>
+                        <TextBlock Text="© 2024 Kernel Labs. All rights reserved." FontSize="12" Opacity="0.6"/>
+                        <HyperlinkButton Content="Check for Updates" Margin="-5,5,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

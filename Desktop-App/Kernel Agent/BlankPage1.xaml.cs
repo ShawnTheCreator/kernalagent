@@ -6,11 +6,11 @@ using System;
 
 namespace Kernel_Agent
 {
-    public sealed partial class MemoryPage : Page
+    public sealed partial class BlankPage1 : Page
     {
         private Random _rnd = new Random();
 
-        public MemoryPage()
+        public BlankPage1()
         {
             this.InitializeComponent();
             GenerateNeuralMap();

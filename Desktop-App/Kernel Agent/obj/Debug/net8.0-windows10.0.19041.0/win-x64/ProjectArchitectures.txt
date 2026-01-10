@@ -1,0 +1,1 @@
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\Kernel Agent.csproj;x64

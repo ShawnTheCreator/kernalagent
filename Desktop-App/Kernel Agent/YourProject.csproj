@@ -1,0 +1,17 @@
+<ItemGroup>
+  <Page Include="MemoryPage.xaml" />
+  <Compile Include="MemoryPage.xaml.cs">
+    <DependentUpon>MemoryPage.xaml</DependentUpon>
+  </Compile>
+
+  <Page Include="SecurityPage.xaml" />
+  <Compile Include="SecurityPage.xaml.cs">
+    <DependentUpon>SecurityPage.xaml</DependentUpon>
+  </Compile>
+
+  <!-- Added SandboxPage so typeof(SandboxPage) resolves at compile time -->
+  <Page Include="SandboxPage.xaml" />
+  <Compile Include="SandboxPage.xaml.cs">
+    <DependentUpon>SandboxPage.xaml</DependentUpon>
+  </Compile>
+</ItemGroup>

@@ -32,12 +32,19 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
                 <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
+                <NavigationViewItem Content="Action History" Tag="history">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE81C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem Content="Neural Memory" Icon="AllApps" Tag="memory"/>
+
+                <NavigationViewItem Content="Security Vault" Icon="Permissions" Tag="security"/>
+                <NavigationViewItem Content="Neural Sandbox" Icon="Play" Tag="sandbox"/>
+                <NavigationViewItem Content="Marketplace" Icon="Shop" Tag="marketplace"/>
             </NavigationView.MenuItems>
 
-            <!-- Mission control root and overlaying Frame for navigated pages -->
             <Grid>
-                <!-- MissionRoot must exist so code-behind can show/hide mission UI -->
                 <Grid x:ConnectionId='4' x:Name="MissionRoot" Padding="20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
@@ -75,7 +82,6 @@
                     </Border>
                 </Grid>
 
-                <!-- Frame overlays mission UI when navigating to other pages -->
                 <Frame x:ConnectionId='5' x:Name="ContentFrame" Visibility="Collapsed"/>
             </Grid>
         </NavigationView>

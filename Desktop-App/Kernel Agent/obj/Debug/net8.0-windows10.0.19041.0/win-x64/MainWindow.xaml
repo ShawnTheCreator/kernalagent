@@ -1,0 +1,90 @@
+﻿<Window
+    x:Class="Kernel_Agent.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Kernel_Agent"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Kernel Agent - Mission Control">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="BaseAlt" />
+    </Window.SystemBackdrop>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid x:ConnectionId='2' x:Name="AppTitleBar" Height="40">
+            <StackPanel Orientation="Horizontal" Margin="15,0">
+                <FontIcon Glyph="&#xE99A;" Foreground="#8E75FF" FontSize="16"/>
+                <TextBlock Text="KERNEL MISSION CONTROL" VerticalAlignment="Center" 
+                           Margin="10,0" FontWeight="Bold" FontSize="11" CharacterSpacing="150"/>
+            </StackPanel>
+        </Grid>
+
+        <NavigationView x:ConnectionId='3' Grid.Row="1" x:Name="NavView" 
+                        PaneDisplayMode="LeftCompact"
+                                                                   >
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
+                <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
+                <NavigationViewItem Content="Action History" Tag="history">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE81C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Neural Memory" Icon="AllApps" Tag="memory"/>
+
+                <NavigationViewItem Content="Security Vault" Icon="Permissions" Tag="security"/>
+                <NavigationViewItem Content="Neural Sandbox" Icon="Repair" Tag="sandbox"/>
+                <NavigationViewItem Content="Marketplace" Icon="Shop" Tag="marketplace"/>
+            </NavigationView.MenuItems>
+
+            <Grid>
+                <Grid x:ConnectionId='4' x:Name="MissionRoot" Padding="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
+                        <Grid>
+                            <Image x:ConnectionId='8' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
+                            <Canvas x:ConnectionId='9' x:Name="AiOverlayCanvas"/>
+                            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
+                                <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="#34A853" FontWeight="Bold"/>
+                                <TextBlock Text="Target: Microsoft Excel" FontSize="12" Opacity="0.6"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1" CornerRadius="12" Background="{ThemeResource LayerFillColorDefaultBrush}" Padding="15">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="INTERNAL MONOLOGUE" FontSize="10" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,10"/>
+
+                            <ScrollViewer Grid.Row="1">
+                                <StackPanel x:ConnectionId='7' x:Name="ThoughtLog"/>
+                            </ScrollViewer>
+
+                            <TextBox x:ConnectionId='6' Grid.Row="2" PlaceholderText="Command Agent..." Margin="0,10,0,0" 
+                                     CornerRadius="8" x:Name="CommandInput"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Frame x:ConnectionId='5' x:Name="ContentFrame" Visibility="Collapsed"/>
+            </Grid>
+        </NavigationView>
+    </Grid>
+</Window>
+

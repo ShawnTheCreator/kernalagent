@@ -5,6 +5,21 @@
     <None Update="App.xaml">
       <SubType>Designer</SubType>
     </None>
+    <Page Update="SettingsPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="MarketplacePage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SecurityPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="HistoryPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="MemoryPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Update="BlankPage1.xaml">
       <SubType>Designer</SubType>
     </Page>

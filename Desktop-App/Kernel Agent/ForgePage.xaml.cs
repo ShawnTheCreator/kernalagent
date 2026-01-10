@@ -61,6 +61,8 @@ namespace Kernel_Agent
         {
             // World-class apps show "Simulating" status
             var btn = sender as Button;
+            if (btn == null) return;
+            
             btn.Content = "Simulating...";
             btn.IsEnabled = false;
 
@@ -87,8 +89,11 @@ namespace Kernel_Agent
     /// </summary>
     public class SkillAction
     {
-        public string Label { get; set; }
+        // Provide a safe default so the non-nullable warning is satisfied.
+        // Alternatively you could declare 'public required string Label { get; set; }'
+        // or use 'string?' and handle nulls, but defaulting to empty string is simplest here.
+        public string Label { get; set; } = string.Empty;
         public int Delay { get; set; }
-        public string Color { get; set; }
+        public string Color { get; set; } = string.Empty;
     }
 }

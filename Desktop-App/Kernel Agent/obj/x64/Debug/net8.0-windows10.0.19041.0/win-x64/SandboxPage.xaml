@@ -1,0 +1,25 @@
+﻿<Page
+    x:Class="Kernel_Agent.SandboxPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Kernel_Agent">
+
+    <Grid Padding="24">
+        <StackPanel Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center" Width="480">
+            <TextBlock Text="Neural Sandbox" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" />
+            <TextBlock Text="Try out code or commands in a safe environment." FontSize="12" Opacity="0.7" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+            <TextBox x:ConnectionId='2' x:Name="SandboxInput" AcceptsReturn="True" Height="120" PlaceholderText="Enter code or commands here..." FontFamily="Consolas"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                <Button x:ConnectionId='4' x:Name="RunSandboxButton" Content="Run" Width="80"                               />
+                <Button x:ConnectionId='5' x:Name="VoiceMicButton" Width="48" Height="48"                             >
+                    <Viewbox Width="24" Height="24">
+                        <Path Data="M12 3C10.34 3 9 4.34 9 6V12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12V6C15 4.34 13.66 3 12 3ZM19 11C19 15 16 17 12 17C8 17 5 15 5 11H7C7 13.76 9.24 15 12 15C14.76 15 17 13.76 17 11H19ZM12 19C13.1 19 14 18.1 14 17H10C10 18.1 10.9 19 12 19Z" Fill="Gray"/>
+                    </Viewbox>
+                </Button>
+            </StackPanel>
+            <TextBlock Text="Output:" FontWeight="SemiBold" Margin="0,12,0,0"/>
+            <TextBox x:ConnectionId='3' x:Name="SandboxOutput" Height="80" IsReadOnly="True" FontFamily="Consolas"/>
+        </StackPanel>
+    </Grid>
+</Page>
+
