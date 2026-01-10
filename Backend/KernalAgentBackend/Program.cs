@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -21,9 +22,10 @@ var httpPort = int.Parse(port);
 builder.WebHost.ConfigureKestrel(options =>
 {
     // Explicitly bind to HTTP on all interfaces (0.0.0.0)
+    // Use Http1 protocol for Render deployment (Render handles HTTPS at load balancer)
     options.ListenAnyIP(httpPort, listenOptions =>
     {
-        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http;
+        listenOptions.Protocols = HttpProtocols.Http1;
     });
 });
 
