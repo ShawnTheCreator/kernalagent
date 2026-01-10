@@ -338,3 +338,57 @@ body {
   width: 30%;
   animation: loading 0.8s ease-in-out infinite;
 }
+
+/* Skeleton Shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.03) 25%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Touch Feedback for Mobile */
+.touch-feedback {
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.touch-feedback:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* GSAP Reveal Styles */
+.gsap-reveal {
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+.gsap-reveal-left {
+  opacity: 0;
+  transform: translateX(-50px);
+}
+
+.gsap-reveal-right {
+  opacity: 0;
+  transform: translateX(50px);
+}
+
+/* 3D Scene Container */
+.neural-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}

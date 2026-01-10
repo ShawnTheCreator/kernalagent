@@ -1,3 +1,4 @@
 export { useMousePosition } from './useMousePosition';
 export { useScrollProgress } from './useScrollProgress';
 export { useInView } from './useInView';
+export { useHaptic } from './useHaptic';
