@@ -5,7 +5,13 @@
  */
 import type { Skill } from '@/stores/dashboardStore';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Toggle: Set to true to use local backend (localhost:8000), false for Render
+const USE_LOCAL_API = false;
+
+const LOCAL_API = 'http://localhost:8000';
+const RENDER_API = 'https://kernalagent.onrender.com';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || (USE_LOCAL_API ? LOCAL_API : RENDER_API);
 
 export interface BackendSkill {
     id: string;
