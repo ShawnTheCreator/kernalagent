@@ -11,7 +11,7 @@ namespace Kernel_Agent.Services
     public class ApiService
     {
         private static readonly string API_BASE_URL = 
-            Environment.GetEnvironmentVariable("API_BASE_URL") ?? "http://localhost:5042/api";
+            Environment.GetEnvironmentVariable("API_BASE_URL") ?? "https://kernal-agent-backend.onrender.com/api"; // Production backend
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
 
@@ -237,6 +237,12 @@ namespace Kernel_Agent.Services
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public async Task<string?> AskAgentAsync(string message)
+        {
+            var data = new { Message = message };
+            var response = await PostAsync<string>("/ask-agent", data);
+            return response;
+        }
     }
 }
 
