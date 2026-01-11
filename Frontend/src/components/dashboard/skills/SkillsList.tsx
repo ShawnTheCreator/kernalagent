@@ -2,38 +2,41 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import { SkillCard } from './SkillCard';
-import { dashboardApi } from '@/lib/api';
+import { fetchSkills } from '@/lib/skillsApi';
+import { mockSkills } from '@/lib/mockApi';
 import type { Skill } from '@/stores/dashboardStore';
 
 export function SkillsList() {
-    const [searchQuery, setSearchQuery] = useState('');
     const [skills, setSkills] = useState<Skill[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [useMock, setUseMock] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
+    // Fetch skills on mount
     useEffect(() => {
-        async function fetchSkills() {
-            try {
-                const data = await dashboardApi.getSkills();
-                // Transform backend data to match Skill interface
-                const transformedSkills: Skill[] = data.map((skill: any) => ({
-                    id: skill.id,
-                    name: skill.name,
-                    description: skill.description,
-                    confidence: skill.confidence,
-                    lastExecuted: new Date(skill.lastExecuted),
-                    executionCount: skill.executionCount,
-                }));
-                setSkills(transformedSkills);
-            } catch (error) {
-                console.error('Failed to fetch skills:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        fetchSkills();
+        loadSkills();
     }, []);
+
+    async function loadSkills() {
+        setLoading(true);
+        try {
+            const data = await fetchSkills();
+            if (data.length > 0) {
+                setSkills(data);
+                setUseMock(false);
+            } else {
+                // Fallback to mock data if backend empty or unavailable
+                setSkills(mockSkills);
+                setUseMock(true);
+            }
+        } catch {
+            setSkills(mockSkills);
+            setUseMock(true);
+        }
+        setLoading(false);
+    }
 
     const filteredSkills = skills.filter(skill =>
         skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -48,7 +51,22 @@ export function SkillsList() {
                     <Sparkles size={16} className="text-zinc-500" />
                     <h2 className="text-sm font-medium text-zinc-300">Learned Skills</h2>
                     <span className="text-[10px] font-mono text-zinc-600">{skills.length} total</span>
+                    {useMock && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">mock</span>
+                    )}
                 </div>
+                <button
+                    onClick={loadSkills}
+                    disabled={loading}
+                    className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
+                    title="Refresh skills"
+                >
+                    {loading ? (
+                        <Loader2 size={14} className="text-zinc-500 animate-spin" />
+                    ) : (
+                        <RefreshCw size={14} className="text-zinc-500" />
+                    )}
+                </button>
             </div>
 
             {/* Search */}
@@ -63,35 +81,38 @@ export function SkillsList() {
                 />
             </div>
 
-            {/* Skills Grid */}
-            {isLoading ? (
-                <div className="text-center py-12">
-                    <p className="text-sm text-zinc-500">Loading skills...</p>
+            {/* Loading state */}
+            {loading && (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 size={24} className="text-zinc-500 animate-spin" />
                 </div>
-            ) : (
-                <>
-                    <motion.div
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                        initial="hidden"
-                        animate="visible"
-                        variants={{
-                            hidden: {},
-                            visible: {
-                                transition: { staggerChildren: 0.05 }
-                            }
-                        }}
-                    >
-                        {filteredSkills.map((skill) => (
-                            <SkillCard key={skill.id} skill={skill} />
-                        ))}
-                    </motion.div>
+            )}
 
-                    {filteredSkills.length === 0 && (
-                        <div className="text-center py-12">
-                            <p className="text-sm text-zinc-500">No skills found matching "{searchQuery}"</p>
-                        </div>
-                    )}
-                </>
+            {/* Skills Grid */}
+            {!loading && (
+                <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        hidden: {},
+                        visible: {
+                            transition: { staggerChildren: 0.05 }
+                        }
+                    }}
+                >
+                    {filteredSkills.map((skill) => (
+                        <SkillCard key={skill.id} skill={skill} />
+                    ))}
+                </motion.div>
+            )}
+
+            {!loading && filteredSkills.length === 0 && (
+                <div className="text-center py-12">
+                    <p className="text-sm text-zinc-500">
+                        {searchQuery ? `No skills found matching "${searchQuery}"` : 'No skills learned yet'}
+                    </p>
+                </div>
             )}
         </div>
     );

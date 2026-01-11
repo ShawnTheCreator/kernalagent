@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { SystemSidebar, TopBar, MobileBottomNav } from '@/components/dashboard/layout';
 import { isAuthenticated } from '@/lib/api';
 
+// HACKATHON: Set to true to bypass auth for demo
+const DEV_BYPASS_AUTH = true;
+
 export default function DashboardLayout({
     children,
 }: {
@@ -15,7 +18,8 @@ export default function DashboardLayout({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        if (!isAuthenticated()) {
+        // Skip auth check if bypass enabled
+        if (!DEV_BYPASS_AUTH && !isAuthenticated()) {
             router.push('/login');
         }
     }, [router]);
