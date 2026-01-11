@@ -6,4 +6,4 @@ pillow
 python-dotenv
 torch
 open-clip-torch
-
+firebase-admin

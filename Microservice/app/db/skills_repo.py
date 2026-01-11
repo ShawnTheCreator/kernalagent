@@ -1,134 +1,73 @@
 """
-Skills Repository - Simple SQLite CRUD for learned skills.
+Skills Repository - Firebase Firestore Implementation
 
-No ORM, no complexity. Just sqlite3 + JSON.
+Stores and retrieves learned skills from Firebase Firestore.
+Replaces SQLite implementation for cross-platform skill sharing.
+
+Firestore Collection: skills
 """
-import sqlite3
-import json
 import uuid
 from datetime import datetime
 from typing import Optional
-import os
 
-from app.db.init_db import DB_PATH, init_database
-
-
-def _get_connection():
-    """Get a database connection. Auto-initializes if needed."""
-    if not os.path.exists(DB_PATH):
-        init_database()
-    return sqlite3.connect(DB_PATH)
+from .firebase_client import get_skills_collection
 
 
-def save_skill(name: str, intent_signature: str, steps: list[dict]) -> str:
+def save_skill(name: str, intent_signature: str, steps: list) -> str:
     """
-    Save a new skill to the database.
+    Save a new skill to Firestore.
     
     Args:
-        name: Human-readable skill name (e.g., "Export PDF")
-        intent_signature: Intent pattern for matching (e.g., "export file")
-        steps: List of step dictionaries
+        name: Human-readable skill name (e.g., "Export as PDF")
+        intent_signature: The intent pattern that triggers this skill
+        steps: List of step dictionaries with action details
         
     Returns:
         The generated skill ID
-        
-    Example steps:
-        [
-            {"step_index": 1, "action_type": "CLICK", "context": "File menu", "vision_expectation": "UI_STABLE"},
-            {"step_index": 2, "action_type": "CLICK", "context": "Export option", "vision_expectation": "SCREEN_CHANGED"}
-        ]
     """
-    skill_id = str(uuid.uuid4())[:8]  # Short ID for readability
-    created_at = datetime.now().isoformat()
+    skill_id = str(uuid.uuid4())[:8]  # Short UUID for readability
+    now = datetime.utcnow().isoformat() + "Z"
     
-    conn = _get_connection()
-    cursor = conn.cursor()
+    skill_doc = {
+        "id": skill_id,
+        "name": name,
+        "intent_signature": intent_signature,
+        "steps": steps,
+        "created_at": now,
+        "last_used_at": None,
+        "success_count": 0
+    }
     
-    cursor.execute("""
-        INSERT INTO skills (id, name, intent_signature, steps_json, created_at, success_count)
-        VALUES (?, ?, ?, ?, ?, 0)
-    """, (skill_id, name, intent_signature, json.dumps(steps), created_at))
+    # Save to Firestore with skill_id as document ID
+    collection = get_skills_collection()
+    collection.document(skill_id).set(skill_doc)
     
-    conn.commit()
-    conn.close()
-    
-    print(f"[SKILLS DB] Saved skill: {name} (id={skill_id})")
+    print(f"[SKILLS DB] Saved skill: {name} (ID: {skill_id})")
     return skill_id
 
 
-def get_all_skills() -> list[dict]:
+def get_all_skills() -> list:
     """
-    Get all skills from the database.
+    Retrieve all skills from Firestore.
     
     Returns:
-        List of skill dictionaries with parsed steps
+        List of all skill dictionaries
     """
-    conn = _get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM skills ORDER BY success_count DESC, created_at DESC")
-    rows = cursor.fetchall()
-    conn.close()
+    collection = get_skills_collection()
+    docs = collection.stream()
     
     skills = []
-    for row in rows:
-        skills.append({
-            "id": row["id"],
-            "name": row["name"],
-            "intent_signature": row["intent_signature"],
-            "steps": json.loads(row["steps_json"]),
-            "created_at": row["created_at"],
-            "last_used_at": row["last_used_at"],
-            "success_count": row["success_count"]
-        })
+    for doc in docs:
+        skill_data = doc.to_dict()
+        skills.append(skill_data)
     
-    return skills
-
-
-def get_skills_by_intent(intent_signature: str) -> list[dict]:
-    """
-    Find skills matching an intent signature.
-    Uses LIKE for fuzzy matching.
-    
-    Args:
-        intent_signature: Intent pattern to search for
-        
-    Returns:
-        List of matching skill dictionaries
-    """
-    conn = _get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    # Fuzzy match with LIKE
-    cursor.execute("""
-        SELECT * FROM skills 
-        WHERE intent_signature LIKE ? 
-        ORDER BY success_count DESC
-    """, (f"%{intent_signature}%",))
-    
-    rows = cursor.fetchall()
-    conn.close()
-    
-    skills = []
-    for row in rows:
-        skills.append({
-            "id": row["id"],
-            "name": row["name"],
-            "intent_signature": row["intent_signature"],
-            "steps": json.loads(row["steps_json"]),
-            "created_at": row["created_at"],
-            "last_used_at": row["last_used_at"],
-            "success_count": row["success_count"]
-        })
-    
+    print(f"[SKILLS DB] Retrieved {len(skills)} skills")
     return skills
 
 
 def get_skill_by_id(skill_id: str) -> Optional[dict]:
     """
-    Get a single skill by ID.
+    Get a single skill by its ID.
     
     Args:
         skill_id: The skill's unique ID
@@ -136,80 +75,111 @@ def get_skill_by_id(skill_id: str) -> Optional[dict]:
     Returns:
         Skill dictionary or None if not found
     """
-    conn = _get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    collection = get_skills_collection()
+    doc = collection.document(skill_id).get()
     
-    cursor.execute("SELECT * FROM skills WHERE id = ?", (skill_id,))
-    row = cursor.fetchone()
-    conn.close()
+    if doc.exists:
+        return doc.to_dict()
+    return None
+
+
+def get_skills_by_intent(intent_signature: str) -> list:
+    """
+    Find skills that match the given intent (fuzzy search).
     
-    if row is None:
-        return None
+    Args:
+        intent_signature: The intent pattern to search for
+        
+    Returns:
+        List of matching skill dictionaries
+    """
+    # Get all skills and filter locally (Firestore doesn't support LIKE queries)
+    all_skills = get_all_skills()
+    search_lower = intent_signature.lower()
     
-    return {
-        "id": row["id"],
-        "name": row["name"],
-        "intent_signature": row["intent_signature"],
-        "steps": json.loads(row["steps_json"]),
-        "created_at": row["created_at"],
-        "last_used_at": row["last_used_at"],
-        "success_count": row["success_count"]
-    }
+    matching = [
+        skill for skill in all_skills
+        if search_lower in skill.get('intent_signature', '').lower()
+        or search_lower in skill.get('name', '').lower()
+    ]
+    
+    print(f"[SKILLS DB] Found {len(matching)} skills matching '{intent_signature}'")
+    return matching
 
 
 def increment_skill_usage(skill_id: str) -> bool:
     """
-    Increment success count and update last_used_at for a skill.
+    Increment the success_count and update last_used_at for a skill.
     
     Args:
         skill_id: The skill's unique ID
         
     Returns:
-        True if skill was found and updated, False otherwise
+        True if successful, False if skill not found
     """
-    conn = _get_connection()
-    cursor = conn.cursor()
+    collection = get_skills_collection()
+    doc_ref = collection.document(skill_id)
+    doc = doc_ref.get()
     
-    now = datetime.now().isoformat()
+    if not doc.exists:
+        print(f"[SKILLS DB] Skill not found: {skill_id}")
+        return False
     
-    cursor.execute("""
-        UPDATE skills 
-        SET success_count = success_count + 1,
-            last_used_at = ?
-        WHERE id = ?
-    """, (now, skill_id))
+    now = datetime.utcnow().isoformat() + "Z"
+    current_data = doc.to_dict()
+    new_count = current_data.get('success_count', 0) + 1
     
-    updated = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
+    doc_ref.update({
+        "last_used_at": now,
+        "success_count": new_count
+    })
     
-    if updated:
-        print(f"[SKILLS DB] Incremented usage for skill: {skill_id}")
-    
-    return updated
+    print(f"[SKILLS DB] Incremented usage for skill: {skill_id} (count: {new_count})")
+    return True
 
 
 def delete_skill(skill_id: str) -> bool:
     """
-    Delete a skill by ID.
+    Delete a skill by its ID.
     
     Args:
         skill_id: The skill's unique ID
         
     Returns:
-        True if skill was deleted, False if not found
+        True if deleted, False if not found
     """
-    conn = _get_connection()
-    cursor = conn.cursor()
+    collection = get_skills_collection()
+    doc_ref = collection.document(skill_id)
+    doc = doc_ref.get()
     
-    cursor.execute("DELETE FROM skills WHERE id = ?", (skill_id,))
+    if not doc.exists:
+        print(f"[SKILLS DB] Skill not found for deletion: {skill_id}")
+        return False
     
-    deleted = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
+    doc_ref.delete()
+    print(f"[SKILLS DB] Deleted skill: {skill_id}")
+    return True
+
+
+def update_skill(skill_id: str, updates: dict) -> bool:
+    """
+    Update a skill with new values.
     
-    if deleted:
-        print(f"[SKILLS DB] Deleted skill: {skill_id}")
+    Args:
+        skill_id: The skill's unique ID
+        updates: Dictionary of fields to update
+        
+    Returns:
+        True if successful, False if skill not found
+    """
+    collection = get_skills_collection()
+    doc_ref = collection.document(skill_id)
+    doc = doc_ref.get()
     
-    return deleted
+    if not doc.exists:
+        print(f"[SKILLS DB] Skill not found: {skill_id}")
+        return False
+    
+    doc_ref.update(updates)
+    print(f"[SKILLS DB] Updated skill: {skill_id}")
+    return True
