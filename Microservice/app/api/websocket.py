@@ -8,6 +8,7 @@ Now includes:
 - Skill usage tracking
 """
 import asyncio
+import uuid
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Optional
 
@@ -23,7 +24,7 @@ PREVIOUS_FRAME: Optional[str] = None
 
 
 @router.websocket("/ws/stream")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
     """
     Main WebSocket endpoint for the Kernal nervous system.
     
@@ -38,6 +39,9 @@ async def websocket_endpoint(websocket: WebSocket):
     - Confidence-based throttling
     """
     global CURRENT_INTENT, PREVIOUS_ACTION, PREVIOUS_FRAME
+    
+    if session_id is None:
+        session_id = str(uuid.uuid4())
     
     await websocket.accept()
     print("[CONNECTED] Nervous System Connected (C# Client Online)")
@@ -70,7 +74,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     current_frame,
                     CURRENT_INTENT,
                     PREVIOUS_ACTION,
-                    PREVIOUS_FRAME
+                    PREVIOUS_FRAME,
+                    session_id
                 )
 
                 # Track skill usage if skill was used

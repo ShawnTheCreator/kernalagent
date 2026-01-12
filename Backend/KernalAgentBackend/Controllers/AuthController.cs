@@ -7,6 +7,7 @@ using System.Text;
 using KernalAgentBackend.Data;
 using KernalAgentBackend.DTOs;
 using KernalAgentBackend.Models;
+using DbUser = KernalAgentBackend.Models.User;
 using BCrypt.Net;
 
 namespace KernalAgentBackend.Controllers;
@@ -18,10 +19,13 @@ public class AuthController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
 
-    public AuthController(ApplicationDbContext context, IConfiguration configuration)
+    private readonly FirestoreDb _firestoreDb;
+
+    public AuthController(ApplicationDbContext context, IConfiguration configuration, FirestoreDb firestoreDb)
     {
         _context = context;
         _configuration = configuration;
+        _firestoreDb = firestoreDb;
     }
 
     [HttpPost("signup")]
@@ -55,7 +59,7 @@ public class AuthController : ControllerBase
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
         // Create user
-        var user = new User
+        var user = new DbUser
         {
             Name = request.Name,
             Email = request.Email,
@@ -65,6 +69,22 @@ public class AuthController : ControllerBase
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        // Also store user in Firestore
+        try
+        {
+            var userDoc = new {
+                Email = user.Email,
+                CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                NeuralCredits = 0,
+                Name = user.Name
+            };
+            await _firestoreDb.Collection("users").Document(user.Id.ToString()).SetAsync(userDoc);
+        }
+        catch (Exception ex)
+        {
+            // Optionally log error but do not block signup
+        }
 
         // Generate token
         var token = GenerateJwtToken(user);
@@ -141,7 +161,7 @@ public class AuthController : ControllerBase
         });
     }
 
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(DbUser user)
     {
         var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") 
             ?? throw new InvalidOperationException("JWT_KEY environment variable is required");

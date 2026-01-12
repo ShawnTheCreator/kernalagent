@@ -13,7 +13,7 @@ from typing import Optional
 from .firebase_client import get_skills_collection
 
 
-def save_skill(name: str, intent_signature: str, steps: list) -> str:
+def save_skill(name: str, intent_signature: str, steps: list, description: str, confidence: str, is_global: bool = True) -> str:
     """
     Save a new skill to Firestore.
     
@@ -25,7 +25,7 @@ def save_skill(name: str, intent_signature: str, steps: list) -> str:
     Returns:
         The generated skill ID
     """
-    skill_id = str(uuid.uuid4())[:8]  # Short UUID for readability
+    skill_id = name.replace(" ", "_").lower()
     now = datetime.utcnow().isoformat() + "Z"
     
     skill_doc = {
@@ -33,9 +33,12 @@ def save_skill(name: str, intent_signature: str, steps: list) -> str:
         "name": name,
         "intent_signature": intent_signature,
         "steps": steps,
+        "description": description,
+        "confidence": confidence,
         "created_at": now,
-        "last_used_at": None,
-        "success_count": 0
+        "lastExecuted": None,
+        "executionCount": 0,
+        "is_global": is_global
     }
     
     # Save to Firestore with skill_id as document ID

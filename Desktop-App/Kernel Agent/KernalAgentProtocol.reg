@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\kernalagent]
+@="URL:Kernal Agent Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\kernalagent\shell]
+
+[HKEY_CLASSES_ROOT\kernalagent\shell\open]
+
+[HKEY_CLASSES_ROOT\kernalagent\shell\open\command]
+@="\"C:\\Program Files\\KernalAgent\\Kernel Agent.exe\" \"%1\""

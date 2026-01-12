@@ -13,6 +13,7 @@ from typing import Optional
 from difflib import SequenceMatcher
 
 from app.db.skills_repo import get_all_skills, get_skills_by_intent
+from app.db.agent_sessions_repo import save_activity_event
 
 
 # Thresholds for decision making
@@ -133,7 +134,8 @@ def decide_next_action(
     vision_signal: str,
     user_intent: str,
     available_skills: Optional[list] = None,
-    last_action: Optional[dict] = None
+    last_action: Optional[dict] = None,
+    session_id: Optional[str] = None
 ) -> dict:
     """
     Main decision function. Determines strategy before Gemini is called.
@@ -212,6 +214,16 @@ def decide_next_action(
     if last_action and last_action.get('failed'):
         decision["confidence"] *= 0.7
         decision["reason"] += " (reduced due to previous failure)"
+
+    if session_id:
+        try:
+            save_activity_event(session_id, {
+                'state': 'PLANNING',
+                'title': f"Strategy: {decision['strategy']}",
+                'description': decision['reason']
+            })
+        except Exception as e:
+            print(f"[DECISION] Failed to save activity event: {e}")
     
     return decision
 

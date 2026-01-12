@@ -15,15 +15,18 @@ namespace Kernel_Agent
 {
     public sealed partial class MainWindow : Window
     {
+        private OrbOverlayWindow _orbOverlayWindow = new OrbOverlayWindow();
         private WaveInEvent _waveIn;
         private SpeechClient _speechClient;
         private bool _isRecording = false;
 
         public MainWindow()
         {
+            InitializeComponent();
+            StateChanged += MainWindow_StateChanged;
+
             try
             {
-                this.InitializeComponent();
                 DotEnv.Load();
 
                 // Modern Title Bar Extension

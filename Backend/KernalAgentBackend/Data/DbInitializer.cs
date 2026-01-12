@@ -21,15 +21,15 @@ namespace KernalAgentBackend.Data
                 }
                 
                 // Add sample users
-                var users = new User[]
+                var users = new KernalAgentBackend.Models.User[]
                 {
-                    new User 
+                    new KernalAgentBackend.Models.User 
                     { 
                         Name = "Admin User", 
                         Email = "admin@example.com",
                         PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123")
                     },
-                    new User 
+                    new KernalAgentBackend.Models.User 
                     { 
                         Name = "Test User", 
                         Email = "test@example.com",
@@ -52,15 +52,15 @@ namespace KernalAgentBackend.Data
                 }
                 
                 // Add sample users
-                var users = new User[]
+                var users = new KernalAgentBackend.Models.User[]
                 {
-                    new User 
+                    new KernalAgentBackend.Models.User 
                     { 
                         Name = "Admin User", 
                         Email = "admin@example.com",
                         PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123")
                     },
-                    new User 
+                    new KernalAgentBackend.Models.User 
                     { 
                         Name = "Test User", 
                         Email = "test@example.com",

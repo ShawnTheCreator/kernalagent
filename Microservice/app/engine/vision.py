@@ -91,7 +91,8 @@ def analyze_frame(
     base64_image: str, 
     user_intent: str,
     previous_action: Optional[dict] = None,
-    previous_image: Optional[str] = None
+    previous_image: Optional[str] = None,
+    session_id: Optional[str] = None
 ) -> dict:
     """
     Analyzes a screenshot and returns the next action to take.
@@ -143,7 +144,8 @@ def analyze_frame(
         decision = decide_next_action(
             vision_signal=vision_signal,
             user_intent=user_intent,
-            last_action=previous_action
+            last_action=previous_action,
+            session_id=session_id
         )
         print(f"[DECISION] Strategy: {decision['strategy']} | Confidence: {decision['confidence']:.0%}")
         

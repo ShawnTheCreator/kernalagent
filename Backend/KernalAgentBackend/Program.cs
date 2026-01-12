@@ -5,6 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using KernalAgentBackend.Data;
 using DotNetEnv;
+using Google.Cloud.Firestore;
+
 
 // Load .env file (only if it exists - for Docker, use environment variables)
 if (File.Exists(".env"))
@@ -102,6 +104,20 @@ builder.Services.AddAuthorization();
 // Add OpenAPI/Swagger support (built-in for .NET 10)
 builder.Services.AddEndpointsApiExplorer();
 
+// Add Firestore client
+var googleCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+if (string.IsNullOrEmpty(googleCredentials))
+{
+    throw new InvalidOperationException("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.");
+}
+var firestoreDb = new FirestoreDbBuilder
+{
+    ProjectId = "kernal-39125",
+    Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(googleCredentials)
+}.Build();
+builder.Services.AddSingleton(firestoreDb);
+
+
 var app = builder.Build();
 
 // Initialize the database
@@ -112,6 +128,9 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         DbInitializer.Initialize(context);
+
+        var firestoreDbInstance = services.GetRequiredService<FirestoreDb>();
+        SeedData.SeedUsers(firestoreDbInstance).Wait();
     }
     catch (Exception ex)
     {

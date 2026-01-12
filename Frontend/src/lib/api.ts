@@ -1,6 +1,6 @@
 // API service layer for backend communication
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5042/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface LoginRequest {
     email: string;
