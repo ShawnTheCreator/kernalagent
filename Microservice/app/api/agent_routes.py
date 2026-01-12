@@ -7,7 +7,15 @@ Exposes stable, clean APIs for frontend consumption:
 - GET /agent/session/{session_id} - Get session timeline
 
 These APIs are safe (no real execution) and demo-friendly.
+
+BUG FIXES APPLIED:
+- FIX 1: Complete response schema with action in all steps
+- FIX 2: Vision bypass (always UI_STABLE, no frame dependency)
+- FIX 3: Safe DONE handling
+- FIX 4: Filter malformed skill entries
+- FIX 5: Clean JSON with logging module
 """
+import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
@@ -22,6 +30,9 @@ from app.agent.sessions import (
     session_to_dict
 )
 from app.db.skills_repo import get_all_skills
+
+# Configure logging (FIX 5: Use logging instead of print)
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -41,7 +52,7 @@ class PreviewRequest(BaseModel):
 
 class StepResponse(BaseModel):
     """A single step in the action plan."""
-    action: str
+    action: str  # Required: SCROLL, CLICK, TYPE, FIND, DONE, ANALYZE
     explanation: str
 
 
@@ -49,7 +60,7 @@ class PreviewResponse(BaseModel):
     """Response from agent preview endpoint."""
     session_id: str
     intent: str
-    strategy: str
+    strategy: str  # REUSE_SKILL, ADAPT_SKILL, FRESH_REASONING
     skill: Optional[str]
     confidence: float
     steps: List[StepResponse]
@@ -96,6 +107,7 @@ async def preview_agent_decision(request: PreviewRequest):
     - Runs the real decision engine
     - Returns the strategy, skill match, and steps
     - Does NOT execute any real actions (safe by default)
+    - Does NOT depend on vision/frames (FIX 2)
     
     Args:
         request: Contains the user's intent
@@ -107,7 +119,7 @@ async def preview_agent_decision(request: PreviewRequest):
     if not intent:
         raise HTTPException(status_code=400, detail="Intent cannot be empty")
     
-    print(f"[API] Preview request for intent: '{intent}'")
+    logger.info(f"Preview request for intent: '{intent}'")
     
     # Create a new session
     session = create_session(intent)
@@ -115,38 +127,52 @@ async def preview_agent_decision(request: PreviewRequest):
     # Create fresh memory for this session
     memory = AgentMemory()
     
-    # Run the real decision engine
-    # We use UI_STABLE as the vision signal since this is a preview
+    # FIX 2: Always use UI_STABLE - preview mode does NOT depend on vision
+    # This prevents red-screen failures and Gemini refusals
     decision = decide_next_action(
-        vision_signal="UI_STABLE",
+        vision_signal="UI_STABLE",  # Always stable for preview
         user_intent=intent,
         memory=memory
     )
     
-    # Extract decision details
+    # Extract decision details with safe defaults
     strategy = decision.get("strategy", "FRESH_REASONING")
     skill_name = decision.get("skill_name")
     confidence = decision.get("confidence", 0.5)
     reason = decision.get("reason", "Decision made by agent")
     
-    # Build steps from skill if available
+    # FIX 1 & FIX 3: Build steps with guaranteed action field
     steps = []
     skill_steps = decision.get("steps", [])
+    
     if skill_steps:
         for step in skill_steps:
+            # Ensure action_type exists (FIX 1)
+            action_type = step.get("action_type") or step.get("action") or "ANALYZE"
+            explanation = step.get("context") or step.get("explanation") or ""
             steps.append(StepResponse(
-                action=step.get("action_type", "UNKNOWN"),
-                explanation=step.get("context", step.get("explanation", ""))
+                action=action_type.upper(),
+                explanation=explanation
             ))
-    else:
-        # For fresh reasoning, show what action would be taken
-        steps.append(StepResponse(
-            action="ANALYZE",
-            explanation=reason
-        ))
+    
+    # FIX 3: Handle DONE or empty steps safely
+    if not steps:
+        # Default step based on strategy
+        if strategy == "FRESH_REASONING":
+            steps.append(StepResponse(
+                action="ANALYZE",
+                explanation=reason
+            ))
+        else:
+            steps.append(StepResponse(
+                action="DONE",
+                explanation="No specific steps available - requires live execution"
+            ))
+    
+    # Determine action type for timeline
+    action_type = steps[0].action if steps else "ANALYZE"
     
     # Add to session timeline
-    action_type = steps[0].action if steps else "ANALYZE"
     add_timeline_entry(
         session_id=session.session_id,
         strategy=strategy,
@@ -159,14 +185,15 @@ async def preview_agent_decision(request: PreviewRequest):
     # Mark session as completed (preview is single-shot)
     complete_session(session.session_id)
     
-    print(f"[API] Preview complete: {strategy} | {skill_name} | {confidence:.0%}")
+    logger.info(f"Preview complete: {strategy} | {skill_name} | {confidence:.0%}")
     
+    # FIX 1: Return complete response with all required fields
     return PreviewResponse(
         session_id=session.session_id,
         intent=intent,
         strategy=strategy,
         skill=skill_name,
-        confidence=confidence,
+        confidence=round(confidence, 2),  # Clean float
         steps=steps
     )
 
@@ -184,25 +211,32 @@ async def list_all_skills():
     This is a read-only endpoint that returns skill metadata.
     No mutations allowed.
     
+    FIX 4: Filters out malformed skill entries missing required fields.
+    
     Returns:
-        List of all skills with metadata
+        List of all valid skills with metadata
     """
-    print("[API] Fetching all skills")
+    logger.info("Fetching all skills")
     
     skills = get_all_skills()
     
-    # Transform to response model
+    # FIX 4: Filter and transform to response model
     result = []
     for skill in skills:
+        # FIX 4: Skip malformed entries missing required fields
+        if not skill.get("id") or not skill.get("name") or not skill.get("intent_signature"):
+            logger.warning(f"Skipping malformed skill: {skill}")
+            continue
+        
         result.append(SkillResponse(
-            id=skill.get("id", "unknown"),
-            name=skill.get("name", "Unnamed Skill"),
-            intent_signature=skill.get("intent_signature", ""),
+            id=skill["id"],
+            name=skill["name"],
+            intent_signature=skill["intent_signature"],
             success_count=skill.get("success_count", 0),
             last_used_at=skill.get("last_used_at")
         ))
     
-    print(f"[API] Returning {len(result)} skills")
+    logger.info(f"Returning {len(result)} valid skills")
     return result
 
 
@@ -224,7 +258,7 @@ async def get_agent_session(session_id: str):
     Returns:
         Session details with full timeline
     """
-    print(f"[API] Fetching session: {session_id}")
+    logger.info(f"Fetching session: {session_id}")
     
     session = get_session(session_id)
     if session is None:
