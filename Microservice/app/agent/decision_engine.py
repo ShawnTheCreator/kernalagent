@@ -15,10 +15,14 @@ Strategy Types:
 - ADAPT_SKILL: Modify an existing skill based on context
 - FRESH_REASONING: No matching skill, use Gemini for full reasoning
 """
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from difflib import SequenceMatcher
 
 from app.db.skills_repo import get_all_skills, get_skills_by_intent
+
+# Type hint for memory without circular import
+if TYPE_CHECKING:
+    from app.agent.memory import AgentMemory
 
 
 # ============================================================================
@@ -251,7 +255,8 @@ def decide_next_action(
     vision_signal: str,
     user_intent: str,
     available_skills: Optional[list] = None,
-    last_action: Optional[dict] = None
+    last_action: Optional[dict] = None,
+    memory: Optional["AgentMemory"] = None
 ) -> dict:
     """
     Main decision function. Determines strategy before Gemini is called.
@@ -261,11 +266,17 @@ def decide_next_action(
     - Lower thresholds for skill reuse
     - Use confidence to ADAPT, not BLOCK
     
+    v3 Changes (STM):
+    - Memory-aware loop detection
+    - Failure penalty from memory
+    - Success boost for skill reuse
+    
     Args:
         vision_signal: Current vision signal (SCREEN_CHANGED, UI_STABLE, etc.)
         user_intent: What the user wants to accomplish
         available_skills: List of available skills (fetched if None)
         last_action: The previous action taken (for context)
+        memory: Short-term memory instance for stateful decisions
         
     Returns:
         Decision dictionary with strategy, confidence, and reasoning
@@ -355,6 +366,40 @@ def decide_next_action(
     if last_action and last_action.get('failed'):
         decision["confidence"] *= 0.75
         decision["reason"] += " (caution: previous action failed)"
+    
+    # ==========================================================================
+    # v3 STM RULES: Memory-aware decision adjustments
+    # ==========================================================================
+    
+    if memory:
+        # RULE 1: Loop Detection
+        # If same action + same signal → force ADAPT_SKILL to break the loop
+        proposed_action = decision.get("strategy", "")
+        if memory.is_loop_detected(proposed_action, vision_signal):
+            if decision["strategy"] == "REUSE_SKILL":
+                decision["strategy"] = "ADAPT_SKILL"
+                decision["reason"] += " [STM: Loop detected - switching to adaptation]"
+                print(f"[STM] Loop detected! Switching from REUSE to ADAPT")
+        
+        # RULE 2: Failure Penalty
+        # 2+ consecutive failures → reduce confidence by 20%
+        failure_modifier = memory.get_confidence_modifier()
+        if failure_modifier < 1.0:
+            decision["confidence"] *= failure_modifier
+            decision["reason"] += f" [STM: Confidence reduced after {memory.failure_count} failures]"
+            print(f"[STM] Applied failure penalty: {failure_modifier:.0%}")
+        
+        # RULE 3: Success Boost
+        # Skill reuse with no recent failures → +10% confidence
+        skill_name = decision.get("skill_name")
+        skill_boost = memory.get_skill_boost(skill_name)
+        if skill_boost > 0:
+            decision["confidence"] = min(1.0, decision["confidence"] + skill_boost)
+            decision["reason"] += f" [STM: +{skill_boost:.0%} boost for successful skill reuse]"
+            print(f"[STM] Applied skill boost: +{skill_boost:.0%}")
+        
+        # Add memory context to decision for explainability
+        decision["memory_context"] = memory.get_context()
     
     return decision
 
