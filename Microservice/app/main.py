@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.websocket import router as websocket_router
 from app.api.skills import router as skills_router
+from app.api.agent_routes import router as agent_router
 from app.core.config import settings
 from app.db.init_db import init_database
 
@@ -33,6 +34,7 @@ app.add_middleware(
 # Include routers
 app.include_router(websocket_router)
 app.include_router(skills_router)
+app.include_router(agent_router)  # Agent preview APIs for frontend
 
 
 @app.get("/health")

@@ -14,6 +14,7 @@ from typing import Optional
 
 from app.engine.vision import analyze_frame
 from app.db.skills_repo import increment_skill_usage
+from app.agent.memory import AgentMemory
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ router = APIRouter()
 CURRENT_INTENT: str = "Waiting for command..."
 PREVIOUS_ACTION: Optional[dict] = None
 PREVIOUS_FRAME: Optional[str] = None
+AGENT_MEMORY: AgentMemory = AgentMemory()  # Session-scoped STM
 
 
 @router.websocket("/ws/stream")
@@ -55,7 +57,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 CURRENT_INTENT = data.get("payload")
                 PREVIOUS_ACTION = None  # Reset action history on new intent
                 PREVIOUS_FRAME = None
+                AGENT_MEMORY.reset()  # Reset STM on new intent
                 print(f"[INTENT] New Intent: {CURRENT_INTENT}")
+                print(f"[STM] Memory reset for new intent")
                 continue
 
             # Handle frame analysis requests
@@ -75,7 +79,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     CURRENT_INTENT,
                     PREVIOUS_ACTION,
                     PREVIOUS_FRAME,
+<<<<<<< HEAD
                     session_id
+=======
+                    AGENT_MEMORY  # Pass STM to vision engine
+>>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
                 )
 
                 # Track skill usage if skill was used
@@ -107,6 +115,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     CURRENT_INTENT = "Waiting for command..."
                     PREVIOUS_ACTION = None
                     PREVIOUS_FRAME = None
+                    AGENT_MEMORY.reset()  # Reset STM on task completion
+                    print(f"[STM] Memory reset after task completion")
 
                 # Adaptive throttling based on confidence
                 confidence = action_plan.get("confidence", 0.5)
@@ -123,6 +133,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
         print("[DISCONNECTED] Nervous System Severed")
         PREVIOUS_ACTION = None
         PREVIOUS_FRAME = None
+        AGENT_MEMORY.reset()  # Reset STM on disconnect
+        print(f"[STM] Memory reset after disconnect")
     except Exception as e:
         print(f"[ERROR] Critical Error: {e}")
         import traceback

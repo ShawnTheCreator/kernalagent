@@ -20,6 +20,7 @@ from app.core.config import client, MODEL_ID
 from app.core.schemas import KernalAction
 from app.agent.decision_engine import decide_next_action, get_decision_for_gemini
 from app.agent.failure_detector import detect_failure, calculate_adjusted_confidence
+from app.agent.memory import AgentMemory
 
 
 # Vision signal detection (simplified - in production would use CLIP)
@@ -92,7 +93,11 @@ def analyze_frame(
     user_intent: str,
     previous_action: Optional[dict] = None,
     previous_image: Optional[str] = None,
+<<<<<<< HEAD
     session_id: Optional[str] = None
+=======
+    memory: Optional[AgentMemory] = None
+>>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
 ) -> dict:
     """
     Analyzes a screenshot and returns the next action to take.
@@ -140,14 +145,22 @@ def analyze_frame(
         vision_signal = detect_vision_signal(image, prev_image)
         print(f"[VISION] Signal: {vision_signal}")
         
-        # Step 3: Get decision from Decision Engine
+        # Step 3: Get decision from Decision Engine (now with STM)
         decision = decide_next_action(
             vision_signal=vision_signal,
             user_intent=user_intent,
             last_action=previous_action,
+<<<<<<< HEAD
             session_id=session_id
+=======
+            memory=memory
+>>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
         )
         print(f"[DECISION] Strategy: {decision['strategy']} | Confidence: {decision['confidence']:.0%}")
+        
+        # Log memory context if available
+        if memory:
+            print(memory.format_for_log())
         
         # Step 4: Check for previous action failure
         failure_result = None
@@ -160,11 +173,30 @@ def analyze_frame(
             )
             if failure_result.get('failed'):
                 print(f"[FAILURE] {failure_result.get('reason')}")
+                # Record failure in STM
+                if memory:
+                    memory.record_failure()
+                    print(f"[STM] Recorded failure (count: {memory.failure_count})")
                 decision['confidence'] = calculate_adjusted_confidence(
                     decision['confidence'],
                     [],  # Would track history in production
                     failure_result
                 )
+            else:
+                # Record success in STM (resets failure count)
+                if memory:
+                    memory.record_success()
+        
+        # Build memory context string for prompt
+        memory_context_str = ""
+        if memory:
+            ctx = memory.get_context()
+            memory_context_str = f"""
+MEMORY CONTEXT:
+- Last Action: {ctx['last_action']}
+- Last Skill: {ctx['last_skill']}
+- Failures: {ctx['failure_count']}
+"""
         
         # Step 5: Build prompt with decision context
         decision_context = get_decision_for_gemini(decision)
@@ -179,7 +211,7 @@ CURRENT CONTEXT:
 - Vision Signal: {vision_signal}
 - Confidence Level: {decision['confidence']:.0%}
 - Reason: {decision['reason']}
-
+{memory_context_str}
 Look at the screenshot carefully.
 If specific UI elements have red number tags, use 'coordinate_label' to identify them.
 If no tags are present, describe what should be clicked.
@@ -217,6 +249,16 @@ Be precise. Do not explain multiple steps.
                 standardized_result["action_type"], 
                 "UI_STABLE"
             )
+            
+            # Step 8: Record action in STM
+            if memory:
+                memory.record_action(
+                    action_type=standardized_result["action_type"],
+                    skill_name=decision.get('skill_name'),
+                    signal=vision_signal
+                )
+                # Add memory context to output for explainability
+                standardized_result["memory_context"] = memory.get_context()
             
             return standardized_result
         else:
