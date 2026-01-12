@@ -17,6 +17,16 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// DEBUG: Log config to verify values are loaded
+console.log('[FIREBASE DEBUG] Config loaded:', {
+    apiKey: firebaseConfig.apiKey ? '✅ SET' : '❌ MISSING',
+    authDomain: firebaseConfig.authDomain || '❌ MISSING',
+    projectId: firebaseConfig.projectId || '❌ MISSING',
+    storageBucket: firebaseConfig.storageBucket || '❌ MISSING',
+    messagingSenderId: firebaseConfig.messagingSenderId || '❌ MISSING',
+    appId: firebaseConfig.appId ? '✅ SET' : '❌ MISSING',
+});
+
 // Initialize Firebase (avoid duplicate initialization)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 

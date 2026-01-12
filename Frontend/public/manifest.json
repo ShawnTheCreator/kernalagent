@@ -1,0 +1,16 @@
+{
+    "name": "Kernal Agent",
+    "short_name": "Kernal",
+    "description": "Cognitive Desktop Copilot",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "64x64",
+            "type": "image/x-icon"
+        }
+    ]
+}
