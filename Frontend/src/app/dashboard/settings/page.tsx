@@ -7,6 +7,7 @@ import {
     Settings, Globe, Zap, Cpu, Shield, LogOut,
     Check, AlertTriangle
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // =============================================================================
 // SETTINGS STORAGE HELPER
@@ -211,6 +212,7 @@ function ReadOnlyRow({
 
 export default function SettingsPage() {
     const router = useRouter();
+    const { logout, user } = useAuth();
     const [settings, setSettings] = useState<KernelSettings>(DEFAULT_SETTINGS);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -241,16 +243,14 @@ export default function SettingsPage() {
         setTimeout(() => setSaveStatus('idle'), 2000);
     };
 
-    // Logout - clears auth data and redirects
-    const handleLogout = () => {
-        // Clear auth data
-        localStorage.removeItem('user');
-        localStorage.removeItem('auth_token');
-        // Optionally clear settings too
-        // localStorage.removeItem(SETTINGS_KEY);
-
-        // Redirect to login
-        router.push('/login');
+    // Logout - uses Firebase auth
+    const handleLogout = async () => {
+        try {
+            await logout();
+            router.push('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
     };
 
     return (

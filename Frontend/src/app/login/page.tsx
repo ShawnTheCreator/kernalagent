@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Github, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
 import { AuthInput } from '@/components/ui';
-import { authApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FormErrors {
     email?: string;
@@ -16,11 +16,27 @@ interface FormErrors {
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login, loginWithGoogle, loginWithGithub, user, loading, error: authError, clearError } = useAuth();
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (!loading && user) {
+            router.push('/dashboard');
+        }
+    }, [user, loading, router]);
+
+    // Sync auth context error to form errors
+    useEffect(() => {
+        if (authError) {
+            setErrors(prev => ({ ...prev, general: authError }));
+        }
+    }, [authError]);
 
     const validateEmail = (email: string): string | undefined => {
         if (!email) return 'Email is required';
@@ -55,6 +71,7 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setTouched({ email: true, password: true });
+        clearError();
 
         if (!validateForm()) return;
 
@@ -62,16 +79,44 @@ export default function LoginPage() {
         setErrors({});
 
         try {
-            await authApi.login({ email, password });
-            // Redirect to dashboard on success
-            router.push('/dashboard');
+            await login(email, password);
+            // Redirect handled by useEffect above
         } catch (error) {
             setIsLoading(false);
-            setErrors({
-                general: error instanceof Error ? error.message : 'Invalid email or password',
-            });
+            // Error handled by auth context
         }
     };
+
+    const handleGoogleLogin = async () => {
+        clearError();
+        setIsLoading(true);
+        try {
+            await loginWithGoogle();
+            // Redirect handled by useEffect above
+        } catch (error) {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGithubLogin = async () => {
+        clearError();
+        setIsLoading(true);
+        try {
+            await loginWithGithub();
+            // Redirect handled by useEffect above
+        } catch (error) {
+            setIsLoading(false);
+        }
+    };
+
+    // Show loading while checking auth state
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-black">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <AuthLayout>
@@ -88,9 +133,13 @@ export default function LoginPage() {
                             <p className="text-zinc-500 text-sm">Sign in to continue to Kernal Agent</p>
                         </div>
 
-                        {/* Social Login */}
+                        {/* Social Login - Now functional */}
                         <div className="grid grid-cols-2 gap-3 mb-6">
-                            <button className="flex items-center justify-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-sm text-zinc-400 hover:text-white hover:border-white/30 hover:bg-white/[0.05] transition-all duration-300">
+                            <button
+                                onClick={handleGoogleLogin}
+                                disabled={isLoading}
+                                className="flex items-center justify-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-sm text-zinc-400 hover:text-white hover:border-white/30 hover:bg-white/[0.05] transition-all duration-300 disabled:opacity-50"
+                            >
                                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -99,7 +148,11 @@ export default function LoginPage() {
                                 </svg>
                                 Google
                             </button>
-                            <button className="flex items-center justify-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-sm text-zinc-400 hover:text-white hover:border-white/30 hover:bg-white/[0.05] transition-all duration-300">
+                            <button
+                                onClick={handleGithubLogin}
+                                disabled={isLoading}
+                                className="flex items-center justify-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-sm text-zinc-400 hover:text-white hover:border-white/30 hover:bg-white/[0.05] transition-all duration-300 disabled:opacity-50"
+                            >
                                 <Github size={18} />
                                 GitHub
                             </button>

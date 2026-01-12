@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { PageTransitionProvider, SmoothScrollProvider } from "@/components/effects";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -91,13 +92,15 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <SmoothScrollProvider>
-          <PageTransitionProvider>
-            <main id="main-content">
-              {children}
-            </main>
-          </PageTransitionProvider>
-        </SmoothScrollProvider>
+        <AuthProvider>
+          <SmoothScrollProvider>
+            <PageTransitionProvider>
+              <main id="main-content">
+                {children}
+              </main>
+            </PageTransitionProvider>
+          </SmoothScrollProvider>
+        </AuthProvider>
       </body>
     </html>
   );
