@@ -91,3 +91,50 @@ def get_skills_collection():
     """
     db = get_firestore_client()
     return db.collection('skills')
+
+
+# =============================================================================
+# User-Scoped Collection Helpers
+# =============================================================================
+
+def get_user_document(user_id: str):
+    """
+    Get a user's document reference.
+    
+    Args:
+        user_id: Firebase Auth UID
+        
+    Returns:
+        Firestore document reference for users/{userId}
+    """
+    db = get_firestore_client()
+    return db.collection('users').document(user_id)
+
+
+def get_user_collection(user_id: str, collection_name: str):
+    """
+    Get a user-scoped subcollection reference.
+    
+    Args:
+        user_id: Firebase Auth UID
+        collection_name: Name of the subcollection (skills, settings, sessions, memory)
+        
+    Returns:
+        Firestore collection reference for users/{userId}/{collection_name}
+    """
+    db = get_firestore_client()
+    return db.collection('users').document(user_id).collection(collection_name)
+
+
+def get_user_skills_collection(user_id: str):
+    """
+    Get a user's skills subcollection reference.
+    
+    Args:
+        user_id: Firebase Auth UID
+        
+    Returns:
+        Firestore collection reference for users/{userId}/skills
+    """
+    return get_user_collection(user_id, 'skills')
+

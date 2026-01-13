@@ -186,3 +186,194 @@ def update_skill(skill_id: str, updates: dict) -> bool:
     doc_ref.update(updates)
     print(f"[SKILLS DB] Updated skill: {skill_id}")
     return True
+
+
+# =============================================================================
+# User-Scoped Skills (Multi-User Support)
+# =============================================================================
+
+from .firebase_client import get_user_skills_collection
+
+
+def save_user_skill(
+    user_id: str,
+    name: str,
+    intent_signature: str,
+    steps: list,
+    description: str,
+    confidence: float = 0.5
+) -> str:
+    """
+    Save a new skill to a user's personal collection.
+    
+    Args:
+        user_id: Firebase Auth UID
+        name: Human-readable skill name
+        intent_signature: The intent pattern that triggers this skill
+        steps: List of step dictionaries
+        description: Skill description
+        confidence: Initial confidence score
+        
+    Returns:
+        The generated skill ID
+    """
+    skill_id = name.replace(" ", "_").lower()
+    now = datetime.utcnow().isoformat() + "Z"
+    
+    skill_doc = {
+        "id": skill_id,
+        "name": name,
+        "intent_signature": intent_signature,
+        "steps": steps,
+        "description": description,
+        "confidence": confidence,
+        "created_at": now,
+        "last_used_at": None,
+        "success_count": 0
+    }
+    
+    collection = get_user_skills_collection(user_id)
+    collection.document(skill_id).set(skill_doc)
+    
+    print(f"[SKILLS DB] Saved user skill: {name} for user: {user_id}")
+    return skill_id
+
+
+def get_user_skills(user_id: str) -> list:
+    """
+    Retrieve all skills for a specific user.
+    
+    Args:
+        user_id: Firebase Auth UID
+        
+    Returns:
+        List of skill dictionaries
+    """
+    collection = get_user_skills_collection(user_id)
+    docs = collection.stream()
+    
+    skills = [doc.to_dict() for doc in docs]
+    print(f"[SKILLS DB] Retrieved {len(skills)} skills for user: {user_id}")
+    return skills
+
+
+def get_user_skill_by_id(user_id: str, skill_id: str) -> Optional[dict]:
+    """
+    Get a single skill by ID from a user's collection.
+    
+    Args:
+        user_id: Firebase Auth UID
+        skill_id: The skill's unique ID
+        
+    Returns:
+        Skill dictionary or None if not found
+    """
+    collection = get_user_skills_collection(user_id)
+    doc = collection.document(skill_id).get()
+    
+    if doc.exists:
+        return doc.to_dict()
+    return None
+
+
+def get_user_skills_by_intent(user_id: str, intent_signature: str) -> list:
+    """
+    Find user skills that match the given intent (fuzzy search).
+    
+    Args:
+        user_id: Firebase Auth UID
+        intent_signature: The intent pattern to search for
+        
+    Returns:
+        List of matching skill dictionaries
+    """
+    all_skills = get_user_skills(user_id)
+    search_lower = intent_signature.lower()
+    
+    matching = [
+        skill for skill in all_skills
+        if search_lower in skill.get('intent_signature', '').lower()
+        or search_lower in skill.get('name', '').lower()
+    ]
+    
+    print(f"[SKILLS DB] Found {len(matching)} user skills matching '{intent_signature}'")
+    return matching
+
+
+def increment_user_skill_usage(user_id: str, skill_id: str) -> bool:
+    """
+    Increment the success_count and update last_used_at for a user's skill.
+    
+    Args:
+        user_id: Firebase Auth UID
+        skill_id: The skill's unique ID
+        
+    Returns:
+        True if successful, False if skill not found
+    """
+    collection = get_user_skills_collection(user_id)
+    doc_ref = collection.document(skill_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
+        return False
+    
+    now = datetime.utcnow().isoformat() + "Z"
+    current_data = doc.to_dict()
+    new_count = current_data.get('success_count', 0) + 1
+    
+    doc_ref.update({
+        "last_used_at": now,
+        "success_count": new_count
+    })
+    
+    print(f"[SKILLS DB] Incremented usage for user skill: {skill_id}")
+    return True
+
+
+def delete_user_skill(user_id: str, skill_id: str) -> bool:
+    """
+    Delete a skill from a user's collection.
+    
+    Args:
+        user_id: Firebase Auth UID
+        skill_id: The skill's unique ID
+        
+    Returns:
+        True if deleted, False if not found
+    """
+    collection = get_user_skills_collection(user_id)
+    doc_ref = collection.document(skill_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
+        return False
+    
+    doc_ref.delete()
+    print(f"[SKILLS DB] Deleted user skill: {skill_id}")
+    return True
+
+
+def update_user_skill(user_id: str, skill_id: str, updates: dict) -> bool:
+    """
+    Update a user's skill with new values.
+    
+    Args:
+        user_id: Firebase Auth UID
+        skill_id: The skill's unique ID
+        updates: Dictionary of fields to update
+        
+    Returns:
+        True if successful, False if skill not found
+    """
+    collection = get_user_skills_collection(user_id)
+    doc_ref = collection.document(skill_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
+        return False
+    
+    doc_ref.update(updates)
+    print(f"[SKILLS DB] Updated user skill: {skill_id}")
+    return True
+
