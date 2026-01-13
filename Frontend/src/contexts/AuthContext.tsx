@@ -28,6 +28,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     loginWithGoogle: () => Promise<void>;
     loginWithGithub: () => Promise<void>;
+    updateUser: (profile: { displayName?: string; photoURL?: string }) => Promise<void>;
     clearError: () => void;
 }
 
@@ -109,6 +110,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Update User Profile
+    const updateUser = async (profile: { displayName?: string; photoURL?: string }) => {
+        if (!auth.currentUser) return;
+        try {
+            await updateProfile(auth.currentUser, profile);
+
+            // Reload user to get fresh data
+            await auth.currentUser.reload();
+
+            // Force local state update while preserving prototype methods
+            // We create a new object reference that inherits from the same prototype
+            const currentUser = auth.currentUser;
+            const updatedUser = Object.assign(
+                Object.create(Object.getPrototypeOf(currentUser)),
+                currentUser
+            );
+
+            setUser(updatedUser);
+        } catch (err) {
+            console.error('Failed to update profile', err);
+            throw err;
+        }
+    };
+
     // Logout
     const logout = async () => {
         setError(null);
@@ -153,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         login,
         signup,
+        updateUser,
         logout,
         loginWithGoogle,
         loginWithGithub,

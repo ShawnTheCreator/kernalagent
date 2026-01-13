@@ -24,13 +24,12 @@ export default function LoginPage() {
     const [errors, setErrors] = useState<FormErrors>({});
     const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
 
-    // Auto-redirect disabled - user must explicitly navigate after login
-    // Uncomment below to re-enable auto-redirect to dashboard
-    // useEffect(() => {
-    //     if (!loading && user) {
-    //         router.push('/dashboard');
-    //     }
-    // }, [user, loading, router]);
+    // Auto-redirect to dashboard when user is authenticated
+    useEffect(() => {
+        if (!loading && user) {
+            router.push('/dashboard');
+        }
+    }, [user, loading, router]);
 
     // Sync auth context error to form errors
     useEffect(() => {

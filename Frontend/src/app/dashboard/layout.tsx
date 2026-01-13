@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SystemSidebar, TopBar, MobileBottomNav } from '@/components/dashboard/layout';
-import { isAuthenticated } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 // HACKATHON: Set to true to bypass auth for demo
-const DEV_BYPASS_AUTH = true;
+const DEV_BYPASS_AUTH = false; // DISABLED - Use real Firebase Auth
 
 export default function DashboardLayout({
     children,
@@ -14,15 +14,19 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
+    const { user, loading } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        // Skip auth check if bypass enabled
-        if (!DEV_BYPASS_AUTH && !isAuthenticated()) {
+        // Skip auth check if bypass enabled OR still loading
+        if (DEV_BYPASS_AUTH || loading) return;
+
+        // Redirect to login if not authenticated
+        if (!user) {
             router.push('/login');
         }
-    }, [router]);
+    }, [user, loading, router]);
 
     return (
         <div className="min-h-screen bg-[#080808] text-zinc-300 font-sans flex flex-col lg:flex-row">

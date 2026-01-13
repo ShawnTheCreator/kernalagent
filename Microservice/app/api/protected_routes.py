@@ -52,6 +52,9 @@ class UserProfileResponse(BaseModel):
     email: Optional[str]
     name: Optional[str]
     photoURL: Optional[str]
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    website: Optional[str] = None
     plan: str
     createdAt: str
     lastLogin: str
@@ -61,6 +64,9 @@ class UpdateProfileRequest(BaseModel):
     """Request to update user profile."""
     name: Optional[str] = None
     photoURL: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    website: Optional[str] = None
 
 
 class SettingsResponse(BaseModel):
@@ -169,6 +175,9 @@ async def get_my_profile(user_id: str = Depends(verify_firebase_token)):
         email=user.get("email"),
         name=user.get("name"),
         photoURL=user.get("photoURL"),
+        bio=user.get("bio"),
+        location=user.get("location"),
+        website=user.get("website"),
         plan=user.get("plan", "free"),
         createdAt=user.get("createdAt", ""),
         lastLogin=user.get("lastLogin", "")
