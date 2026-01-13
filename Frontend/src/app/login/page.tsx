@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Github, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layout';
@@ -16,20 +16,58 @@ interface FormErrors {
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const deviceId = searchParams.get('deviceId');
+
     const { login, loginWithGoogle, loginWithGithub, user, loading, error: authError, clearError } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [verifyingDevice, setVerifyingDevice] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
 
-    // Auto-redirect to dashboard when user is authenticated
+    // Verify Device and Redirect
     useEffect(() => {
-        if (!loading && user) {
-            router.push('/dashboard');
-        }
-    }, [user, loading, router]);
+        const handleDeviceLogin = async () => {
+            if (!loading && user && deviceId) {
+                setVerifyingDevice(true);
+                try {
+                    const token = await user.getIdToken();
+                    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+                    const response = await fetch(`${API_BASE}/api/auth/device-verify`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            deviceId,
+                            token
+                        })
+                    });
+
+                    if (response.ok) {
+                        // Success! The desktop app should pick it up now.
+                        // We can still redirect the user to dashboard.
+                        router.push('/dashboard');
+                    } else {
+                        console.error('Device verification failed');
+                        setErrors(prev => ({ ...prev, general: 'Failed to verify desktop connection.' }));
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    setVerifyingDevice(false);
+                }
+            } else if (!loading && user && !deviceId) {
+                router.push('/dashboard');
+            }
+        };
+
+        handleDeviceLogin();
+    }, [user, loading, router, deviceId]);
 
     // Sync auth context error to form errors
     useEffect(() => {

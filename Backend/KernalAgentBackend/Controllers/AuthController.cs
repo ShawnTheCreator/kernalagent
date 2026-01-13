@@ -188,5 +188,55 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    // Temporary storage for device logins (In production, use Redis or Database)
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _deviceTokens = new();
+
+    [HttpPost("device-verify")]
+    public IActionResult DeviceVerify([FromBody] DeviceLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.DeviceId) || string.IsNullOrWhiteSpace(request.Token))
+        {
+            return BadRequest(new { message = "DeviceId and Token are required" });
+        }
+
+        _deviceTokens.AddOrUpdate(request.DeviceId, request.Token, (k, v) => request.Token);
+        return Ok(new { message = "Device verified successfully" });
+    }
+
+    [HttpGet("poll")]
+    public ActionResult<AuthResponse> PollDevice([FromQuery] string deviceId)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId))
+        {
+            return BadRequest(new { message = "DeviceId is required" });
+        }
+
+        if (_deviceTokens.TryGetValue(deviceId, out var token))
+        {
+            // Optional: Remove after retrieval (one-time use)
+            // _deviceTokens.TryRemove(deviceId, out _);
+
+            // Decode token to get user info (simplified) or fetch user
+            // For now, we return the token. The client can use it to fetch profile.
+            // Ideally we would return the full AuthResponse with UserDto.
+            
+            // Hacky: We need to return AuthResponse with a User object.
+            // Since we only have the token, we'll return a placeholder user or try to decode.
+            // We'll return just the token and let the client fetch the user profile.
+            return Ok(new AuthResponse
+            {
+                Token = token,
+                User = new UserDto { Name = "Device User", Email = "device@login" } // Client should refresh profile
+            });
+        }
+
+        return NotFound(new { message = "Login pending" });
+    }
+}
+
+public class DeviceLoginRequest
+{
+    public string DeviceId { get; set; }
+    public string Token { get; set; }
 }
 
