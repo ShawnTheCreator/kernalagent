@@ -40,8 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // API base URL for backend
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    // API base URL for backend (uses Render URL in production)
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
     // Sync user to Firestore via backend API
     const syncUserToFirestore = async (user: User) => {
