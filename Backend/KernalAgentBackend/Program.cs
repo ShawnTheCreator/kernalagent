@@ -105,15 +105,32 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 
 // Add Firestore client
-var googleCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
-if (string.IsNullOrEmpty(googleCredentials))
+var googleCredentialsPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+var googleCredentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+
+Google.Apis.Auth.OAuth2.GoogleCredential credential;
+
+if (!string.IsNullOrEmpty(googleCredentialsJson))
 {
-    throw new InvalidOperationException("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.");
+    // Use JSON string from environment variable (for Render/cloud deployments)
+    credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromJson(googleCredentialsJson);
 }
+else if (!string.IsNullOrEmpty(googleCredentialsPath) && File.Exists(googleCredentialsPath))
+{
+    // Use file path (for local development)
+    credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(googleCredentialsPath);
+}
+else
+{
+    throw new InvalidOperationException(
+        "Either GOOGLE_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS environment variable must be set. " +
+        "For cloud deployments, use GOOGLE_CREDENTIALS_JSON with the full JSON content.");
+}
+
 var firestoreDb = new FirestoreDbBuilder
 {
     ProjectId = "kernal-39125",
-    Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(googleCredentials)
+    Credential = credential
 }.Build();
 builder.Services.AddSingleton(firestoreDb);
 
