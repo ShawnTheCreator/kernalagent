@@ -2,46 +2,66 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
+import { Search, Sparkles, RefreshCw, Loader2, Plus } from 'lucide-react';
 import { SkillCard } from './SkillCard';
-import { fetchSkills } from '@/lib/skillsApi';
-import { mockSkills } from '@/lib/mockApi';
+import { fetchSkills, deleteSkill } from '@/lib/skillsApi';
 import type { Skill } from '@/stores/dashboardStore';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function SkillsList() {
+    const { user, loading: authLoading } = useAuth();
     const [skills, setSkills] = useState<Skill[]>([]);
     const [loading, setLoading] = useState(true);
-    const [useMock, setUseMock] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Fetch skills on mount
+    // Fetch skills on mount and when user changes
     useEffect(() => {
-        loadSkills();
-    }, []);
+        if (user && !authLoading) {
+            loadSkills();
+        }
+    }, [user, authLoading]);
 
     async function loadSkills() {
         setLoading(true);
         try {
             const data = await fetchSkills();
-            if (data.length > 0) {
-                setSkills(data);
-                setUseMock(false);
-            } else {
-                // Fallback to mock data if backend empty or unavailable
-                setSkills(mockSkills);
-                setUseMock(true);
-            }
-        } catch {
-            setSkills(mockSkills);
-            setUseMock(true);
+            setSkills(data);
+        } catch (error) {
+            console.error('Failed to load skills:', error);
+            setSkills([]);
         }
         setLoading(false);
     }
+
+    const handleDeleteSkill = async (skillId: string) => {
+        const success = await deleteSkill(skillId);
+        if (success) {
+            setSkills(skills.filter(s => s.id !== skillId));
+        }
+    };
 
     const filteredSkills = skills.filter(skill =>
         skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         skill.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Show loading if auth is loading
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Loader2 size={24} className="text-zinc-500 animate-spin" />
+            </div>
+        );
+    }
+
+    // Show message if user is not logged in
+    if (!user) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-sm text-zinc-500">Please log in to view your skills</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">
@@ -49,11 +69,8 @@ export function SkillsList() {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Sparkles size={16} className="text-zinc-500" />
-                    <h2 className="text-sm font-medium text-zinc-300">Learned Skills</h2>
+                    <h2 className="text-sm font-medium text-zinc-300">My Skills</h2>
                     <span className="text-[10px] font-mono text-zinc-600">{skills.length} total</span>
-                    {useMock && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">mock</span>
-                    )}
                 </div>
                 <button
                     onClick={loadSkills}
@@ -102,7 +119,11 @@ export function SkillsList() {
                     }}
                 >
                     {filteredSkills.map((skill) => (
-                        <SkillCard key={skill.id} skill={skill} />
+                        <SkillCard
+                            key={skill.id}
+                            skill={skill}
+                            onDelete={() => handleDeleteSkill(skill.id)}
+                        />
                     ))}
                 </motion.div>
             )}
@@ -110,10 +131,11 @@ export function SkillsList() {
             {!loading && filteredSkills.length === 0 && (
                 <div className="text-center py-12">
                     <p className="text-sm text-zinc-500">
-                        {searchQuery ? `No skills found matching "${searchQuery}"` : 'No skills learned yet'}
+                        {searchQuery ? `No skills found matching "${searchQuery}"` : 'No skills learned yet. Skills will appear here as you use Kernel Agent.'}
                     </p>
                 </div>
             )}
         </div>
     );
 }
+

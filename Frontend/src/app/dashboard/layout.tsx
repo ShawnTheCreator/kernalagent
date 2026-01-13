@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SystemSidebar, TopBar, MobileBottomNav } from '@/components/dashboard/layout';
-import { isAuthenticated } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 // HACKATHON: Set to true to bypass auth for demo
-const DEV_BYPASS_AUTH = true;
+const DEV_BYPASS_AUTH = false; // DISABLED - Use real Firebase Auth
 
 export default function DashboardLayout({
     children,
@@ -14,15 +14,19 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
+    const { user, loading } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        // Skip auth check if bypass enabled
-        if (!DEV_BYPASS_AUTH && !isAuthenticated()) {
+        // Skip auth check if bypass enabled OR still loading
+        if (DEV_BYPASS_AUTH || loading) return;
+
+        // Redirect to login if not authenticated
+        if (!user) {
             router.push('/login');
         }
-    }, [router]);
+    }, [user, loading, router]);
 
     return (
         <div className="min-h-screen bg-[#080808] text-zinc-300 font-sans flex flex-col lg:flex-row">
@@ -40,8 +44,8 @@ export default function DashboardLayout({
                 <TopBar onMenuClick={() => setMobileMenuOpen(true)} />
 
                 {/* Viewport */}
-                <main className="flex-grow overflow-y-auto p-6 md:p-10 pb-24 lg:pb-10 custom-scrollbar">
-                    <div className="max-w-6xl mx-auto">
+                <main className="flex-grow overflow-y-auto p-4 md:p-8 lg:p-10 pb-24 lg:pb-10 custom-scrollbar">
+                    <div className="max-w-4xl lg:max-w-6xl 2xl:max-w-[1800px] mx-auto w-full transition-all duration-300">
                         {children}
                     </div>
                 </main>

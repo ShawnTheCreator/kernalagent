@@ -62,7 +62,7 @@ export function ActivityEvent({ event, isLatest = false }: ActivityEventProps) {
                     {event.title}
                 </p>
                 {event.description && (
-                    <p className="text-xs text-zinc-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-xs text-zinc-600 mt-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         {event.description}
                     </p>
                 )}

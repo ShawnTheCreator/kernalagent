@@ -1,14 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Trash2, Edit2 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/mockApi';
 import type { Skill } from '@/stores/dashboardStore';
 
 interface SkillCardProps {
     skill: Skill;
+    onDelete?: () => void;
+    onEdit?: () => void;
 }
 
-export function SkillCard({ skill }: SkillCardProps) {
+export function SkillCard({ skill, onDelete, onEdit }: SkillCardProps) {
     const confidenceColors = {
         high: 'bg-emerald-400',
         medium: 'bg-amber-400',
@@ -32,10 +35,34 @@ export function SkillCard({ skill }: SkillCardProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4 hover:border-white/10 transition-colors cursor-pointer group"
+            className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4 hover:border-white/10 transition-colors group relative"
         >
+            {/* Action buttons (visible on hover or always on mobile) */}
+            {(onDelete || onEdit) && (
+                <div className="absolute top-2 right-2 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    {onEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+                            title="Edit skill"
+                        >
+                            <Edit2 size={12} />
+                        </button>
+                    )}
+                    {onDelete && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-600 text-zinc-400 hover:text-white transition-colors"
+                            title="Delete skill"
+                        >
+                            <Trash2 size={12} />
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Header */}
-            <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start justify-between mb-2 pr-16">
                 <h3 className="text-sm font-medium text-white group-hover:text-zinc-200 transition-colors">
                     {skill.name}
                 </h3>
@@ -69,3 +96,4 @@ export function SkillCard({ skill }: SkillCardProps) {
         </motion.div>
     );
 }
+

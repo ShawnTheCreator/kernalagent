@@ -79,11 +79,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     CURRENT_INTENT,
                     PREVIOUS_ACTION,
                     PREVIOUS_FRAME,
-<<<<<<< HEAD
-                    session_id
-=======
                     AGENT_MEMORY  # Pass STM to vision engine
->>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
                 )
 
                 # Track skill usage if skill was used

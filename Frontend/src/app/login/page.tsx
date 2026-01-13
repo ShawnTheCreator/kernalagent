@@ -24,7 +24,7 @@ export default function LoginPage() {
     const [errors, setErrors] = useState<FormErrors>({});
     const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
 
-    // Redirect if already logged in
+    // Auto-redirect to dashboard when user is authenticated
     useEffect(() => {
         if (!loading && user) {
             router.push('/dashboard');

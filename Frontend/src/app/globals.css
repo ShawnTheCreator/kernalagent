@@ -645,3 +645,18 @@ html.lenis {
 .dashboard-panel:hover {
   border-color: rgba(255, 255, 255, 0.08);
 }
+
+/* Gradient Flow Animation */
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-xy {
+  background-size: 200% 200%;
+  animation: gradient-xy 6s ease infinite;
+}

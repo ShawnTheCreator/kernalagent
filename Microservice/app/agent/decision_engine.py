@@ -257,11 +257,7 @@ def decide_next_action(
     user_intent: str,
     available_skills: Optional[list] = None,
     last_action: Optional[dict] = None,
-<<<<<<< HEAD
-    session_id: Optional[str] = None
-=======
     memory: Optional["AgentMemory"] = None
->>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
 ) -> dict:
     """
     Main decision function. Determines strategy before Gemini is called.
@@ -369,20 +365,6 @@ def decide_next_action(
     
     # Reduce confidence if last action failed (but don't switch strategy)
     if last_action and last_action.get('failed'):
-<<<<<<< HEAD
-        decision["confidence"] *= 0.7
-        decision["reason"] += " (reduced due to previous failure)"
-
-    if session_id:
-        try:
-            save_activity_event(session_id, {
-                'state': 'PLANNING',
-                'title': f"Strategy: {decision['strategy']}",
-                'description': decision['reason']
-            })
-        except Exception as e:
-            print(f"[DECISION] Failed to save activity event: {e}")
-=======
         decision["confidence"] *= 0.75
         decision["reason"] += " (caution: previous action failed)"
     
@@ -419,7 +401,6 @@ def decide_next_action(
         
         # Add memory context to decision for explainability
         decision["memory_context"] = memory.get_context()
->>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
     
     return decision
 
