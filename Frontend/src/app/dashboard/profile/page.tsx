@@ -236,30 +236,36 @@ export default function ProfilePage() {
                                     </div>
                                 )}
                             </div>
-                            {/* Edit Avatar Overlay */}
-                            <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 border-4 border-transparent">
+
+                            {/* Edit Avatar Overlay (Desktop) */}
+                            <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center opacity-0 lg:group-hover:opacity-100 transition-opacity z-20 border-4 border-transparent pointer-events-none">
                                 <Camera size={24} className="text-white" />
                             </div>
                         </div>
 
-                        <h2 className="text-xl font-bold text-white mb-1">{displayName || 'Ghost User'}</h2>
-                        <p className="text-zinc-500 text-sm mb-6">{user?.email}</p>
-
-                        <div className="w-full grid grid-cols-2 gap-2 mb-6">
-                            <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
-                                <div className="text-xl font-bold text-white">124</div>
-                                <div className="text-[10px] uppercase tracking-wider text-zinc-500">Actions</div>
-                            </div>
-                            <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
-                                <div className="text-xl font-bold text-white">89%</div>
-                                <div className="text-[10px] uppercase tracking-wider text-zinc-500">Success</div>
-                            </div>
+                        {/* Mobile Edit Badge (Always visible, outside the overflow-hidden container) */}
+                        <div className="absolute bottom-6 right-6 bg-zinc-800 p-2 rounded-full border border-zinc-700 shadow-lg lg:hidden z-30 pointer-events-none">
+                            <Camera size={16} className="text-white" />
                         </div>
-
-                        <button className="w-full py-2.5 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-colors text-sm">
-                            Upgrade Plan
-                        </button>
                     </div>
+
+                    <h2 className="text-xl font-bold text-white mb-1">{displayName || 'Ghost User'}</h2>
+                    <p className="text-zinc-500 text-sm mb-6">{user?.email}</p>
+
+                    <div className="w-full grid grid-cols-2 gap-2 mb-6">
+                        <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
+                            <div className="text-xl font-bold text-white">124</div>
+                            <div className="text-[10px] uppercase tracking-wider text-zinc-500">Actions</div>
+                        </div>
+                        <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
+                            <div className="text-xl font-bold text-white">89%</div>
+                            <div className="text-[10px] uppercase tracking-wider text-zinc-500">Success</div>
+                        </div>
+                    </div>
+
+                    <button className="w-full py-2.5 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-colors text-sm">
+                        Upgrade Plan
+                    </button>
 
                     {/* Social Links */}
                     <div className="bg-[#0A0A0A] border border-zinc-800 rounded-2xl p-6 space-y-4">
@@ -427,7 +433,7 @@ export default function ProfilePage() {
                     </div>
                 </motion.div>
             </div>
-        </div>
+        </div >
     );
 }
 

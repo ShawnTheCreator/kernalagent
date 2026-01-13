@@ -37,9 +37,9 @@ export function SkillCard({ skill, onDelete, onEdit }: SkillCardProps) {
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4 hover:border-white/10 transition-colors group relative"
         >
-            {/* Action buttons (visible on hover) */}
+            {/* Action buttons (visible on hover or always on mobile) */}
             {(onDelete || onEdit) && (
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     {onEdit && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onEdit(); }}

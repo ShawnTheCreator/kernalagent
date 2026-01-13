@@ -44,8 +44,8 @@ export default function DashboardLayout({
                 <TopBar onMenuClick={() => setMobileMenuOpen(true)} />
 
                 {/* Viewport */}
-                <main className="flex-grow overflow-y-auto p-6 md:p-10 pb-24 lg:pb-10 custom-scrollbar">
-                    <div className="max-w-6xl mx-auto">
+                <main className="flex-grow overflow-y-auto p-4 md:p-8 lg:p-10 pb-24 lg:pb-10 custom-scrollbar">
+                    <div className="max-w-4xl lg:max-w-6xl 2xl:max-w-[1800px] mx-auto w-full transition-all duration-300">
                         {children}
                     </div>
                 </main>

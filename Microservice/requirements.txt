@@ -7,3 +7,5 @@ python-dotenv
 torch
 open-clip-torch
 firebase-admin
+pydantic
+pytest
