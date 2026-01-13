@@ -9,6 +9,7 @@ using KernalAgentBackend.DTOs;
 using KernalAgentBackend.Models;
 using DbUser = KernalAgentBackend.Models.User;
 using BCrypt.Net;
+using Google.Cloud.Firestore;
 
 namespace KernalAgentBackend.Controllers;
 
