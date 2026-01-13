@@ -1,10 +1,9 @@
 using Microsoft.UI.Xaml;
 using System;
-using System.Windows;
 
 namespace Kernel_Agent
 {
-    public partial class OrbOverlayWindow : Window
+    public partial class OrbOverlayWindow : Microsoft.UI.Xaml.Window
     {
         public OrbOverlayWindow()
         {
@@ -20,12 +19,13 @@ namespace Kernel_Agent
             Top = desktopWorkingArea.Bottom - Height - 30;
         }
 
-        protected override void OnMouseLeftButtonDown(System.Windows.Input.MouseButtonEventArgs e)
+        // WinUI 3: Use PointerPressed event instead of OnMouseLeftButtonDown
+        protected override void OnPointerPressed(Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            base.OnMouseLeftButtonDown(e);
-            // Restore main window and hide orb
-            Application.Current.MainWindow.Show();
-            Hide();
+            base.OnPointerPressed(e);
+            // Restore main window and close orb
+            Application.Current.MainWindow.Activate();
+            this.Close();
         }
     }
 }

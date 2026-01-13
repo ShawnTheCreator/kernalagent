@@ -23,7 +23,12 @@ namespace Kernel_Agent
         public MainWindow()
         {
             InitializeComponent();
-            StateChanged += MainWindow_StateChanged;
+            // WinUI 3: Use AppWindow.Changed event for minimize/restore
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(
+                Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd)
+            );
+            appWindow.Changed += AppWindow_Changed;
 
             try
             {
@@ -411,5 +416,22 @@ namespace Kernel_Agent
         }
 
         #endregion
+
+        private void AppWindow_Changed(Microsoft.UI.Windowing.AppWindow sender, object args)
+        {
+            if (sender.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            {
+                if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Minimized)
+                {
+                    this.Close();
+                    _orbOverlayWindow = new OrbOverlayWindow();
+                    _orbOverlayWindow.Activate();
+                }
+                else
+                {
+                    _orbOverlayWindow?.Close();
+                }
+            }
+        }
     }
 }

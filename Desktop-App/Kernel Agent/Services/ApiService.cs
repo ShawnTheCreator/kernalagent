@@ -12,6 +12,7 @@ namespace Kernel_Agent.Services
     {
         private static readonly string API_BASE_URL = 
             Environment.GetEnvironmentVariable("API_BASE_URL") ?? "https://kernal-agent-backend.onrender.com/api"; // Production backend
+        private static readonly string BASE_URL = "https://kernal-agent-brain.onrender.com/"; // Python microservice
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
 
