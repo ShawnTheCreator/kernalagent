@@ -1,0 +1,122 @@
+﻿<Window
+    x:Class="Kernel_Agent.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Kernel_Agent"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Kernel Agent - Mission Control">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="BaseAlt" />
+    </Window.SystemBackdrop>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid x:ConnectionId='2' x:Name="AppTitleBar" Height="40">
+            <StackPanel Orientation="Horizontal" Margin="15,0">
+                <FontIcon Glyph="&#xE99A;" Foreground="#8E75FF" FontSize="16"/>
+                <TextBlock Text="KERNEL MISSION CONTROL" VerticalAlignment="Center" 
+                           Margin="10,0" FontWeight="Bold" FontSize="11" CharacterSpacing="150"/>
+            </StackPanel>
+            
+            <!-- Profile Section -->
+            <StackPanel x:ConnectionId='11' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,15,0" Visibility="Collapsed">
+                <PersonPicture x:ConnectionId='13' x:Name="ProfilePicture" Width="32" Height="32" Margin="0,4,8,4"/>
+                <TextBlock x:ConnectionId='14' x:Name="UserNameText" Text="User" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Button x:ConnectionId='15' x:Name="ProfileButton" Background="Transparent" BorderThickness="0" Padding="8,4">
+                    <FontIcon Glyph="&#xE70D;" FontSize="12"/>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem x:ConnectionId='16' Text="Logout" x:Name="LogoutMenuItem"                             />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+            
+            <!-- Login Button (shown when not authenticated) -->
+            <Button x:ConnectionId='12' x:Name="LoginButton" Content="Login" HorizontalAlignment="Right" Margin="0,0,15,0" 
+                    Background="#8E75FF" Foreground="White" Padding="15,6"                          />
+        </Grid>
+
+        <NavigationView x:ConnectionId='3' Grid.Row="1" x:Name="NavView" 
+                        PaneDisplayMode="LeftCompact"
+                                                                   >
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
+                <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
+                <NavigationViewItem Content="Action History" Tag="history">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE81C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Neural Memory" Icon="AllApps" Tag="memory"/>
+
+                <NavigationViewItem Content="Security Vault" Icon="Permissions" Tag="security"/>
+                <NavigationViewItem Content="Neural Sandbox" Icon="Play" Tag="sandbox"/>
+                <NavigationViewItem Content="Marketplace" Icon="Shop" Tag="marketplace"/>
+            </NavigationView.MenuItems>
+
+            <Grid>
+                <Grid x:ConnectionId='4' x:Name="MissionRoot" Padding="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
+                        <Grid>
+                            <Image x:ConnectionId='9' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
+                            <Canvas x:ConnectionId='10' x:Name="AiOverlayCanvas"/>
+                            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
+                                <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="#34A853" FontWeight="Bold"/>
+                                <TextBlock Text="Target: Microsoft Excel" FontSize="12" Opacity="0.6"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1" CornerRadius="12" Background="{ThemeResource LayerFillColorDefaultBrush}" Padding="15">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="INTERNAL MONOLOGUE" FontSize="10" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,10"/>
+
+                            <ScrollViewer Grid.Row="1">
+                                <StackPanel x:ConnectionId='8' x:Name="ThoughtLog"/>
+                            </ScrollViewer>
+
+                            <Grid Grid.Row="2" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:ConnectionId='6' PlaceholderText="Command Agent..." 
+                                         CornerRadius="8" x:Name="CommandInput" Margin="0,0,8,0"/>
+                                <Button x:ConnectionId='7' Grid.Column="1" x:Name="InternalMonologueVoiceButton" 
+                                        ToolTipService.ToolTip="Record Voice for Internal Monologue" 
+                                        MinWidth="36" MinHeight="36" VerticalAlignment="Center" 
+                                        HorizontalAlignment="Right"
+                                                                      
+                                        Padding="8">
+                                    <FontIcon Glyph="&#xE720;" FontSize="18"/>
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Frame x:ConnectionId='5' x:Name="ContentFrame" Visibility="Collapsed"/>
+            </Grid>
+        </NavigationView>
+    </Grid>
+</Window>
+

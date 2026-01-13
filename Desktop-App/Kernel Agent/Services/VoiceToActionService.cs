@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Speech.Recognition;
 using Kernel_Agent.Services;
@@ -51,7 +52,7 @@ namespace Kernel_Agent.Services
             if (!response.IsSuccessStatusCode) return null;
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.EnumerateArray().ToArray();
+            return doc.RootElement.EnumerateArray().Select(element => element).ToArray();
         }
 
         private async Task ExecuteActionPlan(JsonElement[] steps)

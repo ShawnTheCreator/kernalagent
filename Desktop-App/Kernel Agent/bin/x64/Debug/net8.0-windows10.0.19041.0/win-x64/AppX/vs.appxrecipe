@@ -29,21 +29,21 @@
     <AppXManifest Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppxManifest.xml">
       <PackagePath>AppxManifest.xml</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
-      <Modified>2026-01-10T19:17:36.954</Modified>
+      <Modified>2026-01-13T19:25:10.767</Modified>
     </AppXManifest>
   </ItemGroup>
   <ItemGroup>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.runtimeconfig.json">
       <PackagePath>Kernel Agent.runtimeconfig.json</PackagePath>
-      <Modified>2026-01-10T17:43:20.928</Modified>
+      <Modified>2026-01-13T16:40:48.855</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\apphost.exe">
       <PackagePath>Kernel Agent.exe</PackagePath>
-      <Modified>2026-01-10T19:17:36.268</Modified>
+      <Modified>2026-01-13T19:25:07.173</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.dll">
       <PackagePath>Kernel Agent.dll</PackagePath>
-      <Modified>2026-01-10T19:17:36.245</Modified>
+      <Modified>2026-01-13T19:25:07.106</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\microsoft.netcore.app.runtime.win-x64\8.0.22\runtimes\win-x64\lib\net8.0\Microsoft.CSharp.dll">
       <PackagePath>Microsoft.CSharp.dll</PackagePath>
@@ -1893,6 +1893,10 @@
       <PackagePath>dotenv.net.dll</PackagePath>
       <Modified>2025-07-11T12:22:10.000</Modified>
     </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\firebaseadmin\3.4.0\lib\net6.0\FirebaseAdmin.dll">
+      <PackagePath>FirebaseAdmin.dll</PackagePath>
+      <Modified>2025-09-08T18:18:34.000</Modified>
+    </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.api.commonprotos\2.17.0\lib\netstandard2.0\Google.Api.CommonProtos.dll">
       <PackagePath>Google.Api.CommonProtos.dll</PackagePath>
       <Modified>2025-05-29T08:53:22.000</Modified>
@@ -1905,17 +1909,33 @@
       <PackagePath>Google.Api.Gax.Grpc.dll</PackagePath>
       <Modified>2025-10-16T15:57:38.000</Modified>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis\1.72.0\lib\net6.0\Google.Apis.dll">
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.api.gax.rest\4.8.0\lib\netstandard2.0\Google.Api.Gax.Rest.dll">
+      <PackagePath>Google.Api.Gax.Rest.dll</PackagePath>
+      <Modified>2024-03-25T16:53:10.000</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis\1.73.0\lib\net6.0\Google.Apis.dll">
       <PackagePath>Google.Apis.dll</PackagePath>
-      <Modified>2025-10-06T21:15:04.000</Modified>
+      <Modified>2025-11-20T05:24:24.000</Modified>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.auth\1.72.0\lib\net6.0\Google.Apis.Auth.dll">
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.auth\1.73.0\lib\net6.0\Google.Apis.Auth.dll">
       <PackagePath>Google.Apis.Auth.dll</PackagePath>
-      <Modified>2025-10-06T21:15:08.000</Modified>
+      <Modified>2025-11-20T05:24:26.000</Modified>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.core\1.72.0\lib\net6.0\Google.Apis.Core.dll">
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.core\1.73.0\lib\net6.0\Google.Apis.Core.dll">
       <PackagePath>Google.Apis.Core.dll</PackagePath>
-      <Modified>2025-10-06T21:15:04.000</Modified>
+      <Modified>2025-11-20T05:24:24.000</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.firestore\3.4.0\lib\netstandard2.1\Google.Cloud.Firestore.dll">
+      <PackagePath>Google.Cloud.Firestore.dll</PackagePath>
+      <Modified>2023-10-04T07:15:02.000</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.firestore.v1\3.4.0\lib\netstandard2.1\Google.Cloud.Firestore.V1.dll">
+      <PackagePath>Google.Cloud.Firestore.V1.dll</PackagePath>
+      <Modified>2023-10-04T07:14:58.000</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.location\2.0.0\lib\netstandard2.1\Google.Cloud.Location.dll">
+      <PackagePath>Google.Cloud.Location.dll</PackagePath>
+      <Modified>2022-06-07T10:46:26.000</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.speech.v1\3.9.0\lib\netstandard2.0\Google.Cloud.Speech.V1.dll">
       <PackagePath>Google.Cloud.Speech.V1.dll</PackagePath>
@@ -2109,6 +2129,10 @@
       <PackagePath>Newtonsoft.Json.dll</PackagePath>
       <Modified>2025-09-16T08:04:24.000</Modified>
     </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.linq.async\6.0.1\lib\net6.0\System.Linq.Async.dll">
+      <PackagePath>System.Linq.Async.dll</PackagePath>
+      <Modified>2022-02-01T15:33:00.000</Modified>
+    </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.management\7.0.2\runtimes\win\lib\net7.0\System.Management.dll">
       <PackagePath>System.Management.dll</PackagePath>
       <Modified>2023-05-24T14:40:18.000</Modified>
@@ -2116,6 +2140,14 @@
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.numerics.tensors\9.0.0\lib\net8.0\System.Numerics.Tensors.dll">
       <PackagePath>System.Numerics.Tensors.dll</PackagePath>
       <Modified>2024-10-29T02:40:16.000</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.speech\8.0.0\runtimes\win\lib\net8.0\System.Speech.dll">
+      <PackagePath>System.Speech.dll</PackagePath>
+      <Modified>2023-10-31T15:00:06.000</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\windowsinput\6.4.0\lib\netcoreapp3.1\WindowsInput.dll">
+      <PackagePath>WindowsInput.dll</PackagePath>
+      <Modified>2022-02-04T16:32:32.000</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\microsoft.web.webview2\1.0.3179.45\runtimes\win-x64\native\WebView2Loader.dll">
       <PackagePath>WebView2Loader.dll</PackagePath>
@@ -2139,7 +2171,11 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.deps.json">
       <PackagePath>Kernel Agent.deps.json</PackagePath>
-      <Modified>2026-01-10T17:43:20.877</Modified>
+      <Modified>2026-01-13T16:54:10.588</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\windowsinput\6.4.0\contentFiles\any\netcoreapp3.1\.nuget\mouse-keyboard-hook-logo.png">
+      <PackagePath>.nuget\mouse-keyboard-hook-logo.png</PackagePath>
+      <Modified>2022-02-04T16:27:08.000</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\Assets\LockScreenLogo.scale-200.png">
       <PackagePath>Assets\LockScreenLogo.scale-200.png</PackagePath>
@@ -2175,7 +2211,7 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.pri">
       <PackagePath>resources.pri</PackagePath>
-      <Modified>2026-01-10T19:17:36.407</Modified>
+      <Modified>2026-01-13T19:25:08.424</Modified>
     </AppxPackagedFile>
   </ItemGroup>
   <ItemGroup>

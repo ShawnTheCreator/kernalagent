@@ -1,13 +1,42 @@
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.exe
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.xbf
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\OrbOverlayWindow.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.exe
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.deps.json
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.runtimeconfig.json
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.pdb
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.pri
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppxManifest.xml
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Web.WebView2.Core.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\dotenv.net.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\FirebaseAdmin.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Api.CommonProtos.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Api.Gax.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Api.Gax.Grpc.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Api.Gax.Rest.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Apis.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Apis.Auth.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Apis.Core.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Cloud.Firestore.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Cloud.Firestore.V1.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Cloud.Location.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Cloud.Speech.V1.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.LongRunning.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Protobuf.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Auth.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Core.Api.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Net.Client.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Net.Common.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Bcl.AsyncInterfaces.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Graphics.Imaging.Projection.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Windows.AI.ContentSafety.Projection.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Windows.AI.Foundation.Projection.dll
@@ -38,13 +67,24 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Windows.AI.MachineLearning.Projection.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Windows.Widgets.Projection.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.WinUI.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Asio.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Core.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Midi.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Wasapi.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.WinForms.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.WinMM.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Newtonsoft.Json.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Linq.Async.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Management.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Numerics.Tensors.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Speech.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WindowsInput.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WebView2Loader.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Windows.ApplicationModel.Background.UniversalBGTask.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.WindowsAppRuntime.Bootstrap.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.CSharp.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.VisualBasic.Core.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.VisualBasic.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Win32.Primitives.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Win32.Registry.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.AppContext.dll
@@ -77,7 +117,6 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Diagnostics.TraceSource.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Diagnostics.Tracing.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Drawing.Primitives.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Drawing.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Dynamic.Runtime.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Formats.Asn1.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Formats.Tar.dll
@@ -207,134 +246,12 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Xml.XmlSerializer.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Xml.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WindowsBase.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscorlib.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\netstandard.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.DiaSymReader.Native.amd64.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.IO.Compression.Native.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\clretwrc.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\clrgc.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\clrjit.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\coreclr.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\createdump.exe
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\hostfxr.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\hostpolicy.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscordaccore.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscordaccore_amd64_amd64_8.0.2225.52707.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscordbi.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscorrc.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\msquic.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Windows.SDK.NET.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WinRT.Runtime.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Web.WebView2.Core.Projection.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.csproj.AssemblyReference.cache
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\XamlTypeInfo.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\XamlSaveStateFile.xml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.AssemblyInfoInputs.cache
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.AssemblyInfo.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.csproj.CoreCompileInputs.cache
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel A.0A88BAB2.Up2Date
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\refint\Kernel Agent.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.pdb
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.genruntimeconfig.cache
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ref\Kernel Agent.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\priconfig.xml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\priconfig.xml.intermediate
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\unfiltered.layout.resfiles
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\unfiltered.layout.resfiles.intermediate
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\filtered.layout.resfiles
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\filtered.layout.resfiles.intermediate
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\excluded.layout.resfiles
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\excluded.layout.resfiles.intermediate
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.resfiles
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.resfiles.intermediate
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\pri.resfiles
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\pri.resfiles.intermediate
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\qualifiers.txt
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\qualifiers.txt.intermediate
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MultipleQualifiersPerDimensionFound.txt
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ProjectArchitectures.txt
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\.winmd_cache\$Microsoft.Web.WebView2.Core.winmd_638789222360000000.json
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.sourcelink.json
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.g.i.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.g.cs
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.xaml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.xbf
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\dotenv.net.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Api.CommonProtos.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Api.Gax.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Api.Gax.Grpc.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Apis.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Apis.Auth.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Apis.Core.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Cloud.Speech.V1.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.LongRunning.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Google.Protobuf.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Auth.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Core.Api.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Net.Client.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Grpc.Net.Common.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Bcl.AsyncInterfaces.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Extensions.Logging.Abstractions.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Asio.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Core.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Midi.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.Wasapi.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.WinForms.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\NAudio.WinMM.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Newtonsoft.Json.dll
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Management.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Accessibility.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\DirectWriteForwarder.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.VisualBasic.Forms.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.VisualBasic.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Win32.Registry.AccessControl.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Win32.SystemEvents.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\PresentationCore.dll
@@ -361,6 +278,7 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.DirectoryServices.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Drawing.Common.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Drawing.Design.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Drawing.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.IO.Packaging.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Printing.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.Resources.Extensions.dll
@@ -382,7 +300,22 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\UIAutomationClientSideProviders.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\UIAutomationProvider.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\UIAutomationTypes.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WindowsBase.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WindowsFormsIntegration.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.DiaSymReader.Native.amd64.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\System.IO.Compression.Native.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\clretwrc.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\clrgc.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\clrjit.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\coreclr.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\createdump.exe
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\hostfxr.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\hostpolicy.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscordaccore.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscordaccore_amd64_amd64_8.0.2225.52707.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscordbi.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\mscorrc.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\msquic.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\D3DCompiler_47_cor3.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\PenImc_cor3.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\PresentationNative_cor3.dll
@@ -609,7 +542,83 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\zh-Hant\UIAutomationTypes.resources.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\zh-Hant\WindowsBase.resources.dll
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\zh-Hant\WindowsFormsIntegration.resources.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Windows.SDK.NET.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\WinRT.Runtime.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Microsoft.Web.WebView2.Core.Projection.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.csproj.AssemblyReference.cache
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.g.cs
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\OrbOverlayWindow.g.i.cs
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\OrbOverlayWindow.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.g.i.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\XamlTypeInfo.g.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.xaml
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\OrbOverlayWindow.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.xaml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ForgePage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\HistoryPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MainWindow.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MarketplacePage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MemoryPage.xbf
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\OrbOverlayWindow.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SandboxPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SecurityPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\SettingsPage.xbf
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\XamlSaveStateFile.xml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.AssemblyInfoInputs.cache
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.AssemblyInfo.cs
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.csproj.CoreCompileInputs.cache
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.sourcelink.json
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel A.0A88BAB2.Up2Date
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\refint\Kernel Agent.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.pdb
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.genruntimeconfig.cache
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ref\Kernel Agent.dll
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\priconfig.xml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\priconfig.xml.intermediate
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\unfiltered.layout.resfiles
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\unfiltered.layout.resfiles.intermediate
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\filtered.layout.resfiles
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\filtered.layout.resfiles.intermediate
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\excluded.layout.resfiles
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\excluded.layout.resfiles.intermediate
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.resfiles
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.resfiles.intermediate
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\pri.resfiles
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\pri.resfiles.intermediate
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\qualifiers.txt
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\qualifiers.txt.intermediate
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MultipleQualifiersPerDimensionFound.txt
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.pri
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppxManifest.xml
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ProjectArchitectures.txt
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\.winmd_cache\$Microsoft.Web.WebView2.Core.winmd_638789222360000000.json

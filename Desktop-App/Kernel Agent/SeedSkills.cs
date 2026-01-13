@@ -48,7 +48,7 @@ namespace Kernel_Agent
                 id = "sample-skill",
                 name = "Open Word and Type",
                 intent_signature = "open word and type",
-                steps = new[]
+                steps = new object[]
                 {
                     new { action = "open_app", app = "Word" },
                     new { action = "type_text", text = "Hello, world!" }

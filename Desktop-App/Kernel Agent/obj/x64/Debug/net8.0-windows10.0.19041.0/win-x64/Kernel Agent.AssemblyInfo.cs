@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Kernel Agent")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5ea631374e5ca6ae4935ae8da645c0885ee4c408")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0f50c44b6bbd3cbe5172abb01cb23bb136a42cd4")]
 [assembly: System.Reflection.AssemblyProductAttribute("Kernel Agent")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Kernel Agent")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

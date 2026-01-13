@@ -24,11 +24,31 @@
                 <TextBlock Text="KERNEL MISSION CONTROL" VerticalAlignment="Center" 
                            Margin="10,0" FontWeight="Bold" FontSize="11" CharacterSpacing="150"/>
             </StackPanel>
+            
+            <!-- Profile Section -->
+            <StackPanel x:ConnectionId='17' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" Visibility="Collapsed">
+                <PersonPicture x:ConnectionId='19' x:Name="ProfilePicture" Width="32" Height="32" Margin="0,0,8,0"/>
+                <TextBlock x:ConnectionId='20' x:Name="UserNameText" Text="User" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Button x:ConnectionId='21' x:Name="ProfileButton" Background="Transparent" BorderThickness="0" Padding="8,4">
+                    <FontIcon Glyph="&#xE70D;" FontSize="12"/>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem x:ConnectionId='22' Text="Logout" x:Name="LogoutMenuItem"                             />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+            
+            <!-- Login Button (Header) -->
+            <Button x:ConnectionId='18' x:Name="LoginButton" Content="Login" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" 
+                    Background="#8E75FF" Foreground="White" Padding="15,6"                           Visibility="Collapsed"/>
         </Grid>
 
+        <!-- Main Content Area with Navigation -->
         <NavigationView x:ConnectionId='3' Grid.Row="1" x:Name="NavView" 
                         PaneDisplayMode="LeftCompact"
-                                                                   >
+                                                                   
+                        Visibility="Collapsed">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
                 <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
@@ -45,7 +65,7 @@
             </NavigationView.MenuItems>
 
             <Grid>
-                <Grid x:ConnectionId='4' x:Name="MissionRoot" Padding="20">
+                <Grid x:ConnectionId='10' x:Name="MissionRoot" Padding="20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
                         <ColumnDefinition Width="1*"/>
@@ -53,8 +73,8 @@
 
                     <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
                         <Grid>
-                            <Image x:ConnectionId='9' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
-                            <Canvas x:ConnectionId='10' x:Name="AiOverlayCanvas"/>
+                            <Image x:ConnectionId='15' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
+                            <Canvas x:ConnectionId='16' x:Name="AiOverlayCanvas"/>
                             <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
                                 <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="#34A853" FontWeight="Bold"/>
                                 <TextBlock Text="Target: Microsoft Excel" FontSize="12" Opacity="0.6"/>
@@ -73,7 +93,7 @@
                             <TextBlock Text="INTERNAL MONOLOGUE" FontSize="10" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,10"/>
 
                             <ScrollViewer Grid.Row="1">
-                                <StackPanel x:ConnectionId='8' x:Name="ThoughtLog"/>
+                                <StackPanel x:ConnectionId='14' x:Name="ThoughtLog"/>
                             </ScrollViewer>
 
                             <Grid Grid.Row="2" Margin="0,10,0,0">
@@ -81,9 +101,10 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:ConnectionId='6' PlaceholderText="Command Agent..." 
-                                         CornerRadius="8" x:Name="CommandInput" Margin="0,0,8,0"/>
-                                <Button x:ConnectionId='7' Grid.Column="1" x:Name="InternalMonologueVoiceButton" 
+                                <TextBox x:ConnectionId='12' PlaceholderText="Command Agent..." 
+                                         CornerRadius="8" x:Name="CommandInput" Margin="0,0,8,0"
+                                                                       />
+                                <Button x:ConnectionId='13' Grid.Column="1" x:Name="InternalMonologueVoiceButton" 
                                         ToolTipService.ToolTip="Record Voice for Internal Monologue" 
                                         MinWidth="36" MinHeight="36" VerticalAlignment="Center" 
                                         HorizontalAlignment="Right"
@@ -96,9 +117,59 @@
                     </Border>
                 </Grid>
 
-                <Frame x:ConnectionId='5' x:Name="ContentFrame" Visibility="Collapsed"/>
+                <Frame x:ConnectionId='11' x:Name="ContentFrame" Visibility="Collapsed"/>
             </Grid>
         </NavigationView>
+
+        <!-- Separate Login/Welcome Home Screen -->
+        <Grid x:ConnectionId='4' Grid.Row="1" x:Name="LoginOverlay" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Visibility="Visible">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                <FontIcon Glyph="&#xE99A;" Foreground="#8E75FF" FontSize="64"/>
+                <TextBlock Text="Welcome to Kernel Agent" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                <TextBlock Text="Please login to access your Mission Control." FontSize="16" Opacity="0.7" HorizontalAlignment="Center"/>
+                
+                <Button x:ConnectionId='9' x:Name="BigLoginButton" Content="Login with Web App" 
+                        Background="#8E75FF" Foreground="White" 
+                        FontSize="16" Padding="30,12" CornerRadius="8"
+                                                  HorizontalAlignment="Center" Margin="0,20,0,0"/>
+            </StackPanel>
+
+            <!-- Loading Overlay (shown while waiting for login) -->
+            <Grid x:ConnectionId='5' x:Name="LoginLoadingOverlay" Background="#CC000000" Visibility="Collapsed">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="24">
+                    <!-- Animated Spinner -->
+                    <Grid Width="80" Height="80">
+                        <Ellipse Width="80" Height="80" 
+                                 Stroke="#8E75FF" StrokeThickness="4" 
+                                 Opacity="0.3"/>
+                        <Ellipse x:ConnectionId='7' x:Name="SpinnerRing" 
+                                 Width="80" Height="80" 
+                                 Stroke="#8E75FF" 
+                                 StrokeThickness="4"
+                                 StrokeDashArray="50 200"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform x:ConnectionId='8' x:Name="SpinnerRotation" Angle="0"/>
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                    </Grid>
+
+                    <!-- Loading Text -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Please Wait..." 
+                                   FontSize="24" 
+                                   FontWeight="SemiBold" 
+                                   HorizontalAlignment="Center"
+                                   Foreground="White"/>
+                        <TextBlock x:ConnectionId='6' x:Name="LoadingStatusText"
+                                   Text="Waiting for login..." 
+                                   FontSize="14" 
+                                   HorizontalAlignment="Center"
+                                   Foreground="#AAAAAA"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
 

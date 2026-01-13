@@ -10,15 +10,18 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Generic;
 using Kernel_Agent.Services;
+using Microsoft.UI.Xaml.Input;
 
 namespace Kernel_Agent
 {
     public sealed partial class MainWindow : Window
     {
         private OrbOverlayWindow _orbOverlayWindow = new OrbOverlayWindow();
-        private WaveInEvent _waveIn;
+        private WaveInEvent? _waveIn;
         private SpeechClient _speechClient;
         private bool _isRecording = false;
+        private string _loginDeviceId = Guid.NewGuid().ToString();
+        private FirestoreRealtimeListener? _firestoreListener;
 
         public MainWindow()
         {
@@ -45,6 +48,9 @@ namespace Kernel_Agent
                     ContentFrame.Visibility = Visibility.Collapsed;
                 }
 
+                // Start spinner animation
+                StartSpinnerAnimation();
+
                 // Check authentication on startup
                 CheckAuthenticationAsync();
 
@@ -57,166 +63,307 @@ namespace Kernel_Agent
             }
         }
 
+        private void StartSpinnerAnimation()
+        {
+            var storyboard = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+            var animation = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                From = 0,
+                To = 360,
+                Duration = new Duration(TimeSpan.FromSeconds(1)),
+                RepeatBehavior = Microsoft.UI.Xaml.Media.Animation.RepeatBehavior.Forever
+            };
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(animation, SpinnerRotation);
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(animation, "Angle");
+            storyboard.Children.Add(animation);
+            storyboard.Begin();
+        }
+
         private async void CheckAuthenticationAsync()
         {
+            // Wait a moment for the window to be fully loaded
+            await Task.Delay(100);
+            
             var isAuthenticated = await ApiService.Instance.IsAuthenticatedAsync();
-            if (!isAuthenticated)
+            if (isAuthenticated)
             {
-                // Show login dialog
-                await ShowLoginDialogAsync();
+                // User is already logged in, show profile
+                await ShowUserProfileAsync();
+            }
+            else
+            {
+                // Show login UI
+                ShowLoginButton();
+                
+                // Automatically open browser to login (Windsurf style)
+                await OpenWebLoginAsync();
             }
         }
 
-        private async Task ShowLoginDialogAsync()
+        private void ShowLoginButton()
         {
+            // Show the separate login overlay
+            if (LoginOverlay != null) LoginOverlay.Visibility = Visibility.Visible;
+            if (NavView != null) NavView.Visibility = Visibility.Collapsed;
+            
+            // Header login button can be hidden or shown. Let's hide it to focus on the big screen.
+            if (LoginButton != null) LoginButton.Visibility = Visibility.Collapsed; 
+            if (ProfileSection != null) ProfileSection.Visibility = Visibility.Collapsed;
+        }
+
+        private void ShowProfileSection()
+        {
+            if (LoginButton != null) LoginButton.Visibility = Visibility.Collapsed;
+            if (ProfileSection != null) ProfileSection.Visibility = Visibility.Visible;
+            
+            // Show main app content
+            if (LoginOverlay != null) LoginOverlay.Visibility = Visibility.Collapsed;
+            if (NavView != null) NavView.Visibility = Visibility.Visible;
+        }
+
+        private async Task ShowUserProfileAsync()
+        {
+            try
+            {
+                var user = await ApiService.Instance.GetCurrentUserAsync();
+                
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (user != null)
+                    {
+                        UserNameText.Text = user.Name;
+                        // Set profile picture if available
+                        if (!string.IsNullOrEmpty(user.Email))
+                        {
+                            ProfilePicture.DisplayName = user.Name;
+                            ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
+                        }
+                        ShowProfileSection();
+
+                        // Start Listening to Firestore "Brain"
+                        var projectId = Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT") ?? "kernel-agent-brain";
+                        if (_firestoreListener == null)
+                        {
+                            var sessionId = user.Id.ToString();
+                            _firestoreListener = new FirestoreRealtimeListener(projectId, sessionId, OnMonologueUpdate);
+                        }
+                    }
+                    else
+                    {
+                        // Token might be valid but profile failed? fallback
+                        // ShowLoginButton(); // Optional: decide if we want to kick them out or retry
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error loading user profile: {ex.Message}");
+                    ShowLoginButton();
+                });
+            }
+        }
+
+        private void OnMonologueUpdate(string thought)
+        {
+            if (string.IsNullOrEmpty(thought)) return;
+
+            this.DispatcherQueue.TryEnqueue(() =>
+            {
+                // Add new thought to the log
+                var textBlock = new TextBlock
+                {
+                    Text = $"> {thought}",
+                    Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 255, 0)), // Terminal Green
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 4),
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas")
+                };
+                ThoughtLog.Children.Add(textBlock);
+                
+                // Auto-scroll to bottom (if ScrollViewer is accessible, or just let users scroll)
+                // If ThoughtLog is in a ScrollViewer, it would be nice to scroll to end.
+            });
+        }
+
+        private async void CommandInput_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                var text = CommandInput.Text;
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    CommandInput.Text = ""; // Clear input
+                    AddToThoughtLog($"User: {text}", true);
+                    await ApiService.Instance.SendCommandAsync(text);
+                }
+            }
+        }
+
+        private void AddToThoughtLog(string message, bool isUser = false)
+        {
+             var textBlock = new TextBlock
+            {
+                Text = message,
+                Foreground = isUser ? 
+                    new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)) : 
+                    new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 255, 0)),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 4),
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas")
+            };
+            ThoughtLog.Children.Add(textBlock);
+        }
+
+        private async void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            await OpenWebLoginAsync();
+        }
+
+        private async Task OpenWebLoginAsync()
+        {
+            try
+            {
+                // Show loading overlay
+                if (LoginLoadingOverlay != null)
+                {
+                    LoginLoadingOverlay.Visibility = Visibility.Visible;
+                }
+
+                // Open browser for web login
+                var webAppUrl = Environment.GetEnvironmentVariable("WEB_APP_URL") ?? "https://kernalagent.vercel.app";
+                var loginUrl = $"{webAppUrl}/login?deviceId={_loginDeviceId}";
+                await Windows.System.Launcher.LaunchUriAsync(new Uri(loginUrl));
+                
+                // Update status
+                if (LoadingStatusText != null)
+                {
+                    LoadingStatusText.Text = "Browser opened. Please login...";
+                }
+
+                // Start polling for authentication status
+                await PollAuthenticationStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error opening web login: {ex.Message}");
+                // Hide loading on error
+                if (LoginLoadingOverlay != null)
+                {
+                    LoginLoadingOverlay.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private async Task PollAuthenticationStatusAsync()
+        {
+            // Poll every 2 seconds for up to 5 minutes
+            var maxAttempts = 150; // 5 minutes * 60 seconds / 2 second intervals
+            var attempt = 0;
+
+            System.Diagnostics.Debug.WriteLine($"[AUTH] Starting polling for deviceId: {_loginDeviceId}");
+
+            while (attempt < maxAttempts)
+            {
+                await Task.Delay(2000);
+                attempt++;
+
+                System.Diagnostics.Debug.WriteLine($"[AUTH] Poll attempt {attempt}/{maxAttempts}");
+
+                // Update UI with polling status
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (LoadingStatusText != null)
+                    {
+                        LoadingStatusText.Text = $"Checking for login... ({attempt})";
+                    }
+                });
+
+                // Check backend for token using deviceId
+                var success = await ApiService.Instance.CheckLoginStatusAsync(_loginDeviceId);
+                
+                System.Diagnostics.Debug.WriteLine($"[AUTH] Poll result: {success}");
+                
+                if (success)
+                {
+                    System.Diagnostics.Debug.WriteLine("[AUTH] Login detected! Showing user profile...");
+                    
+                    // Update status before switching
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (LoadingStatusText != null)
+                        {
+                            LoadingStatusText.Text = "Login successful! Loading...";
+                        }
+                    });
+
+                    await ShowUserProfileAsync();
+                    
+                    // Hide loading overlay
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (LoginLoadingOverlay != null)
+                        {
+                            LoginLoadingOverlay.Visibility = Visibility.Collapsed;
+                        }
+                    });
+                    break;
+                }
+            }
+
+            if (attempt >= maxAttempts)
+            {
+                System.Diagnostics.Debug.WriteLine("[AUTH] Polling timeout reached");
+                
+                // Hide loading overlay
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (LoginLoadingOverlay != null)
+                    {
+                        LoginLoadingOverlay.Visibility = Visibility.Collapsed;
+                    }
+                });
+
+                // Timeout - show error message
+                await ShowAuthenticationTimeoutDialog();
+            }
+        }
+
+        private async Task ShowAuthenticationTimeoutDialog()
+        {
+            // Ensure we have a valid root for the dialog
+            if (ContentFrame == null || ContentFrame.XamlRoot == null) return;
+
             var dialog = new ContentDialog
             {
-                Title = "Login Required",
-                PrimaryButtonText = "Login",
-                SecondaryButtonText = "Sign Up",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.Content.XamlRoot
+                Title = "Login Timeout",
+                Content = "Login session timed out. Please try again.",
+                CloseButtonText = "OK",
+                XamlRoot = ContentFrame.XamlRoot
             };
-
-            var emailBox = new TextBox
-            {
-                PlaceholderText = "Email",
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var passwordBox = new PasswordBox
-            {
-                PlaceholderText = "Password",
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var stackPanel = new StackPanel
-            {
-                Spacing = 10
-            };
-            stackPanel.Children.Add(emailBox);
-            stackPanel.Children.Add(passwordBox);
-
-            dialog.Content = stackPanel;
-
-            dialog.PrimaryButtonClick += async (sender, args) =>
-            {
-                var deferral = args.GetDeferral();
-                try
-                {
-                    var success = await ApiService.Instance.LoginAsync(emailBox.Text, passwordBox.Password);
-                    if (!success)
-                    {
-                        args.Cancel = true;
-                        var errorDialog = new ContentDialog
-                        {
-                            Title = "Login Failed",
-                            Content = "Invalid email or password. Please try again.",
-                            CloseButtonText = "OK",
-                            XamlRoot = this.Content.XamlRoot
-                        };
-                        await errorDialog.ShowAsync();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    args.Cancel = true;
-                    System.Diagnostics.Debug.WriteLine($"Login error: {ex.Message}");
-                }
-                finally
-                {
-                    deferral.Complete();
-                }
-            };
-
-            dialog.SecondaryButtonClick += async (sender, args) =>
-            {
-                var deferral = args.GetDeferral();
-                try
-                {
-                    // Show signup dialog
-                    await ShowSignupDialogAsync();
-                }
-                finally
-                {
-                    deferral.Complete();
-                }
-            };
-
             await dialog.ShowAsync();
         }
 
-        private async Task ShowSignupDialogAsync()
+        private async void LogoutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new ContentDialog
+            try
             {
-                Title = "Create Account",
-                PrimaryButtonText = "Sign Up",
-                CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.Content.XamlRoot
-            };
-
-            var nameBox = new TextBox
+                await ApiService.Instance.LogoutAsync();
+                ShowLoginButton();
+                
+                // Clear profile picture
+                ProfilePicture.DisplayName = string.Empty;
+                ProfilePicture.Initials = string.Empty;
+                UserNameText.Text = string.Empty;
+            }
+            catch (Exception ex)
             {
-                PlaceholderText = "Full Name",
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var emailBox = new TextBox
-            {
-                PlaceholderText = "Email",
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var passwordBox = new PasswordBox
-            {
-                PlaceholderText = "Password",
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var stackPanel = new StackPanel
-            {
-                Spacing = 10
-            };
-            stackPanel.Children.Add(nameBox);
-            stackPanel.Children.Add(emailBox);
-            stackPanel.Children.Add(passwordBox);
-
-            dialog.Content = stackPanel;
-
-            dialog.PrimaryButtonClick += async (sender, args) =>
-            {
-                var deferral = args.GetDeferral();
-                try
-                {
-                    var success = await ApiService.Instance.SignupAsync(nameBox.Text, emailBox.Text, passwordBox.Password);
-                    if (!success)
-                    {
-                        args.Cancel = true;
-                        var errorDialog = new ContentDialog
-                        {
-                            Title = "Signup Failed",
-                            Content = "Failed to create account. Please try again.",
-                            CloseButtonText = "OK",
-                            XamlRoot = this.Content.XamlRoot
-                        };
-                        await errorDialog.ShowAsync();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    args.Cancel = true;
-                    System.Diagnostics.Debug.WriteLine($"Signup error: {ex.Message}");
-                }
-                finally
-                {
-                    deferral.Complete();
-                }
-            };
-
-            await dialog.ShowAsync();
+                System.Diagnostics.Debug.WriteLine($"Logout error: {ex.Message}");
+            }
         }
+
+        // Removed the old ShowLoginDialogAsync and ShowSignupDialogAsync as we are using Web Login now exclusively per user request.
 
         private async void InitializeSpeechClient()
         {
@@ -331,12 +478,18 @@ namespace Kernel_Agent
                 // Show error to user
                 this.DispatcherQueue.TryEnqueue(async () =>
                 {
+                    // Wait for ContentFrame to be loaded and have XamlRoot
+                    while (ContentFrame?.XamlRoot == null)
+                    {
+                        await Task.Delay(50);
+                    }
+                    
                     var dialog = new ContentDialog
                     {
                         Title = "Microphone Access Error",
                         Content = "Unable to access microphone. Please check:\n1. Microphone permissions are enabled\n2. No other application is using the microphone\n3. A microphone is connected and working",
                         CloseButtonText = "OK",
-                        XamlRoot = this.Content.XamlRoot
+                        XamlRoot = ContentFrame.XamlRoot
                     };
                     await dialog.ShowAsync();
                 });
@@ -423,13 +576,30 @@ namespace Kernel_Agent
             {
                 if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Minimized)
                 {
-                    this.Close();
-                    _orbOverlayWindow = new OrbOverlayWindow();
-                    _orbOverlayWindow.Activate();
+                    // Do not close the main window to avoid crashes. 
+                    // Just activate the orb overlay.
+                    
+                    if (_orbOverlayWindow == null)
+                    {
+                        _orbOverlayWindow = new OrbOverlayWindow();
+                    }
+                    
+                    try 
+                    {
+                        _orbOverlayWindow.Activate();
+                    } 
+                    catch (Exception ex) 
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error activating Orb: {ex.Message}");
+                        // Re-create if disposed/closed unexpectedly
+                        _orbOverlayWindow = new OrbOverlayWindow();
+                        _orbOverlayWindow.Activate();
+                    }
                 }
                 else
                 {
                     _orbOverlayWindow?.Close();
+                    _orbOverlayWindow = null;
                 }
             }
         }

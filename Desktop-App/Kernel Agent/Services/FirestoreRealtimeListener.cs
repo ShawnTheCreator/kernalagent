@@ -7,11 +7,14 @@ namespace Kernel_Agent.Services
     public class FirestoreRealtimeListener
     {
         private FirestoreDb _firestoreDb;
-        private ListenerRegistration _listenerRegistration;
+        private FirestoreChangeListener? _listenerRegistration;
 
-        public FirestoreRealtimeListener(string projectId, string sessionId)
+        private Action<string> _onUpdate;
+
+        public FirestoreRealtimeListener(string projectId, string sessionId, Action<string> onUpdate)
         {
             _firestoreDb = FirestoreDb.Create(projectId);
+            _onUpdate = onUpdate;
             ListenToAgentSession(sessionId);
         }
 
@@ -24,15 +27,15 @@ namespace Kernel_Agent.Services
                 {
                     var data = snapshot.ToDictionary();
                     var monologue = data.ContainsKey("monologue") ? data["monologue"]?.ToString() : string.Empty;
-                    // Update your UI with the new monologue text
-                    // Example: MainWindow.Instance.UpdateMonologueBox(monologue);
+                    _onUpdate?.Invoke(monologue ?? "");
                 }
             });
+
         }
 
         public void StopListening()
         {
-            _listenerRegistration?.Stop();
+            _listenerRegistration = null;
         }
     }
 }

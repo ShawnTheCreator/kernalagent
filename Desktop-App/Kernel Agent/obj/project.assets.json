@@ -156,6 +156,58 @@
           }
         }
       },
+      "Google.Cloud.Firestore/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Cloud.Firestore.V1": "3.4.0",
+          "System.Collections.Immutable": "6.0.0",
+          "System.Linq.Async": "6.0.1"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Firestore.V1/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.4.0, 5.0.0)",
+          "Google.Cloud.Location": "[2.0.0, 3.0.0)",
+          "Google.LongRunning": "[3.0.0, 4.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Location/2.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.0.0, 5.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
       "Google.Cloud.Speech.V1/3.9.0": {
         "type": "package",
         "dependencies": {
@@ -854,6 +906,22 @@
           "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
+      "System.Linq.Async/6.0.1": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
+        },
+        "compile": {
+          "ref/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.Management/7.0.2": {
         "type": "package",
         "dependencies": {
@@ -938,6 +1006,43 @@
           "runtimes/win/lib/netcoreapp2.1/System.Security.Principal.Windows.dll": {
             "assetType": "runtime",
             "rid": "win"
+          }
+        }
+      },
+      "System.Speech/8.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/System.Speech.dll": {}
+        },
+        "runtime": {
+          "lib/net8.0/System.Speech.dll": {}
+        },
+        "build": {
+          "buildTransitive/net6.0/_._": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net8.0/System.Speech.dll": {
+            "assetType": "runtime",
+            "rid": "win"
+          }
+        }
+      },
+      "WindowsInput/6.4.0": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ],
+        "contentFiles": {
+          "contentFiles/any/netcoreapp3.1/.nuget/mouse-keyboard-hook-logo.png": {
+            "buildAction": "Content",
+            "codeLanguage": "any",
+            "copyToOutput": false
           }
         }
       }
@@ -1093,6 +1198,58 @@
         },
         "runtime": {
           "lib/net6.0/Google.Apis.Core.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Firestore/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Cloud.Firestore.V1": "3.4.0",
+          "System.Collections.Immutable": "6.0.0",
+          "System.Linq.Async": "6.0.1"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Firestore.V1/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.4.0, 5.0.0)",
+          "Google.Cloud.Location": "[2.0.0, 3.0.0)",
+          "Google.LongRunning": "[3.0.0, 4.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Location/2.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.0.0, 5.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
             "related": ".pdb;.xml"
           }
         }
@@ -1744,6 +1901,22 @@
           "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
+      "System.Linq.Async/6.0.1": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
+        },
+        "compile": {
+          "ref/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.Management/7.0.2": {
         "type": "package",
         "dependencies": {
@@ -1806,6 +1979,37 @@
         "runtime": {
           "runtimes/win/lib/netcoreapp2.1/System.Security.Principal.Windows.dll": {
             "related": ".xml"
+          }
+        }
+      },
+      "System.Speech/8.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/System.Speech.dll": {}
+        },
+        "runtime": {
+          "runtimes/win/lib/net8.0/System.Speech.dll": {}
+        },
+        "build": {
+          "buildTransitive/net6.0/_._": {}
+        }
+      },
+      "WindowsInput/6.4.0": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ],
+        "contentFiles": {
+          "contentFiles/any/netcoreapp3.1/.nuget/mouse-keyboard-hook-logo.png": {
+            "buildAction": "Content",
+            "codeLanguage": "any",
+            "copyToOutput": false
           }
         }
       }
@@ -1961,6 +2165,58 @@
         },
         "runtime": {
           "lib/net6.0/Google.Apis.Core.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Firestore/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Cloud.Firestore.V1": "3.4.0",
+          "System.Collections.Immutable": "6.0.0",
+          "System.Linq.Async": "6.0.1"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Firestore.V1/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.4.0, 5.0.0)",
+          "Google.Cloud.Location": "[2.0.0, 3.0.0)",
+          "Google.LongRunning": "[3.0.0, 4.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Location/2.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.0.0, 5.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
             "related": ".pdb;.xml"
           }
         }
@@ -2612,6 +2868,22 @@
           "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
+      "System.Linq.Async/6.0.1": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
+        },
+        "compile": {
+          "ref/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.Management/7.0.2": {
         "type": "package",
         "dependencies": {
@@ -2674,6 +2946,37 @@
         "runtime": {
           "runtimes/win/lib/netcoreapp2.1/System.Security.Principal.Windows.dll": {
             "related": ".xml"
+          }
+        }
+      },
+      "System.Speech/8.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/System.Speech.dll": {}
+        },
+        "runtime": {
+          "runtimes/win/lib/net8.0/System.Speech.dll": {}
+        },
+        "build": {
+          "buildTransitive/net6.0/_._": {}
+        }
+      },
+      "WindowsInput/6.4.0": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ],
+        "contentFiles": {
+          "contentFiles/any/netcoreapp3.1/.nuget/mouse-keyboard-hook-logo.png": {
+            "buildAction": "Content",
+            "codeLanguage": "any",
+            "copyToOutput": false
           }
         }
       }
@@ -2829,6 +3132,58 @@
         },
         "runtime": {
           "lib/net6.0/Google.Apis.Core.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Firestore/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Cloud.Firestore.V1": "3.4.0",
+          "System.Collections.Immutable": "6.0.0",
+          "System.Linq.Async": "6.0.1"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Firestore.V1/3.4.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.4.0, 5.0.0)",
+          "Google.Cloud.Location": "[2.0.0, 3.0.0)",
+          "Google.LongRunning": "[3.0.0, 4.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "Google.Cloud.Location/2.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Google.Api.Gax.Grpc": "[4.0.0, 5.0.0)"
+        },
+        "compile": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Google.Cloud.Location.dll": {
             "related": ".pdb;.xml"
           }
         }
@@ -3480,6 +3835,22 @@
           "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
+      "System.Linq.Async/6.0.1": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
+        },
+        "compile": {
+          "ref/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/System.Linq.Async.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.Management/7.0.2": {
         "type": "package",
         "dependencies": {
@@ -3542,6 +3913,37 @@
         "runtime": {
           "runtimes/win/lib/netcoreapp2.1/System.Security.Principal.Windows.dll": {
             "related": ".xml"
+          }
+        }
+      },
+      "System.Speech/8.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/System.Speech.dll": {}
+        },
+        "runtime": {
+          "runtimes/win/lib/net8.0/System.Speech.dll": {}
+        },
+        "build": {
+          "buildTransitive/net6.0/_._": {}
+        }
+      },
+      "WindowsInput/6.4.0": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/WindowsInput.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ],
+        "contentFiles": {
+          "contentFiles/any/netcoreapp3.1/.nuget/mouse-keyboard-hook-logo.png": {
+            "buildAction": "Content",
+            "codeLanguage": "any",
+            "copyToOutput": false
           }
         }
       }
@@ -3777,6 +4179,63 @@
         "lib/netstandard2.0/Google.Apis.Core.dll",
         "lib/netstandard2.0/Google.Apis.Core.pdb",
         "lib/netstandard2.0/Google.Apis.Core.xml"
+      ]
+    },
+    "Google.Cloud.Firestore/3.4.0": {
+      "sha512": "rtCXjjHUgVvO2f9GDsMkgjAPW33lgk9csAAi2r3JjxoWqBhFWg4dttEHLs80YQitM5qmv67rbNcshKPbwOxsdQ==",
+      "type": "package",
+      "path": "google.cloud.firestore/3.4.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "NuGetIcon.png",
+        "google.cloud.firestore.3.4.0.nupkg.sha512",
+        "google.cloud.firestore.nuspec",
+        "lib/net462/Google.Cloud.Firestore.dll",
+        "lib/net462/Google.Cloud.Firestore.pdb",
+        "lib/net462/Google.Cloud.Firestore.xml",
+        "lib/netstandard2.1/Google.Cloud.Firestore.dll",
+        "lib/netstandard2.1/Google.Cloud.Firestore.pdb",
+        "lib/netstandard2.1/Google.Cloud.Firestore.xml"
+      ]
+    },
+    "Google.Cloud.Firestore.V1/3.4.0": {
+      "sha512": "Sub7/VtjeBKDonbqQNoCsMpxhDnYB3l9vpzKAFNIH1e/VBttD92ND+3M6MiikkiY4HKBaW8RTCiqKsGVeiBaew==",
+      "type": "package",
+      "path": "google.cloud.firestore.v1/3.4.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "NuGetIcon.png",
+        "google.cloud.firestore.v1.3.4.0.nupkg.sha512",
+        "google.cloud.firestore.v1.nuspec",
+        "lib/net462/Google.Cloud.Firestore.V1.dll",
+        "lib/net462/Google.Cloud.Firestore.V1.pdb",
+        "lib/net462/Google.Cloud.Firestore.V1.xml",
+        "lib/netstandard2.1/Google.Cloud.Firestore.V1.dll",
+        "lib/netstandard2.1/Google.Cloud.Firestore.V1.pdb",
+        "lib/netstandard2.1/Google.Cloud.Firestore.V1.xml"
+      ]
+    },
+    "Google.Cloud.Location/2.0.0": {
+      "sha512": "qxJ6dATru5XYQzuE8f3izGKPE14Zpc5mEBEROMM/FXYzMug+3ezoRktcD00l2nmMeJ7CIwWZjx9uRpDIiZTLEA==",
+      "type": "package",
+      "path": "google.cloud.location/2.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "NuGetIcon.png",
+        "google.cloud.location.2.0.0.nupkg.sha512",
+        "google.cloud.location.nuspec",
+        "lib/net462/Google.Cloud.Location.dll",
+        "lib/net462/Google.Cloud.Location.pdb",
+        "lib/net462/Google.Cloud.Location.xml",
+        "lib/netstandard2.1/Google.Cloud.Location.dll",
+        "lib/netstandard2.1/Google.Cloud.Location.pdb",
+        "lib/netstandard2.1/Google.Cloud.Location.xml"
       ]
     },
     "Google.Cloud.Speech.V1/3.9.0": {
@@ -6199,6 +6658,34 @@
         "useSharedDesignerContext.txt"
       ]
     },
+    "System.Linq.Async/6.0.1": {
+      "sha512": "0YhHcaroWpQ9UCot3Pizah7ryAzQhNvobLMSxeDIGmnXfkQn8u5owvpOH0K6EVB+z9L7u6Cc4W17Br/+jyttEQ==",
+      "type": "package",
+      "path": "system.linq.async/6.0.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Logo.png",
+        "lib/net48/System.Linq.Async.dll",
+        "lib/net48/System.Linq.Async.xml",
+        "lib/net6.0/System.Linq.Async.dll",
+        "lib/net6.0/System.Linq.Async.xml",
+        "lib/netstandard2.0/System.Linq.Async.dll",
+        "lib/netstandard2.0/System.Linq.Async.xml",
+        "lib/netstandard2.1/System.Linq.Async.dll",
+        "lib/netstandard2.1/System.Linq.Async.xml",
+        "ref/net48/System.Linq.Async.dll",
+        "ref/net48/System.Linq.Async.xml",
+        "ref/net6.0/System.Linq.Async.dll",
+        "ref/net6.0/System.Linq.Async.xml",
+        "ref/netstandard2.0/System.Linq.Async.dll",
+        "ref/netstandard2.0/System.Linq.Async.xml",
+        "ref/netstandard2.1/System.Linq.Async.dll",
+        "ref/netstandard2.1/System.Linq.Async.xml",
+        "system.linq.async.6.0.1.nupkg.sha512",
+        "system.linq.async.nuspec"
+      ]
+    },
     "System.Management/7.0.2": {
       "sha512": "/qEUN91mP/MUQmJnM5y5BdT7ZoPuVrtxnFlbJ8a3kBJGhe2wCzBfnPFtK2wTtEEcf3DMGR9J00GZZfg6HRI6yA==",
       "type": "package",
@@ -6354,16 +6841,63 @@
         "useSharedDesignerContext.txt",
         "version.txt"
       ]
+    },
+    "System.Speech/8.0.0": {
+      "sha512": "CNuiA6vb95Oe5PRjClZEBiaju31vwB8OIeCgeSBXyZL6+MS4RVVB2X/C11z0xCkooHE3Vy91nM2z76emIzR+sg==",
+      "type": "package",
+      "path": "system.speech/8.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "PACKAGE.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "buildTransitive/net6.0/_._",
+        "buildTransitive/netcoreapp2.0/System.Speech.targets",
+        "lib/net462/_._",
+        "lib/net6.0/System.Speech.dll",
+        "lib/net7.0/System.Speech.dll",
+        "lib/net8.0/System.Speech.dll",
+        "lib/netstandard2.0/System.Speech.dll",
+        "runtimes/win/lib/net6.0/System.Speech.dll",
+        "runtimes/win/lib/net7.0/System.Speech.dll",
+        "runtimes/win/lib/net8.0/System.Speech.dll",
+        "system.speech.8.0.0.nupkg.sha512",
+        "system.speech.nuspec",
+        "useSharedDesignerContext.txt"
+      ]
+    },
+    "WindowsInput/6.4.0": {
+      "sha512": "OaekrfPwfbWZAOcCP8Xmgw6cQ0eXJEqlsI4qqry9ToOf8uTXh0UdPJIeoEPMyVNX9WX+4gqJzEwXsDT7cWQI1A==",
+      "type": "package",
+      "path": "windowsinput/6.4.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.txt",
+        "content/.nuget/mouse-keyboard-hook-logo.png",
+        "contentFiles/any/net461/.nuget/mouse-keyboard-hook-logo.png",
+        "contentFiles/any/netcoreapp3.1/.nuget/mouse-keyboard-hook-logo.png",
+        "lib/net461/WindowsInput.dll",
+        "lib/netcoreapp3.1/WindowsInput.dll",
+        "mouse-keyboard-hook-logo.png",
+        "windowsinput.6.4.0.nupkg.sha512",
+        "windowsinput.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
     "net8.0-windows10.0.19041": [
       "FirebaseAdmin >= 3.4.0",
       "Google.Apis.Auth >= 1.73.0",
+      "Google.Cloud.Firestore >= 3.4.0",
       "Google.Cloud.Speech.V1 >= 3.9.0",
       "Microsoft.Windows.SDK.BuildTools >= 10.0.26100.7175",
       "Microsoft.WindowsAppSDK >= 1.8.251106002",
       "NAudio >= 2.2.1",
+      "System.Speech >= 8.0.0",
+      "WindowsInput >= 6.4.0",
       "dotenv.net >= 4.0.0"
     ]
   },
@@ -6425,6 +6959,10 @@
             "target": "Package",
             "version": "[1.73.0, )"
           },
+          "Google.Cloud.Firestore": {
+            "target": "Package",
+            "version": "[3.4.0, )"
+          },
           "Google.Cloud.Speech.V1": {
             "target": "Package",
             "version": "[3.9.0, )"
@@ -6440,6 +6978,14 @@
           "NAudio": {
             "target": "Package",
             "version": "[2.2.1, )"
+          },
+          "System.Speech": {
+            "target": "Package",
+            "version": "[8.0.0, )"
+          },
+          "WindowsInput": {
+            "target": "Package",
+            "version": "[6.4.0, )"
           },
           "dotenv.net": {
             "target": "Package",

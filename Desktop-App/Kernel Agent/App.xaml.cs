@@ -26,7 +26,7 @@ namespace Kernel_Agent
     /// </summary>
     public partial class App : Application
     {
-        private Window? _window;
+        internal Window? _window;
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -35,6 +35,11 @@ namespace Kernel_Agent
         public App()
         {
             InitializeComponent();
+        }
+
+        public Window? GetMainWindow()
+        {
+            return _window;
         }
 
         /// <summary>

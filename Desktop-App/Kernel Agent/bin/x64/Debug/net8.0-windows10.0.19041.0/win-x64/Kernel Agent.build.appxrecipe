@@ -1420,6 +1420,9 @@
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\dotenv.net\4.0.0\lib\netstandard2.1\dotenv.net.dll">
       <PackagePath>dotenv.net.dll</PackagePath>
     </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\firebaseadmin\3.4.0\lib\net6.0\FirebaseAdmin.dll">
+      <PackagePath>FirebaseAdmin.dll</PackagePath>
+    </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.api.commonprotos\2.17.0\lib\netstandard2.0\Google.Api.CommonProtos.dll">
       <PackagePath>Google.Api.CommonProtos.dll</PackagePath>
     </AppxPackagedFile>
@@ -1429,14 +1432,26 @@
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.api.gax.grpc\4.12.1\lib\netstandard2.0\Google.Api.Gax.Grpc.dll">
       <PackagePath>Google.Api.Gax.Grpc.dll</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis\1.72.0\lib\net6.0\Google.Apis.dll">
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.api.gax.rest\4.8.0\lib\netstandard2.0\Google.Api.Gax.Rest.dll">
+      <PackagePath>Google.Api.Gax.Rest.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis\1.73.0\lib\net6.0\Google.Apis.dll">
       <PackagePath>Google.Apis.dll</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.auth\1.72.0\lib\net6.0\Google.Apis.Auth.dll">
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.auth\1.73.0\lib\net6.0\Google.Apis.Auth.dll">
       <PackagePath>Google.Apis.Auth.dll</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.core\1.72.0\lib\net6.0\Google.Apis.Core.dll">
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.apis.core\1.73.0\lib\net6.0\Google.Apis.Core.dll">
       <PackagePath>Google.Apis.Core.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.firestore\3.4.0\lib\netstandard2.1\Google.Cloud.Firestore.dll">
+      <PackagePath>Google.Cloud.Firestore.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.firestore.v1\3.4.0\lib\netstandard2.1\Google.Cloud.Firestore.V1.dll">
+      <PackagePath>Google.Cloud.Firestore.V1.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.location\2.0.0\lib\netstandard2.1\Google.Cloud.Location.dll">
+      <PackagePath>Google.Cloud.Location.dll</PackagePath>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\google.cloud.speech.v1\3.9.0\lib\netstandard2.0\Google.Cloud.Speech.V1.dll">
       <PackagePath>Google.Cloud.Speech.V1.dll</PackagePath>
@@ -1582,11 +1597,20 @@
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\newtonsoft.json\13.0.4\lib\net6.0\Newtonsoft.Json.dll">
       <PackagePath>Newtonsoft.Json.dll</PackagePath>
     </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.linq.async\6.0.1\lib\net6.0\System.Linq.Async.dll">
+      <PackagePath>System.Linq.Async.dll</PackagePath>
+    </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.management\7.0.2\runtimes\win\lib\net7.0\System.Management.dll">
       <PackagePath>System.Management.dll</PackagePath>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.numerics.tensors\9.0.0\lib\net8.0\System.Numerics.Tensors.dll">
       <PackagePath>System.Numerics.Tensors.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\system.speech\8.0.0\runtimes\win\lib\net8.0\System.Speech.dll">
+      <PackagePath>System.Speech.dll</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\windowsinput\6.4.0\lib\netcoreapp3.1\WindowsInput.dll">
+      <PackagePath>WindowsInput.dll</PackagePath>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\microsoft.web.webview2\1.0.3179.45\runtimes\win-x64\native\WebView2Loader.dll">
       <PackagePath>WebView2Loader.dll</PackagePath>
@@ -1605,6 +1629,9 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.deps.json">
       <PackagePath>Kernel Agent.deps.json</PackagePath>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\windowsinput\6.4.0\contentFiles\any\netcoreapp3.1\.nuget\mouse-keyboard-hook-logo.png">
+      <PackagePath>.nuget\mouse-keyboard-hook-logo.png</PackagePath>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\Assets\LockScreenLogo.scale-200.png">
       <PackagePath>Assets\LockScreenLogo.scale-200.png</PackagePath>

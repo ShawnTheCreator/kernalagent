@@ -28,8 +28,8 @@ namespace Kernel_Agent.Services
 
         public void TypeIntoApp(string text)
         {
-            var simulator = new InputSimulator();
-            simulator.Keyboard.TextEntry(text);
+            // Use SendKeys for basic text input as fallback
+            System.Windows.Forms.SendKeys.SendWait(text);
         }
 
         public void OpenAndType(string exeName, string processName, string text)

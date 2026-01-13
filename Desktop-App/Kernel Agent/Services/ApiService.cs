@@ -11,8 +11,9 @@ namespace Kernel_Agent.Services
     public class ApiService
     {
         private static readonly string API_BASE_URL = 
-            Environment.GetEnvironmentVariable("API_BASE_URL") ?? "https://kernal-agent-backend.onrender.com/api"; // Production backend
-        private static readonly string BASE_URL = "https://kernal-agent-brain.onrender.com/"; // Python microservice
+            (Environment.GetEnvironmentVariable("API_BASE_URL") ?? "https://kernal-agent-backend.onrender.com/api").TrimEnd('/') + "/";
+        
+        private static readonly string BASE_URL = "https://kernal-agent-brain.onrender.com/"; // Python microservice - Not used directly anymore?
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
 
@@ -84,7 +85,7 @@ namespace Kernel_Agent.Services
                 var json = JsonSerializer.Serialize(request);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient!.PostAsync("/auth/login", content);
+                var response = await _httpClient!.PostAsync("auth/login", content);
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -124,7 +125,7 @@ namespace Kernel_Agent.Services
                 var json = JsonSerializer.Serialize(request);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient!.PostAsync("/auth/signup", content);
+                var response = await _httpClient!.PostAsync("auth/signup", content);
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -159,6 +160,23 @@ namespace Kernel_Agent.Services
         public async Task LogoutAsync()
         {
             await ClearAuthTokenAsync();
+        }
+
+        public async Task<UserDto?> GetCurrentUserAsync()
+        {
+            return await GetAsync<UserDto>("auth/me");
+        }
+
+        public async Task<string?> AskAgentAsync(string message)
+        {
+            var data = new { Message = message };
+            // This endpoint likely sits on the python microservice or routed via dashboard?
+            // "The App sends an HTTPS POST request... It includes your Firebase ID Token... Forwarding: It then sends..."
+            // "The C# Backend receives the command first." 
+            // I added `agent/command` in SendCommandAsync.
+            // This `ask-agent` seems legacy? Leaving it but fixing slash.
+            var response = await PostAsync<string>("ask-agent", data);
+            return response;
         }
 
         public async Task<T?> GetAsync<T>(string endpoint)
@@ -225,6 +243,76 @@ namespace Kernel_Agent.Services
                 return default(T);
             }
         }
+        public async Task<bool> CheckLoginStatusAsync(string deviceId)
+        {
+            try
+            {
+                var url = $"auth/poll?deviceId={deviceId}";
+                System.Diagnostics.Debug.WriteLine($"[API] Polling: {API_BASE_URL}{url}");
+                
+                var response = await _httpClient!.GetAsync(url);
+                
+                System.Diagnostics.Debug.WriteLine($"[API] Poll response status: {response.StatusCode}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] Poll response body: {responseJson}");
+                    
+                    var authResponse = JsonSerializer.Deserialize<AuthResponse>(responseJson, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (authResponse != null && !string.IsNullOrEmpty(authResponse.Token))
+                    {
+                        System.Diagnostics.Debug.WriteLine("[API] Token received! Saving...");
+                        await SetAuthTokenAsync(authResponse.Token);
+                        return true;
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("[API] Response OK but no token in body");
+                    }
+                }
+                else
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] Poll failed: {errorBody}");
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] Poll error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<string?> SendCommandAsync(string commandText)
+        {
+            try
+            {
+                // Matches "The App sends an HTTPS POST request... It includes your Firebase ID Token"
+                // The token is in the Authorization header (handled by PostAsync helper).
+                var data = new 
+                { 
+                    Command = commandText,
+                    Timestamp = DateTime.UtcNow
+                };
+
+                // Using PostAsync helper which adds the Bearer Token
+                var response = await PostAsync<JsonElement>("agent/command", data);
+                
+                // Assuming response might contain a status or message
+                return response.ToString();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Command error: {ex.Message}");
+                return null;
+            }
+        }
     }
 
     public class AuthResponse
@@ -238,12 +326,6 @@ namespace Kernel_Agent.Services
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public async Task<string?> AskAgentAsync(string message)
-        {
-            var data = new { Message = message };
-            var response = await PostAsync<string>("/ask-agent", data);
-            return response;
-        }
     }
 }
 

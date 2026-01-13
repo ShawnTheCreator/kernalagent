@@ -1,6 +1,10 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Threading.Tasks;
+using System.IO;
+using Google.Cloud.Speech.V1;
+using NAudio.Wave;
 
 namespace Kernel_Agent
 {
@@ -37,30 +41,38 @@ namespace Kernel_Agent
 
         private async Task<string> RecognizeSpeechFromMicAsync()
         {
-            // Uses NAudio to record and Google.Cloud.Speech.V1 to transcribe
-            // This is a simplified version; for production, handle cleanup and errors robustly
-            var speech = SpeechClient.Create();
-            var config = new RecognitionConfig
+            try
             {
-                Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
-                SampleRateHertz = 16000,
-                LanguageCode = "en-US"
-            };
-            using (var ms = new MemoryStream())
-            using (var waveIn = new WaveInEvent())
-            {
-                waveIn.WaveFormat = new WaveFormat(16000, 1);
-                waveIn.DataAvailable += (s, a) => ms.Write(a.Buffer, 0, a.BytesRecorded);
-                waveIn.StartRecording();
-                await Task.Delay(4000); // Record for 4 seconds (adjust as needed)
-                waveIn.StopRecording();
-                ms.Position = 0;
-                var audio = RecognitionAudio.FromStream(ms);
-                var response = speech.Recognize(config, audio);
-                foreach (var result in response.Results)
+                // Uses NAudio to record and Google.Cloud.Speech.V1 to transcribe
+                // This is a simplified version; for production, handle cleanup and errors robustly
+                var speech = await SpeechClient.CreateAsync();
+                var config = new RecognitionConfig
                 {
-                    return result.Alternatives[0].Transcript;
+                    Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
+                    SampleRateHertz = 16000,
+                    LanguageCode = "en-US"
+                };
+                using (var ms = new MemoryStream())
+                using (var waveIn = new WaveInEvent())
+                {
+                    waveIn.WaveFormat = new WaveFormat(16000, 1);
+                    waveIn.DataAvailable += (s, a) => ms.Write(a.Buffer, 0, a.BytesRecorded);
+                    waveIn.StartRecording();
+                    await Task.Delay(4000); // Record for 4 seconds (adjust as needed)
+                    waveIn.StopRecording();
+                    ms.Position = 0;
+                    var audio = RecognitionAudio.FromStream(ms);
+                    var response = await speech.RecognizeAsync(config, audio);
+                    foreach (var result in response.Results)
+                    {
+                        return result.Alternatives[0].Transcript;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Speech recognition error: {ex.Message}");
+                return $"Error: {ex.Message}";
             }
             return string.Empty;
         }
