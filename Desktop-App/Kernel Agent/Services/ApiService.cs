@@ -275,10 +275,17 @@ namespace Kernel_Agent.Services
                         System.Diagnostics.Debug.WriteLine("[API] Response OK but no token in body");
                     }
                 }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // 404 with "Login pending" is expected - not an error
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] Login pending (404): {responseBody}");
+                    return false; // Keep polling
+                }
                 else
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"[API] Poll failed: {errorBody}");
+                    System.Diagnostics.Debug.WriteLine($"[API] Poll failed with status {response.StatusCode}: {errorBody}");
                 }
                 return false;
             }
