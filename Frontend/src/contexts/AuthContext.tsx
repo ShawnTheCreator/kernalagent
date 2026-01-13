@@ -40,11 +40,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // API base URL for backend
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+    // Sync user to Firestore via backend API
+    const syncUserToFirestore = async (user: User) => {
+        try {
+            const token = await user.getIdToken();
+            const response = await fetch(`${API_BASE}/me`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                console.log('[AUTH] User synced to Firestore successfully');
+            } else {
+                console.warn('[AUTH] Failed to sync user to Firestore:', response.status);
+            }
+        } catch (error) {
+            console.warn('[AUTH] Error syncing user to Firestore:', error);
+            // Don't throw - this is a background sync, not critical for auth flow
+        }
+    };
+
     // Listen to Firebase auth state changes
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
             setLoading(false);
+
+            // Sync user to Firestore backend when logged in
+            if (user) {
+                syncUserToFirestore(user);
+            }
         });
 
         // Cleanup subscription

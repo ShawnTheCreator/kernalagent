@@ -93,11 +93,7 @@ def analyze_frame(
     user_intent: str,
     previous_action: Optional[dict] = None,
     previous_image: Optional[str] = None,
-<<<<<<< HEAD
-    session_id: Optional[str] = None
-=======
     memory: Optional[AgentMemory] = None
->>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
 ) -> dict:
     """
     Analyzes a screenshot and returns the next action to take.
@@ -150,11 +146,7 @@ def analyze_frame(
             vision_signal=vision_signal,
             user_intent=user_intent,
             last_action=previous_action,
-<<<<<<< HEAD
-            session_id=session_id
-=======
             memory=memory
->>>>>>> 075af4c8af26a65bd380c3f04c26ccead1e287a8
         )
         print(f"[DECISION] Strategy: {decision['strategy']} | Confidence: {decision['confidence']:.0%}")
         
