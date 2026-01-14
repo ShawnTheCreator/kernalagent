@@ -301,7 +301,7 @@ namespace Kernel_Agent.Services
             try
             {
                 // ========================================
-                // FIXED: Call Python Brain backend directly
+                // Call Python Brain backend
                 // ========================================
                 var pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan";
                 
@@ -342,30 +342,100 @@ namespace Kernel_Agent.Services
                             
                             switch (action)
                             {
+                                // ===== APP CONTROL =====
                                 case "open_app":
                                     if (step.TryGetProperty("target", out JsonElement targetEl))
                                     {
-                                        string target = targetEl.GetString() ?? "";
-                                        automation.OpenApplication(target);
+                                        automation.OpenApplication(targetEl.GetString() ?? "");
                                         await Task.Delay(2000);
                                     }
                                     break;
                                     
+                                case "close_app":
+                                    if (step.TryGetProperty("target", out JsonElement closeTargetEl))
+                                    {
+                                        automation.CloseApplication(closeTargetEl.GetString() ?? "");
+                                    }
+                                    break;
+                                    
+                                // ===== TEXT INPUT =====
                                 case "type_text":
                                     if (step.TryGetProperty("content", out JsonElement contentEl))
                                     {
-                                        string text = contentEl.GetString() ?? "";
-                                        automation.TypeIntoApp(text);
+                                        automation.TypeIntoApp(contentEl.GetString() ?? "");
                                     }
                                     break;
                                     
                                 case "navigate":
                                     if (step.TryGetProperty("url", out JsonElement urlEl))
                                     {
-                                        string url = urlEl.GetString() ?? "";
-                                        automation.TypeIntoApp(url + "\n");
+                                        automation.TypeIntoApp((urlEl.GetString() ?? "") + "\n");
                                         await Task.Delay(1500);
                                     }
+                                    break;
+                                    
+                                // ===== VOLUME CONTROL =====
+                                case "volume_up":
+                                    int upAmount = 5;
+                                    if (step.TryGetProperty("amount", out JsonElement upAmountEl))
+                                        upAmount = upAmountEl.GetInt32() / 2; // Divide by 2 since each press is ~2%
+                                    automation.VolumeUp(upAmount);
+                                    break;
+                                    
+                                case "volume_down":
+                                    int downAmount = 5;
+                                    if (step.TryGetProperty("amount", out JsonElement downAmountEl))
+                                        downAmount = downAmountEl.GetInt32() / 2;
+                                    automation.VolumeDown(downAmount);
+                                    break;
+                                    
+                                case "volume_mute":
+                                    automation.VolumeMute();
+                                    break;
+                                    
+                                case "volume_set":
+                                    // For max volume, press up 50 times
+                                    if (step.TryGetProperty("amount", out JsonElement setAmountEl) && setAmountEl.GetInt32() == 100)
+                                        automation.VolumeUp(50);
+                                    break;
+                                    
+                                // ===== WINDOW MANAGEMENT =====
+                                case "minimize_window":
+                                    automation.MinimizeWindow();
+                                    break;
+                                    
+                                case "maximize_window":
+                                    automation.MaximizeWindow();
+                                    break;
+                                    
+                                case "restore_window":
+                                    automation.RestoreWindow();
+                                    break;
+                                    
+                                // ===== SYSTEM COMMANDS =====
+                                case "lock_screen":
+                                    automation.LockScreen();
+                                    break;
+                                    
+                                case "sleep":
+                                    automation.Sleep();
+                                    break;
+                                    
+                                case "shutdown":
+                                    automation.Shutdown();
+                                    break;
+                                    
+                                case "restart":
+                                    automation.Restart();
+                                    break;
+                                    
+                                // ===== SCREENSHOT =====
+                                case "screenshot":
+                                    automation.TakeScreenshot();
+                                    break;
+                                    
+                                default:
+                                    System.Diagnostics.Debug.WriteLine($"[COMMAND] Unknown action: {action}");
                                     break;
                             }
                         }
@@ -377,6 +447,7 @@ namespace Kernel_Agent.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[COMMAND] Error: {ex.Message}");
+                return null;
             }
         }
     }

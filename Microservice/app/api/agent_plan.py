@@ -5,13 +5,13 @@ This provides an HTTP endpoint that the C# Desktop Agent can call
 using its existing HTTP polling approach (VoiceToActionService.cs).
 
 Maps user commands to the new v1.0 executor schema.
+Supports flexible/fuzzy command matching for typos.
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import uuid
-
-from app.executor import CommandGenerator, Target, Command, ActionType
+import re
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
@@ -31,7 +31,8 @@ class ActionStep(BaseModel):
     content: Optional[str] = None
     x: Optional[int] = None
     y: Optional[int] = None
-    label: Optional[int] = None
+    label: Optional[str] = None
+    amount: Optional[int] = None  # For volume control
 
 
 class PlanResponse(BaseModel):
@@ -41,117 +42,207 @@ class PlanResponse(BaseModel):
     schema_version: str = "1.0.0"
 
 
-# Simple intent-to-action mappings for common commands
-INTENT_PATTERNS = {
-    "open notepad": [
-        ActionStep(action="open_app", target="notepad.exe")
-    ],
-    "open chrome": [
-        ActionStep(action="open_app", target="chrome.exe")
-    ],
-    "open browser": [
-        ActionStep(action="open_app", target="chrome.exe")
-    ],
-    "open calculator": [
-        ActionStep(action="open_app", target="calc.exe")
-    ],
-    "open explorer": [
-        ActionStep(action="open_app", target="explorer.exe")
-    ],
-    "open word": [
-        ActionStep(action="open_app", target="winword.exe")
-    ],
-    "open excel": [
-        ActionStep(action="open_app", target="excel.exe")
-    ],
+# App name variations and typo tolerance
+APP_ALIASES = {
+    # Notepad variations
+    "notepad": "notepad.exe", "notpad": "notepad.exe", "note pad": "notepad.exe",
+    "notepadd": "notepad.exe", "text editor": "notepad.exe",
+    
+    # Chrome variations
+    "chrome": "chrome.exe", "chrom": "chrome.exe", "crome": "chrome.exe",
+    "google chrome": "chrome.exe", "googlechrome": "chrome.exe", "browser": "chrome.exe",
+    "web browser": "chrome.exe", "internet": "chrome.exe",
+    
+    # Edge variations
+    "edge": "msedge.exe", "microsoft edge": "msedge.exe", "msedge": "msedge.exe",
+    
+    # Firefox variations
+    "firefox": "firefox.exe", "fire fox": "firefox.exe", "mozila": "firefox.exe",
+    "mozilla": "firefox.exe",
+    
+    # Calculator variations
+    "calculator": "calc.exe", "calc": "calc.exe", "calulator": "calc.exe",
+    "calculater": "calc.exe", "maths": "calc.exe",
+    
+    # Explorer variations
+    "explorer": "explorer.exe", "file explorer": "explorer.exe", "files": "explorer.exe",
+    "file manager": "explorer.exe", "folder": "explorer.exe", "folders": "explorer.exe",
+    
+    # Office apps
+    "word": "winword.exe", "microsoft word": "winword.exe", "ms word": "winword.exe",
+    "excel": "excel.exe", "microsoft excel": "excel.exe", "spreadsheet": "excel.exe",
+    "powerpoint": "powerpnt.exe", "power point": "powerpnt.exe", "ppt": "powerpnt.exe",
+    "outlook": "outlook.exe", "mail": "outlook.exe", "email": "outlook.exe",
+    
+    # VSCode variations
+    "vscode": "code.exe", "vs code": "code.exe", "visual studio code": "code.exe",
+    "code": "code.exe", "vsc": "code.exe",
+    
+    # Terminal variations
+    "terminal": "wt.exe", "cmd": "cmd.exe", "command prompt": "cmd.exe",
+    "powershell": "powershell.exe", "shell": "wt.exe",
+    
+    # Other apps
+    "paint": "mspaint.exe", "ms paint": "mspaint.exe", "drawing": "mspaint.exe",
+    "spotify": "spotify.exe", "music": "spotify.exe",
+    "discord": "discord.exe", "teams": "teams.exe", "microsoft teams": "teams.exe",
+    "slack": "slack.exe", "zoom": "zoom.exe", "skype": "skype.exe",
+    "settings": "ms-settings:", "control panel": "control.exe",
+    "task manager": "taskmgr.exe", "taskmanager": "taskmgr.exe",
 }
+
+
+def fuzzy_match(text: str, patterns: list) -> bool:
+    """Check if text loosely matches any pattern (typo tolerant)."""
+    text = text.lower().strip()
+    for pattern in patterns:
+        pattern = pattern.lower()
+        # Exact match
+        if pattern in text:
+            return True
+        # Check if most characters match (typo tolerance)
+        if len(pattern) > 3 and text:
+            matches = sum(1 for c in pattern if c in text)
+            if matches >= len(pattern) * 0.7:  # 70% match
+                return True
+    return False
+
+
+def get_app_exe(app_name: str) -> str:
+    """Get executable name for app, with fuzzy matching."""
+    app_lower = app_name.lower().strip()
+    
+    # Direct match
+    if app_lower in APP_ALIASES:
+        return APP_ALIASES[app_lower]
+    
+    # Fuzzy match - find best matching alias
+    for alias, exe in APP_ALIASES.items():
+        if alias in app_lower or app_lower in alias:
+            return exe
+        # Check character overlap for typos
+        if len(app_lower) > 3 and len(alias) > 3:
+            matches = sum(1 for c in app_lower if c in alias)
+            if matches >= len(app_lower) * 0.7:
+                return exe
+    
+    # Default: append .exe
+    return f"{app_lower}.exe"
 
 
 def parse_command(command: str) -> List[ActionStep]:
     """
     Parse user command into action steps.
     
-    Supports:
-    - "open [app]" - Opens an application
-    - "type [text]" - Types text  
-    - "search [query]" - Searches for something
-    - "go to [url]" - Navigates to URL
+    Supports flexible matching with typos:
+    - "open X" / "launch X" / "start X" - Opens an application
+    - "close X" / "quit X" / "exit X" / "kill X" - Closes an application
+    - "type X" / "write X" - Types text
+    - "search X" / "google X" - Searches for something
+    - "go to X" / "navigate X" / "open X" (URL) - Navigates to URL
+    - "volume up/down/mute" - Volume control
+    - "minimize/maximize/restore" - Window management
+    - "lock" / "sleep" / "shutdown" - System commands
     """
-    command_lower = command.lower().strip()
+    cmd = command.lower().strip()
+    words = cmd.split()
     
-    # Check exact matches first
-    if command_lower in INTENT_PATTERNS:
-        return INTENT_PATTERNS[command_lower]
+    # ===== CLOSE APP =====
+    close_patterns = ["close", "quit", "exit", "kill", "stop", "end", "terminate"]
+    if words and words[0] in close_patterns:
+        app_name = " ".join(words[1:]) if len(words) > 1 else ""
+        if app_name:
+            exe = get_app_exe(app_name).replace(".exe", "")
+            return [ActionStep(action="close_app", target=exe)]
     
-    # Parse "open X" commands
-    if command_lower.startswith("open "):
-        app_name = command[5:].strip()
-        # Map common names to executables
-        app_mapping = {
-            "notepad": "notepad.exe",
-            "chrome": "chrome.exe",
-            "browser": "chrome.exe",
-            "firefox": "firefox.exe",
-            "edge": "msedge.exe",
-            "calculator": "calc.exe",
-            "calc": "calc.exe",
-            "explorer": "explorer.exe",
-            "word": "winword.exe",
-            "excel": "excel.exe",
-            "powerpoint": "powerpnt.exe",
-            "vscode": "code.exe",
-            "code": "code.exe",
-            "terminal": "wt.exe",
-            "cmd": "cmd.exe",
-            "paint": "mspaint.exe",
-        }
-        exe = app_mapping.get(app_name.lower(), f"{app_name}.exe")
-        return [ActionStep(action="open_app", target=exe)]
+    # ===== VOLUME CONTROL =====
+    if fuzzy_match(cmd, ["volume up", "turn up volume", "louder", "increase volume", "vol up"]):
+        return [ActionStep(action="volume_up", amount=10)]
+    if fuzzy_match(cmd, ["volume down", "turn down volume", "quieter", "decrease volume", "vol down", "lower volume"]):
+        return [ActionStep(action="volume_down", amount=10)]
+    if fuzzy_match(cmd, ["mute", "unmute", "toggle mute", "silence"]):
+        return [ActionStep(action="volume_mute")]
+    if fuzzy_match(cmd, ["max volume", "full volume", "maximum volume"]):
+        return [ActionStep(action="volume_set", amount=100)]
     
-    # Parse "type X" commands
-    if command_lower.startswith("type "):
-        text = command[5:].strip()
+    # ===== WINDOW MANAGEMENT =====
+    if fuzzy_match(cmd, ["minimize", "minimise", "min window"]):
+        return [ActionStep(action="minimize_window")]
+    if fuzzy_match(cmd, ["maximize", "maximise", "max window", "fullscreen"]):
+        return [ActionStep(action="maximize_window")]
+    if fuzzy_match(cmd, ["restore window", "restore"]):
+        return [ActionStep(action="restore_window")]
+    
+    # ===== SYSTEM COMMANDS =====
+    if fuzzy_match(cmd, ["lock", "lock screen", "lock computer", "lock pc"]):
+        return [ActionStep(action="lock_screen")]
+    if fuzzy_match(cmd, ["sleep", "hibernate", "sleep mode"]):
+        return [ActionStep(action="sleep")]
+    if fuzzy_match(cmd, ["shutdown", "shut down", "power off", "turn off"]):
+        return [ActionStep(action="shutdown")]
+    if fuzzy_match(cmd, ["restart", "reboot"]):
+        return [ActionStep(action="restart")]
+    
+    # ===== SCREENSHOT =====
+    if fuzzy_match(cmd, ["screenshot", "screen shot", "capture screen", "print screen", "take screenshot"]):
+        return [ActionStep(action="screenshot")]
+    
+    # ===== OPEN APP =====
+    open_patterns = ["open", "launch", "start", "run"]
+    if words and words[0] in open_patterns:
+        rest = " ".join(words[1:])
+        # Check if it's a URL
+        if rest.startswith("http") or "." in rest and "/" not in rest[:10]:
+            url = rest if rest.startswith("http") else f"https://{rest}"
+            return [
+                ActionStep(action="open_app", target="chrome.exe"),
+                ActionStep(action="navigate", url=url)
+            ]
+        # It's an app
+        if rest:
+            exe = get_app_exe(rest)
+            return [ActionStep(action="open_app", target=exe)]
+    
+    # ===== TYPE TEXT =====
+    type_patterns = ["type", "write", "enter", "input"]
+    if words and words[0] in type_patterns:
+        text = " ".join(words[1:])
         return [ActionStep(action="type_text", content=text)]
     
-    # Parse "search X" or "search for X" commands
-    if command_lower.startswith("search for "):
+    # ===== SEARCH =====
+    if cmd.startswith("search for "):
         query = command[11:].strip()
         return [
             ActionStep(action="open_app", target="chrome.exe"),
             ActionStep(action="navigate", url=f"https://www.google.com/search?q={query}")
         ]
-    if command_lower.startswith("search "):
-        query = command[7:].strip()
+    if cmd.startswith("search ") or cmd.startswith("google "):
+        query = " ".join(words[1:])
         return [
             ActionStep(action="open_app", target="chrome.exe"),
             ActionStep(action="navigate", url=f"https://www.google.com/search?q={query}")
         ]
     
-    # Parse "go to X" or "navigate to X" commands
-    if command_lower.startswith("go to "):
-        url = command[6:].strip()
-        if not url.startswith("http"):
-            url = f"https://{url}"
-        return [
-            ActionStep(action="open_app", target="chrome.exe"),
-            ActionStep(action="navigate", url=url)
-        ]
-    if command_lower.startswith("navigate to "):
-        url = command[12:].strip()
-        if not url.startswith("http"):
-            url = f"https://{url}"
-        return [
-            ActionStep(action="open_app", target="chrome.exe"),
-            ActionStep(action="navigate", url=url)
-        ]
+    # ===== NAVIGATE =====
+    nav_patterns = ["go to", "navigate to", "visit", "browse to"]
+    for pattern in nav_patterns:
+        if cmd.startswith(pattern):
+            url = cmd[len(pattern):].strip()
+            if not url.startswith("http"):
+                url = f"https://{url}"
+            return [
+                ActionStep(action="open_app", target="chrome.exe"),
+                ActionStep(action="navigate", url=url)
+            ]
     
-    # Parse "click X" commands (placeholder - needs coordinates)
-    if command_lower.startswith("click "):
+    # ===== CLICK (placeholder) =====
+    if cmd.startswith("click "):
         target = command[6:].strip()
         return [ActionStep(action="click", target=target)]
     
-    # Default: try to open as app
-    return [ActionStep(action="open_app", target=f"{command_lower}.exe")]
+    # ===== DEFAULT: Try as app name =====
+    exe = get_app_exe(cmd)
+    return [ActionStep(action="open_app", target=exe)]
 
 
 @router.post("/plan", response_model=PlanResponse)
@@ -187,3 +278,4 @@ async def get_action_plan(request: PlanRequest):
 async def agent_health():
     """Health check for agent API."""
     return {"status": "ready", "version": "1.0.0"}
+
