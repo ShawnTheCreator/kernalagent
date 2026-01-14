@@ -411,6 +411,29 @@ namespace Kernel_Agent.Services
                                 case "restore_window":
                                     automation.RestoreWindow();
                                     break;
+                                
+                                case "alt_tab":
+                                    automation.AltTab();
+                                    break;
+                                    
+                                case "show_desktop":
+                                    automation.ShowDesktop();
+                                    break;
+                                
+                                // ===== KEYBOARD =====
+                                case "press_key":
+                                    if (step.TryGetProperty("content", out JsonElement keyEl))
+                                    {
+                                        automation.PressKey(keyEl.GetString() ?? "");
+                                    }
+                                    break;
+                                    
+                                case "hotkey":
+                                    if (step.TryGetProperty("content", out JsonElement hotkeyEl))
+                                    {
+                                        automation.Hotkey(hotkeyEl.GetString() ?? "");
+                                    }
+                                    break;
                                     
                                 // ===== SYSTEM COMMANDS =====
                                 case "lock_screen":
