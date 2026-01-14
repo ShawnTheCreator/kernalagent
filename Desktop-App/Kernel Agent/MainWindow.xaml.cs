@@ -123,6 +123,8 @@ namespace Kernel_Agent
 
         private async Task ShowUserProfileAsync()
         {
+            System.Diagnostics.Debug.WriteLine("[UI] ShowUserProfileAsync called");
+            
             try
             {
                 var user = await ApiService.Instance.GetCurrentUserAsync();
@@ -131,6 +133,7 @@ namespace Kernel_Agent
                 {
                     if (user != null)
                     {
+                        System.Diagnostics.Debug.WriteLine($"[UI] User loaded: {user.Name}");
                         UserNameText.Text = user.Name;
                         // Set profile picture if available
                         if (!string.IsNullOrEmpty(user.Email))
@@ -138,29 +141,54 @@ namespace Kernel_Agent
                             ProfilePicture.DisplayName = user.Name;
                             ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
                         }
-                        ShowProfileSection();
-
-                        // Start Listening to Firestore "Brain"
-                        var projectId = Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT") ?? "kernel-agent-brain";
-                        if (_firestoreListener == null)
-                        {
-                            var sessionId = user.Id.ToString();
-                            _firestoreListener = new FirestoreRealtimeListener(projectId, sessionId, OnMonologueUpdate);
-                        }
                     }
                     else
                     {
-                        // Token might be valid but profile failed? fallback
-                        // ShowLoginButton(); // Optional: decide if we want to kick them out or retry
+                        System.Diagnostics.Debug.WriteLine("[UI] User is null, using default name");
+                        UserNameText.Text = "User";
+                        ProfilePicture.Initials = "U";
+                    }
+                    
+                    // Always show profile section after successful login
+                    System.Diagnostics.Debug.WriteLine("[UI] Showing profile section");
+                    ShowProfileSection();
+
+                    // Start Listening to Firestore "Brain" - wrapped in try-catch to prevent credential errors
+                    try
+                    {
+                        var projectId = Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT") ?? "kernel-agent-brain";
+                        var credentialsPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+                        
+                        // Only create listener if credentials are configured
+                        if (!string.IsNullOrEmpty(credentialsPath) && System.IO.File.Exists(credentialsPath) && _firestoreListener == null)
+                        {
+                            var sessionId = user?.Id.ToString() ?? "default";
+                            _firestoreListener = new FirestoreRealtimeListener(projectId, sessionId, OnMonologueUpdate);
+                            System.Diagnostics.Debug.WriteLine("[UI] Firestore listener started");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine("[UI] Firestore listener skipped - credentials not configured");
+                        }
+                    }
+                    catch (Exception fsEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[UI] Firestore listener failed: {fsEx.Message}");
+                        // Don't crash the app - continue without real-time updates
                     }
                 });
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[UI] Error loading user profile: {ex.Message}");
+                
+                // Even if we can't load user details, still show the main interface
                 this.DispatcherQueue.TryEnqueue(() =>
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error loading user profile: {ex.Message}");
-                    ShowLoginButton();
+                    System.Diagnostics.Debug.WriteLine("[UI] Showing profile section despite error");
+                    UserNameText.Text = "User";
+                    ProfilePicture.Initials = "U";
+                    ShowProfileSection();
                 });
             }
         }
@@ -287,27 +315,61 @@ namespace Kernel_Agent
                 
                 if (success)
                 {
-                    System.Diagnostics.Debug.WriteLine("[AUTH] Login detected! Showing user profile...");
+                    System.Diagnostics.Debug.WriteLine("[AUTH] Login detected! Switching to main interface...");
                     
-                    // Update status before switching
+                    // IMMEDIATELY switch to main interface on UI thread
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
-                        if (LoadingStatusText != null)
-                        {
-                            LoadingStatusText.Text = "Login successful! Loading...";
-                        }
-                    });
-
-                    await ShowUserProfileAsync();
-                    
-                    // Hide loading overlay
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
+                        System.Diagnostics.Debug.WriteLine("[AUTH] Hiding loading overlay and login screen...");
+                        
+                        // Hide loading overlay
                         if (LoginLoadingOverlay != null)
                         {
                             LoginLoadingOverlay.Visibility = Visibility.Collapsed;
                         }
+                        
+                        // Hide login overlay, show main navigation
+                        if (LoginOverlay != null) 
+                        {
+                            LoginOverlay.Visibility = Visibility.Collapsed;
+                            System.Diagnostics.Debug.WriteLine("[AUTH] LoginOverlay hidden");
+                        }
+                        if (NavView != null) 
+                        {
+                            NavView.Visibility = Visibility.Visible;
+                            System.Diagnostics.Debug.WriteLine("[AUTH] NavView shown");
+                        }
+                        
+                        // Set default user info
+                        if (UserNameText != null) UserNameText.Text = "User";
+                        if (ProfilePicture != null) ProfilePicture.Initials = "U";
+                        if (LoginButton != null) LoginButton.Visibility = Visibility.Collapsed;
+                        if (ProfileSection != null) ProfileSection.Visibility = Visibility.Visible;
+                        
+                        System.Diagnostics.Debug.WriteLine("[AUTH] Main interface activated!");
                     });
+                    
+                    // Load user details in background (non-blocking)
+                    _ = Task.Run(async () => {
+                        try
+                        {
+                            var user = await ApiService.Instance.GetCurrentUserAsync();
+                            if (user != null)
+                            {
+                                this.DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    UserNameText.Text = user.Name;
+                                    ProfilePicture.DisplayName = user.Name;
+                                    ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
+                                });
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[AUTH] Background user load failed: {ex.Message}");
+                        }
+                    });
+                    
                     break;
                 }
             }

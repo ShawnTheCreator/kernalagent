@@ -26,7 +26,7 @@
             </StackPanel>
             
             <!-- Profile Section -->
-            <StackPanel x:ConnectionId='17' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" Visibility="Collapsed">
+            <StackPanel x:ConnectionId='17' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,140,0" Visibility="Collapsed">
                 <PersonPicture x:ConnectionId='19' x:Name="ProfilePicture" Width="32" Height="32" Margin="0,0,8,0"/>
                 <TextBlock x:ConnectionId='20' x:Name="UserNameText" Text="User" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <Button x:ConnectionId='21' x:Name="ProfileButton" Background="Transparent" BorderThickness="0" Padding="8,4">
