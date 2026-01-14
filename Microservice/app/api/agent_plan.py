@@ -217,12 +217,12 @@ def parse_command(command: str) -> List[ActionStep]:
     if cmd in ["max volume", "full volume"]:
         return [ActionStep(action="volume_set", amount=100)]
     
-    # Window - exact keywords only
-    if cmd in ["minimize", "minimise", "min"]:
+    # Window - with variations
+    if cmd in ["minimize", "minimise", "min", "minimize window", "minimize this window", "minimize this"]:
         return [ActionStep(action="minimize_window")]
-    if cmd in ["maximize", "maximise", "max", "fullscreen"]:
+    if cmd in ["maximize", "maximise", "max", "fullscreen", "maximize window", "maximize this window", "maximize this"]:
         return [ActionStep(action="maximize_window")]
-    if cmd in ["restore", "restore window"]:
+    if cmd in ["restore", "restore window", "restore this window"]:
         return [ActionStep(action="restore_window")]
     
     # System - exact keywords only
