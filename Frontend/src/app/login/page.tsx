@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Github, AlertCircle } from 'lucide-react';
@@ -14,7 +14,7 @@ interface FormErrors {
     general?: string;
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const deviceId = searchParams.get('deviceId');
@@ -279,5 +279,23 @@ export default function LoginPage() {
                 </p>
             </div>
         </AuthLayout>
+    );
+}
+
+// Loading fallback for Suspense
+function LoginPageLoading() {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-black">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+        </div>
+    );
+}
+
+// Default export wrapped in Suspense for useSearchParams
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<LoginPageLoading />}>
+            <LoginPageContent />
+        </Suspense>
     );
 }

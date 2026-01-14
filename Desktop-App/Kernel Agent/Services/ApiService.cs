@@ -300,24 +300,83 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                // Matches "The App sends an HTTPS POST request... It includes your Firebase ID Token"
-                // The token is in the Authorization header (handled by PostAsync helper).
-                var data = new 
-                { 
-                    Command = commandText,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                // Using PostAsync helper which adds the Bearer Token
-                var response = await PostAsync<JsonElement>("agent/command", data);
+                // ========================================
+                // FIXED: Call Python Brain backend directly
+                // ========================================
+                var pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan";
                 
-                // Assuming response might contain a status or message
-                return response.ToString();
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(30);
+                
+                var requestBody = new { command = commandText };
+                var json = JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                
+                System.Diagnostics.Debug.WriteLine($"[COMMAND] Sending to Python: {commandText}");
+                
+                var response = await client.PostAsync(pythonBackendUrl, content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[COMMAND] Error: {response.StatusCode}");
+                    return null;
+                }
+                
+                var responseJson = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[COMMAND] Response: {responseJson}");
+                
+                // Parse and execute the action steps
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+                
+                if (root.TryGetProperty("steps", out JsonElement stepsElement))
+                {
+                    var automation = new WindowsAutomation();
+                    
+                    foreach (var step in stepsElement.EnumerateArray())
+                    {
+                        if (step.TryGetProperty("action", out JsonElement actionElement))
+                        {
+                            string action = actionElement.GetString() ?? "";
+                            System.Diagnostics.Debug.WriteLine($"[COMMAND] Executing: {action}");
+                            
+                            switch (action)
+                            {
+                                case "open_app":
+                                    if (step.TryGetProperty("target", out JsonElement targetEl))
+                                    {
+                                        string target = targetEl.GetString() ?? "";
+                                        automation.OpenApplication(target);
+                                        await Task.Delay(2000);
+                                    }
+                                    break;
+                                    
+                                case "type_text":
+                                    if (step.TryGetProperty("content", out JsonElement contentEl))
+                                    {
+                                        string text = contentEl.GetString() ?? "";
+                                        automation.TypeIntoApp(text);
+                                    }
+                                    break;
+                                    
+                                case "navigate":
+                                    if (step.TryGetProperty("url", out JsonElement urlEl))
+                                    {
+                                        string url = urlEl.GetString() ?? "";
+                                        automation.TypeIntoApp(url + "\n");
+                                        await Task.Delay(1500);
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                }
+                
+                return responseJson;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Command error: {ex.Message}");
-                return null;
+                System.Diagnostics.Debug.WriteLine($"[COMMAND] Error: {ex.Message}");
             }
         }
     }
