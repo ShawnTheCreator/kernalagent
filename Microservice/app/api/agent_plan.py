@@ -236,13 +236,85 @@ def parse_command(command: str) -> List[ActionStep]:
         return [ActionStep(action="restart")]
     
     # Screenshot
-    if cmd in ["screenshot", "screen shot", "take screenshot", "capture screen"]:
+    if cmd in ["screenshot", "screen shot", "take screenshot", "capture screen", "take a screenshot"]:
         return [ActionStep(action="screenshot")]
     
-    # Click
+    # ===== KEYBOARD SHORTCUTS =====
+    # Clipboard
+    if cmd in ["copy", "copy this", "copy that"]:
+        return [ActionStep(action="copy")]
+    if cmd in ["paste", "paste that", "paste it"]:
+        return [ActionStep(action="paste")]
+    if cmd in ["cut", "cut this", "cut that"]:
+        return [ActionStep(action="cut")]
+    
+    # Undo/Redo
+    if cmd in ["undo", "undo that", "go back"]:
+        return [ActionStep(action="undo")]
+    if cmd in ["redo", "redo that"]:
+        return [ActionStep(action="redo")]
+    
+    # Select/Save
+    if cmd in ["select all", "select everything"]:
+        return [ActionStep(action="select_all")]
+    if cmd in ["save", "save this", "save file", "save document"]:
+        return [ActionStep(action="save")]
+    
+    # Window switching
+    if cmd in ["alt tab", "switch window", "next window", "switch windows"]:
+        return [ActionStep(action="alt_tab")]
+    if cmd in ["show desktop", "go to desktop", "desktop"]:
+        return [ActionStep(action="show_desktop")]
+    
+    # ===== MEDIA CONTROL =====
+    if cmd in ["play", "pause", "play pause", "play/pause", "toggle play"]:
+        return [ActionStep(action="media_play_pause")]
+    if cmd in ["next track", "next song", "skip", "skip song"]:
+        return [ActionStep(action="media_next")]
+    if cmd in ["previous track", "previous song", "go back song", "last song"]:
+        return [ActionStep(action="media_previous")]
+    if cmd in ["stop music", "stop media", "stop playing"]:
+        return [ActionStep(action="media_stop")]
+    
+    # ===== BRIGHTNESS =====
+    if cmd in ["brightness up", "increase brightness", "brighter"]:
+        return [ActionStep(action="brightness_up", amount=10)]
+    if cmd in ["brightness down", "decrease brightness", "dimmer"]:
+        return [ActionStep(action="brightness_down", amount=10)]
+    
+    # ===== BROWSER COMMANDS =====
+    if cmd in ["new tab", "open new tab", "open tab"]:
+        return [ActionStep(action="new_tab")]
+    if cmd in ["close tab", "close this tab"]:
+        return [ActionStep(action="close_tab")]
+    if cmd in ["refresh", "refresh page", "reload", "reload page"]:
+        return [ActionStep(action="refresh")]
+    if cmd in ["go back", "back", "previous page"]:
+        return [ActionStep(action="go_back")]
+    if cmd in ["go forward", "forward", "next page"]:
+        return [ActionStep(action="go_forward")]
+    
+    # ===== SCROLL =====
+    if cmd in ["scroll up", "scroll page up"]:
+        return [ActionStep(action="scroll", target="up")]
+    if cmd in ["scroll down", "scroll page down"]:
+        return [ActionStep(action="scroll", target="down")]
+    
+    # ===== HOTKEYS (press ctrl+x format) =====
+    if cmd.startswith("press "):
+        key = cmd[6:].strip()
+        if "+" in key:
+            return [ActionStep(action="hotkey", content=key)]
+        else:
+            return [ActionStep(action="press_key", content=key)]
+    
+    # Click at coordinates (click 500 300)
     if cmd.startswith("click "):
-        target = command[6:].strip()
-        return [ActionStep(action="click", target=target)]
+        parts = cmd[6:].strip().split()
+        if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+            return [ActionStep(action="click", x=int(parts[0]), y=int(parts[1]))]
+        else:
+            return [ActionStep(action="click", target=" ".join(parts))]
     
     # ===== DEFAULT: Try as app name =====
     exe = get_app_exe(cmd)

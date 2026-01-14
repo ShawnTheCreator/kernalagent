@@ -95,18 +95,163 @@ REGISTERED_SKILLS: Dict[str, Dict[str, Any]] = {
         "params": [],
         "description": "Puts computer to sleep"
     },
+    "Shutdown": {
+        "action": "shutdown",
+        "params": [],
+        "description": "Shuts down the computer"
+    },
+    "Restart": {
+        "action": "restart",
+        "params": [],
+        "description": "Restarts the computer"
+    },
     
-    # ===== UI Interaction =====
-    "Click Element": {
+    # ===== Keyboard Shortcuts =====
+    "Press Key": {
+        "action": "press_key",
+        "params": ["key"],
+        "description": "Presses a key (enter, tab, escape, space, backspace, delete)"
+    },
+    "Hotkey": {
+        "action": "hotkey",
+        "params": ["keys"],
+        "description": "Presses a keyboard shortcut like ctrl+c, alt+tab, win+d"
+    },
+    "Copy": {
+        "action": "copy",
+        "params": [],
+        "description": "Copies selected content (Ctrl+C)"
+    },
+    "Paste": {
+        "action": "paste",
+        "params": [],
+        "description": "Pastes clipboard content (Ctrl+V)"
+    },
+    "Cut": {
+        "action": "cut",
+        "params": [],
+        "description": "Cuts selected content (Ctrl+X)"
+    },
+    "Undo": {
+        "action": "undo",
+        "params": [],
+        "description": "Undoes last action (Ctrl+Z)"
+    },
+    "Redo": {
+        "action": "redo",
+        "params": [],
+        "description": "Redoes last action (Ctrl+Y)"
+    },
+    "Select All": {
+        "action": "select_all",
+        "params": [],
+        "description": "Selects all content (Ctrl+A)"
+    },
+    "Save": {
+        "action": "save",
+        "params": [],
+        "description": "Saves current document (Ctrl+S)"
+    },
+    "Alt Tab": {
+        "action": "alt_tab",
+        "params": [],
+        "description": "Switches to next window (Alt+Tab)"
+    },
+    "Show Desktop": {
+        "action": "show_desktop",
+        "params": [],
+        "description": "Shows the desktop (Win+D)"
+    },
+    
+    # ===== Mouse Control =====
+    "Click": {
         "action": "click",
-        "params": ["target"],
-        "description": "Clicks on a UI element by label"
+        "params": ["x", "y"],
+        "description": "Clicks at screen coordinates"
+    },
+    "Double Click": {
+        "action": "double_click",
+        "params": ["x", "y"],
+        "description": "Double clicks at screen coordinates"
+    },
+    "Right Click": {
+        "action": "right_click",
+        "params": ["x", "y"],
+        "description": "Right clicks at screen coordinates"
+    },
+    "Move Mouse": {
+        "action": "move_mouse",
+        "params": ["x", "y"],
+        "description": "Moves mouse to screen coordinates"
     },
     "Scroll Page": {
         "action": "scroll",
         "params": ["direction", "amount"],
         "description": "Scrolls the page up or down"
     },
+    
+    # ===== Media Control =====
+    "Play Pause": {
+        "action": "media_play_pause",
+        "params": [],
+        "description": "Toggles play/pause for media"
+    },
+    "Next Track": {
+        "action": "media_next",
+        "params": [],
+        "description": "Skips to next track"
+    },
+    "Previous Track": {
+        "action": "media_previous",
+        "params": [],
+        "description": "Goes to previous track"
+    },
+    "Stop Media": {
+        "action": "media_stop",
+        "params": [],
+        "description": "Stops media playback"
+    },
+    
+    # ===== Brightness =====
+    "Brightness Up": {
+        "action": "brightness_up",
+        "params": ["amount"],
+        "description": "Increases screen brightness"
+    },
+    "Brightness Down": {
+        "action": "brightness_down",
+        "params": ["amount"],
+        "description": "Decreases screen brightness"
+    },
+    
+    # ===== Browser Commands =====
+    "New Tab": {
+        "action": "new_tab",
+        "params": [],
+        "description": "Opens a new browser tab (Ctrl+T)"
+    },
+    "Close Tab": {
+        "action": "close_tab",
+        "params": [],
+        "description": "Closes current browser tab (Ctrl+W)"
+    },
+    "Refresh Page": {
+        "action": "refresh",
+        "params": [],
+        "description": "Refreshes the current page (F5)"
+    },
+    "Go Back": {
+        "action": "go_back",
+        "params": [],
+        "description": "Goes back in browser history (Alt+Left)"
+    },
+    "Go Forward": {
+        "action": "go_forward",
+        "params": [],
+        "description": "Goes forward in browser history (Alt+Right)"
+    },
+    
+    # ===== Other =====
     "Wait": {
         "action": "wait",
         "params": ["seconds"],
