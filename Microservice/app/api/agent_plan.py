@@ -300,9 +300,13 @@ def parse_command(command: str) -> List[ActionStep]:
         return [ActionStep(action="media_stop")]
     
     # ===== BRIGHTNESS =====
-    if cmd in ["brightness up", "increase brightness", "brighter"]:
+    # Using 'in' check for explicit matches + partial matching for flexibility
+    brightness_up_phrases = ["brightness up", "increase brightness", "brighter", "raise brightness", "turn up brightness", "screen brighter"]
+    brightness_down_phrases = ["brightness down", "decrease brightness", "dimmer", "reduce brightness", "lower brightness", "turn down brightness", "screen dimmer", "dim the screen", "dim screen"]
+    
+    if cmd in brightness_up_phrases or any(phrase in cmd for phrase in ["brightness up", "brighter", "increase brightness"]):
         return [ActionStep(action="brightness_up", amount=10)]
-    if cmd in ["brightness down", "decrease brightness", "dimmer"]:
+    if cmd in brightness_down_phrases or any(phrase in cmd for phrase in ["brightness down", "dimmer", "reduce brightness", "lower brightness", "dim"]):
         return [ActionStep(action="brightness_down", amount=10)]
     
     # ===== BROWSER COMMANDS =====
@@ -412,6 +416,20 @@ async def plan_with_gemini(command: str) -> List[ActionStep]:
                     if cmd_lower.startswith(("type ", "write ")):
                         if first_action != "type_text":
                             print(f"[AGENT] Intent mismatch: '{cmd_lower}' got '{first_action}'")
+                            is_valid_intent = False
+                    
+                    # If user says brightness-related words but action is not brightness_*, that's wrong
+                    brightness_keywords = ["brightness", "brighter", "dimmer", "dim ", "screen dim"]
+                    if any(kw in cmd_lower for kw in brightness_keywords):
+                        if first_action not in ["brightness_up", "brightness_down"]:
+                            print(f"[AGENT] Intent mismatch: brightness command got '{first_action}'")
+                            is_valid_intent = False
+                    
+                    # If user says volume-related words but action is not volume_*, that's wrong
+                    volume_keywords = ["volume", "louder", "quieter", "sound", "audio", "mute"]
+                    if any(kw in cmd_lower for kw in volume_keywords):
+                        if first_action not in ["volume_up", "volume_down", "volume_mute"]:
+                            print(f"[AGENT] Intent mismatch: volume command got '{first_action}'")
                             is_valid_intent = False
                     
                     if not is_valid_intent:
