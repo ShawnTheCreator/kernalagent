@@ -630,3 +630,65 @@ async def agent_status():
         ],
         "version": "1.0.0"
     }
+
+
+# ===== LLM-FIRST ARCHITECTURE (v2) =====
+
+@router.post("/plan/v2", response_model=PlanResponse)
+async def get_action_plan_v2(request: PlanRequest):
+    """
+    Get action plan using LLM-First Architecture (v2).
+    
+    This endpoint uses the new Intent → Plan → Execute pipeline:
+    1. Intent Analyzer (LLM) extracts structured intent
+    2. Tool Registry maps to executor actions
+    3. Context Memory enables "do that again" support
+    
+    Falls back to deterministic parser if LLM fails.
+    """
+    session_id = request.session_id or str(uuid.uuid4())
+    start_time = time.time()
+    source = "llm_first"
+    
+    logger.info(f"📥 [v2] Command: '{request.command}'")
+    
+    try:
+        from app.reasoning.llm_planner import plan_command_with_fallback
+        
+        # Use the new LLM-first planner
+        step_dicts = await plan_command_with_fallback(request.command, session_id)
+        
+        # Convert to ActionStep objects
+        steps = [
+            ActionStep(
+                action=s.get("action", ""),
+                target=s.get("target"),
+                url=s.get("url"),
+                query=s.get("query"),
+                content=s.get("content"),
+                amount=s.get("amount"),
+                x=s.get("x"),
+                y=s.get("y"),
+            )
+            for s in step_dicts
+        ]
+        
+        processing_time = int((time.time() - start_time) * 1000)
+        
+        # Log result
+        action_summary = ", ".join([s.action for s in steps[:3]])
+        logger.info(f"📤 [v2] Result: {len(steps)} step(s): {action_summary} ({processing_time}ms)")
+        
+        return PlanResponse(
+            session_id=session_id,
+            steps=steps,
+            schema_version="2.0.0",
+            source=source,
+            processing_time_ms=processing_time,
+            timestamp=datetime.now().isoformat()
+        )
+    except Exception as e:
+        logger.error(f"❌ [v2] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
