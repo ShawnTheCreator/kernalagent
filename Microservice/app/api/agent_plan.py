@@ -246,16 +246,25 @@ def parse_command(command: str) -> List[ActionStep]:
 
 
 # ===== GEMINI REASONING LAYER INTEGRATION =====
-# Initialize Gemini layer (disabled by default, enable for AI planning)
+# Gemini is DISABLED by default for stability
+# Set GEMINI_ENABLED=true environment variable to enable
+import os
+
 _gemini_layer = None
+GEMINI_ENABLED = os.environ.get("GEMINI_ENABLED", "false").lower() == "true"
 
 def get_gemini_layer():
     """Lazy initialization of Gemini layer."""
     global _gemini_layer
+    
+    if not GEMINI_ENABLED:
+        return None
+    
     if _gemini_layer is None:
         try:
             from app.reasoning import GeminiReasoningLayer
             _gemini_layer = GeminiReasoningLayer(enabled=True)
+            print("[AGENT] Gemini layer initialized")
         except Exception as e:
             print(f"[AGENT] Gemini layer init failed: {e}")
             _gemini_layer = None
