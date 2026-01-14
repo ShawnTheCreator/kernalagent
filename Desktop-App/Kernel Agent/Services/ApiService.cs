@@ -471,6 +471,119 @@ namespace Kernel_Agent.Services
                                         brDownAmt = brDownEl.GetInt32();
                                     automation.BrightnessDown(brDownAmt);
                                     break;
+                                
+                                // ===== SEARCH =====
+                                case "search":
+                                case "search_web":
+                                    if (step.TryGetProperty("query", out JsonElement queryEl))
+                                    {
+                                        automation.TypeIntoApp((queryEl.GetString() ?? "") + "\n");
+                                        await Task.Delay(1500);
+                                    }
+                                    break;
+                                
+                                // ===== CLIPBOARD =====
+                                case "copy":
+                                    automation.Copy();
+                                    break;
+                                    
+                                case "paste":
+                                    automation.Paste();
+                                    break;
+                                    
+                                case "cut":
+                                    automation.Cut();
+                                    break;
+                                    
+                                case "undo":
+                                    automation.Undo();
+                                    break;
+                                    
+                                case "redo":
+                                    automation.Redo();
+                                    break;
+                                    
+                                case "select_all":
+                                    automation.SelectAll();
+                                    break;
+                                    
+                                case "save":
+                                    automation.Save();
+                                    break;
+                                
+                                // ===== MEDIA =====
+                                case "media_play_pause":
+                                    automation.MediaPlayPause();
+                                    break;
+                                    
+                                case "media_next":
+                                    automation.MediaNext();
+                                    break;
+                                    
+                                case "media_previous":
+                                    automation.MediaPrevious();
+                                    break;
+                                    
+                                case "media_stop":
+                                    automation.MediaStop();
+                                    break;
+                                
+                                // ===== BROWSER =====
+                                case "new_tab":
+                                    automation.NewTab();
+                                    break;
+                                    
+                                case "close_tab":
+                                    automation.CloseTab();
+                                    break;
+                                    
+                                case "refresh":
+                                    automation.Refresh();
+                                    break;
+                                    
+                                case "go_back":
+                                    automation.GoBack();
+                                    break;
+                                    
+                                case "go_forward":
+                                    automation.GoForward();
+                                    break;
+                                
+                                // ===== MOUSE =====
+                                case "click":
+                                    if (step.TryGetProperty("x", out JsonElement xEl) && step.TryGetProperty("y", out JsonElement yEl))
+                                    {
+                                        automation.Click(xEl.GetInt32(), yEl.GetInt32());
+                                    }
+                                    break;
+                                    
+                                case "double_click":
+                                    if (step.TryGetProperty("x", out JsonElement dxEl) && step.TryGetProperty("y", out JsonElement dyEl))
+                                    {
+                                        automation.DoubleClick(dxEl.GetInt32(), dyEl.GetInt32());
+                                    }
+                                    break;
+                                    
+                                case "right_click":
+                                    if (step.TryGetProperty("x", out JsonElement rxEl) && step.TryGetProperty("y", out JsonElement ryEl))
+                                    {
+                                        automation.RightClick(rxEl.GetInt32(), ryEl.GetInt32());
+                                    }
+                                    break;
+                                    
+                                case "move_mouse":
+                                    if (step.TryGetProperty("x", out JsonElement mxEl) && step.TryGetProperty("y", out JsonElement myEl))
+                                    {
+                                        automation.MoveMouse(mxEl.GetInt32(), myEl.GetInt32());
+                                    }
+                                    break;
+                                    
+                                case "scroll":
+                                    string scrollDir = "down";
+                                    if (step.TryGetProperty("target", out JsonElement scrollDirEl))
+                                        scrollDir = scrollDirEl.GetString() ?? "down";
+                                    automation.Scroll(scrollDir);
+                                    break;
                                     
                                 default:
                                     System.Diagnostics.Debug.WriteLine($"[COMMAND] Unknown action: {action}");
