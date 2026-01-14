@@ -29,7 +29,7 @@
     <AppXManifest Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppxManifest.xml">
       <PackagePath>AppxManifest.xml</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
-      <Modified>2026-01-13T19:25:10.767</Modified>
+      <Modified>2026-01-13T20:23:40.522</Modified>
     </AppXManifest>
   </ItemGroup>
   <ItemGroup>
@@ -39,11 +39,11 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\apphost.exe">
       <PackagePath>Kernel Agent.exe</PackagePath>
-      <Modified>2026-01-13T19:25:07.173</Modified>
+      <Modified>2026-01-13T20:23:38.248</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.dll">
       <PackagePath>Kernel Agent.dll</PackagePath>
-      <Modified>2026-01-13T19:25:07.106</Modified>
+      <Modified>2026-01-13T20:23:38.191</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\shawn\.nuget\packages\microsoft.netcore.app.runtime.win-x64\8.0.22\runtimes\win-x64\lib\net8.0\Microsoft.CSharp.dll">
       <PackagePath>Microsoft.CSharp.dll</PackagePath>

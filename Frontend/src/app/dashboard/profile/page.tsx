@@ -39,7 +39,7 @@ export default function ProfilePage() {
     const [website, setWebsite] = useState('');
     const [photoURL, setPhotoURL] = useState('');
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com';
 
     // Redirect to login if not authenticated
     useEffect(() => {

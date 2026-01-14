@@ -18,17 +18,17 @@ export default function ApiTestPage() {
     const [rawResponse, setRawResponse] = useState("");
 
     // Get the API base URL from environment
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "NOT SET";
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || "https://kernal-agent-backend.onrender.com";
 
     useEffect(() => {
         // Log to console for debugging
         console.log("=== API TEST ===");
-        console.log("NEXT_PUBLIC_API_BASE_URL:", apiBaseUrl);
+        console.log("NEXT_PUBLIC_API_BASE_URLCSHARP:", apiBaseUrl);
 
         // Skip fetch if env var not set
         if (apiBaseUrl === "NOT SET") {
             setStatus("error");
-            setMessage("Environment variable NEXT_PUBLIC_API_BASE_URL is NOT SET");
+            setMessage("Environment variable NEXT_PUBLIC_API_BASE_URLCSHARP is NOT SET");
             return;
         }
 
@@ -95,7 +95,7 @@ export default function ApiTestPage() {
                 background: "#f0f0f0",
                 borderRadius: "5px"
             }}>
-                <strong>NEXT_PUBLIC_API_BASE_URL:</strong>
+                <strong>NEXT_PUBLIC_API_BASE_URLCSHARP:</strong>
                 <br />
                 <code style={{ color: apiBaseUrl === "NOT SET" ? "red" : "green" }}>
                     {apiBaseUrl}
