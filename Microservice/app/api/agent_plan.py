@@ -245,10 +245,69 @@ def parse_command(command: str) -> List[ActionStep]:
     return [ActionStep(action="open_app", target=exe)]
 
 
+# ===== GEMINI REASONING LAYER INTEGRATION =====
+# Initialize Gemini layer (disabled by default, enable for AI planning)
+_gemini_layer = None
+
+def get_gemini_layer():
+    """Lazy initialization of Gemini layer."""
+    global _gemini_layer
+    if _gemini_layer is None:
+        try:
+            from app.reasoning import GeminiReasoningLayer
+            _gemini_layer = GeminiReasoningLayer(enabled=True)
+        except Exception as e:
+            print(f"[AGENT] Gemini layer init failed: {e}")
+            _gemini_layer = None
+    return _gemini_layer
+
+
+async def plan_with_gemini(command: str) -> List[ActionStep]:
+    """
+    Try to get a plan from Gemini first.
+    Falls back to deterministic parsing if Gemini fails.
+    
+    Philosophy: "Gemini thinks. Python decides. C# executes."
+    """
+    gemini = get_gemini_layer()
+    
+    if gemini and gemini.enabled:
+        try:
+            plan = await gemini.plan(command)
+            
+            if plan:
+                # Convert Gemini plan to ActionSteps
+                actions = gemini.convert_plan_to_actions(plan)
+                
+                if actions:
+                    steps = []
+                    for action in actions:
+                        step = ActionStep(
+                            action=action.get("action", ""),
+                            target=action.get("target"),
+                            url=action.get("url"),
+                            query=action.get("query"),
+                            content=action.get("content"),
+                            amount=action.get("amount")
+                        )
+                        steps.append(step)
+                    
+                    print(f"[AGENT] Gemini planned: {len(steps)} steps")
+                    return steps
+        except Exception as e:
+            print(f"[AGENT] Gemini planning failed: {e}")
+    
+    # Fallback to deterministic parsing
+    print(f"[AGENT] Using deterministic parsing")
+    return parse_command(command)
+
+
 @router.post("/plan", response_model=PlanResponse)
 async def get_action_plan(request: PlanRequest):
     """
     Get action plan for a user command.
+    
+    Uses Gemini for intelligent planning with fallback to deterministic parsing.
     
     This endpoint is called by the C# Desktop Agent's VoiceToActionService.
     It parses the user's voice/text command and returns a list of actions.
@@ -263,7 +322,8 @@ async def get_action_plan(request: PlanRequest):
     session_id = request.session_id or str(uuid.uuid4())
     
     try:
-        steps = parse_command(request.command)
+        # Try Gemini first, fallback to deterministic
+        steps = await plan_with_gemini(request.command)
         
         return PlanResponse(
             session_id=session_id,
@@ -274,8 +334,54 @@ async def get_action_plan(request: PlanRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/plan/gemini", response_model=PlanResponse)
+async def get_gemini_plan(request: PlanRequest):
+    """
+    Get action plan using Gemini ONLY (no fallback).
+    Useful for testing Gemini integration.
+    """
+    session_id = request.session_id or str(uuid.uuid4())
+    
+    gemini = get_gemini_layer()
+    
+    if not gemini or not gemini.enabled:
+        raise HTTPException(status_code=503, detail="Gemini not available")
+    
+    plan = await gemini.plan(request.command)
+    
+    if not plan:
+        raise HTTPException(status_code=422, detail="Gemini could not create a plan")
+    
+    actions = gemini.convert_plan_to_actions(plan)
+    steps = [
+        ActionStep(
+            action=a.get("action", ""),
+            target=a.get("target"),
+            url=a.get("url"),
+            query=a.get("query"),
+            content=a.get("content"),
+            amount=a.get("amount")
+        )
+        for a in actions
+    ]
+    
+    return PlanResponse(
+        session_id=session_id,
+        steps=steps,
+        schema_version="1.0.0"
+    )
+
+
 @router.get("/health")
 async def agent_health():
     """Health check for agent API."""
-    return {"status": "ready", "version": "1.0.0"}
+    gemini = get_gemini_layer()
+    gemini_status = "enabled" if (gemini and gemini.enabled) else "disabled"
+    
+    return {
+        "status": "ready", 
+        "version": "1.0.0",
+        "gemini": gemini_status
+    }
+
 
