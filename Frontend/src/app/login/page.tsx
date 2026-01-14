@@ -35,7 +35,7 @@ export default function LoginPage() {
                 setVerifyingDevice(true);
                 try {
                     const token = await user.getIdToken();
-                    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com';
+                    const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com').replace(/\/+$/, '');
 
                     const response = await fetch(`${API_BASE}/api/auth/device-verify`, {
                         method: 'POST',

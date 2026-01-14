@@ -42,13 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [error, setError] = useState<string | null>(null);
 
     // API base URL for backend (uses Render URL in production)
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com';
+    const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com').replace(/\/+$/, '');
 
     // Sync user to Firestore via backend API
     const syncUserToFirestore = async (user: User) => {
         try {
             const token = await user.getIdToken();
-            const response = await fetch(`${API_BASE}/me`, {
+            const response = await fetch(`${API_BASE}/api/auth/me`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
