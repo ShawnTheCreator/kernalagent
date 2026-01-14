@@ -65,9 +65,15 @@ namespace Kernel_Agent.Services
                 switch (action)
                 {
                     // ===== APP CONTROL =====
+                    // ===== APP CONTROL =====
                     case "open_app":
-                        _automation.OpenApplication(step.GetProperty("target").GetString() ?? "");
-                        await Task.Delay(2000);
+                        bool success = _automation.OpenApplication(step.GetProperty("target").GetString() ?? "");
+                        if (!success)
+                        {
+                            System.Diagnostics.Debug.WriteLine("[VOICE] Failed to open/verify app. Aborting plan.");
+                            // Future: Take screenshot and ask user for help
+                            return; 
+                        }
                         break;
                     case "close_app":
                         _automation.CloseApplication(step.GetProperty("target").GetString() ?? "");

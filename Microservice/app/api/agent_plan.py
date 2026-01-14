@@ -254,6 +254,14 @@ def parse_command(command: str) -> List[ActionStep]:
     if cmd in ["screenshot", "screen shot", "take screenshot", "capture screen", "take a screenshot"]:
         return [ActionStep(action="screenshot")]
     
+    # ===== VOLUME CONTROL =====
+    if cmd in ["volume up", "increase volume", "louder", "turn up volume", "raise volume"]:
+        return [ActionStep(action="volume_up", amount=1)]
+    if cmd in ["volume down", "decrease volume", "quieter", "turn down volume", "lower volume"]:
+        return [ActionStep(action="volume_down", amount=1)]
+    if cmd in ["mute", "mute volume", "silence", "turn off sound", "mute audio"]:
+        return [ActionStep(action="volume_mute")]
+    
     # ===== KEYBOARD SHORTCUTS =====
     # Clipboard
     if cmd in ["copy", "copy this", "copy that"]:

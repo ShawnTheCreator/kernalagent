@@ -12,6 +12,8 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
+    <!-- Enable Unpackaged debugging -->
+    <WindowsPackageType Condition="'$(Configuration)'=='Debug'">None</WindowsPackageType>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="BlankPage1.xaml" />

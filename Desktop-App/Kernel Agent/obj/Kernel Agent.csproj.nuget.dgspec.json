@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\shawn\\Desktop\\Kernel Agent\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {}
+    "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {}
   },
   "projects": {
-    "C:\\Users\\shawn\\Desktop\\Kernel Agent\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {
+    "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\shawn\\Desktop\\Kernel Agent\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+        "projectUniqueName": "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
         "projectName": "Kernel Agent",
-        "projectPath": "C:\\Users\\shawn\\Desktop\\Kernel Agent\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
-        "packagesPath": "C:\\Users\\shawn\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\shawn\\Desktop\\Kernel Agent\\Desktop-App\\Kernel Agent\\obj\\",
+        "projectPath": "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+        "packagesPath": "C:\\Users\\anime\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\shawn\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\anime\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -105,27 +105,27 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Runtime.win-arm64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.AspNetCore.App.Runtime.win-x86",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.NETCore.App.Runtime.win-arm64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.NETCore.App.Runtime.win-x86",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.Windows.SDK.NET.Ref",
@@ -133,15 +133,15 @@
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Runtime.win-arm64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Runtime.win-x86",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.23, 8.0.23]"
             }
           ],
           "frameworkReferences": {
@@ -152,7 +152,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {

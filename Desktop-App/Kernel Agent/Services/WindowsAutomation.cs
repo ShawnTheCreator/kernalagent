@@ -76,11 +76,13 @@ namespace Kernel_Agent.Services
         };
 
         // ===== OPEN APPLICATION =====
-        public void OpenApplication(string exeName)
+        public bool OpenApplication(string exeName)
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opening: {exeName}");
+                
+                string processName = exeName.Replace(".exe", "").Replace(".EXE", "");
                 
                 // Method 1: Try shell execute
                 try
@@ -92,7 +94,7 @@ namespace Kernel_Agent.Services
                     };
                     Process.Start(startInfo);
                     System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opened via shell: {exeName}");
-                    return;
+                    return WaitForAppReady(processName);
                 }
                 catch (Exception ex)
                 {
@@ -109,7 +111,7 @@ namespace Kernel_Agent.Services
                         {
                             Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
                             System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opened via path: {path}");
-                            return;
+                            return WaitForAppReady(processName);
                         }
                     }
                 }
@@ -117,24 +119,68 @@ namespace Kernel_Agent.Services
                 // Method 3: Try start command
                 try
                 {
-                    string appName = exeName.Replace(".exe", "").Replace(".EXE", "");
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = "cmd.exe",
-                        Arguments = $"/c start {appName}",
+                        Arguments = $"/c start {processName}",
                         UseShellExecute = true,
                         CreateNoWindow = true
                     });
-                    System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opened via start: {appName}");
-                    return;
+                    System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opened via start: {processName}");
+                    return WaitForAppReady(processName);
                 }
                 catch { }
 
                 System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Could not open: {exeName}");
+                return false;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Error opening {exeName}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private bool WaitForAppReady(string processName)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Waiting for {processName} to be ready...");
+                // Some apps like 'notepad' might have different process names (e.g. 'Notepad')
+                // We'll try to find it leniently
+                
+                int maxRetries = 20; // Wait up to 10 seconds
+                
+                for (int i = 0; i < maxRetries; i++)
+                {
+                    var processes = Process.GetProcesses();
+                    var target = processes.FirstOrDefault(p => 
+                        p.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase) ||
+                        p.ProcessName.Contains(processName, StringComparison.OrdinalIgnoreCase));
+
+                    if (target != null && target.MainWindowHandle != IntPtr.Zero)
+                    {
+                        target.WaitForInputIdle(500); // Wait for app to be idle
+                        SetForegroundWindow(target.MainWindowHandle); // Force focus
+                        Thread.Sleep(500); // Extra safety buffer
+                        System.Diagnostics.Debug.WriteLine($"[AUTOMATION] {processName} is ready and focused.");
+                        return true;
+                    }
+                    else if (target != null)
+                    {
+                        // Found process but no window yet
+                        System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Found {processName}, waiting for window...");
+                    }
+                    
+                    Thread.Sleep(500);
+                }
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Timeout waiting for {processName}.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Error waiting for app: {ex.Message}");
+                return false;
             }
         }
 
