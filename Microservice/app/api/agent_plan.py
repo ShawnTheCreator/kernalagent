@@ -134,65 +134,25 @@ def parse_command(command: str) -> List[ActionStep]:
     """
     Parse user command into action steps.
     
-    Supports flexible matching with typos:
-    - "open X" / "launch X" / "start X" - Opens an application
-    - "close X" / "quit X" / "exit X" / "kill X" - Closes an application
-    - "type X" / "write X" - Types text
-    - "search X" / "google X" - Searches for something
-    - "go to X" / "navigate X" / "open X" (URL) - Navigates to URL
-    - "volume up/down/mute" - Volume control
-    - "minimize/maximize/restore" - Window management
-    - "lock" / "sleep" / "shutdown" - System commands
+    Priority order:
+    1. Explicit command patterns (open, close, type, search) - checked first
+    2. Fuzzy matching for volume/window/system commands
+    3. Default fallback
     """
     cmd = command.lower().strip()
     words = cmd.split()
     
-    # ===== CLOSE APP =====
-    close_patterns = ["close", "quit", "exit", "kill", "stop", "end", "terminate"]
-    if words and words[0] in close_patterns:
-        app_name = " ".join(words[1:]) if len(words) > 1 else ""
-        if app_name:
-            exe = get_app_exe(app_name).replace(".exe", "")
-            return [ActionStep(action="close_app", target=exe)]
+    if not words:
+        return [ActionStep(action="open_app", target="notepad.exe")]
     
-    # ===== VOLUME CONTROL =====
-    if fuzzy_match(cmd, ["volume up", "turn up volume", "louder", "increase volume", "vol up"]):
-        return [ActionStep(action="volume_up", amount=10)]
-    if fuzzy_match(cmd, ["volume down", "turn down volume", "quieter", "decrease volume", "vol down", "lower volume"]):
-        return [ActionStep(action="volume_down", amount=10)]
-    if fuzzy_match(cmd, ["mute", "unmute", "toggle mute", "silence"]):
-        return [ActionStep(action="volume_mute")]
-    if fuzzy_match(cmd, ["max volume", "full volume", "maximum volume"]):
-        return [ActionStep(action="volume_set", amount=100)]
+    # ===== EXPLICIT PATTERNS - CHECK FIRST =====
     
-    # ===== WINDOW MANAGEMENT =====
-    if fuzzy_match(cmd, ["minimize", "minimise", "min window"]):
-        return [ActionStep(action="minimize_window")]
-    if fuzzy_match(cmd, ["maximize", "maximise", "max window", "fullscreen"]):
-        return [ActionStep(action="maximize_window")]
-    if fuzzy_match(cmd, ["restore window", "restore"]):
-        return [ActionStep(action="restore_window")]
-    
-    # ===== SYSTEM COMMANDS =====
-    if fuzzy_match(cmd, ["lock", "lock screen", "lock computer", "lock pc"]):
-        return [ActionStep(action="lock_screen")]
-    if fuzzy_match(cmd, ["sleep", "hibernate", "sleep mode"]):
-        return [ActionStep(action="sleep")]
-    if fuzzy_match(cmd, ["shutdown", "shut down", "power off", "turn off"]):
-        return [ActionStep(action="shutdown")]
-    if fuzzy_match(cmd, ["restart", "reboot"]):
-        return [ActionStep(action="restart")]
-    
-    # ===== SCREENSHOT =====
-    if fuzzy_match(cmd, ["screenshot", "screen shot", "capture screen", "print screen", "take screenshot"]):
-        return [ActionStep(action="screenshot")]
-    
-    # ===== OPEN APP =====
+    # OPEN APP (highest priority for "open X" commands)
     open_patterns = ["open", "launch", "start", "run"]
-    if words and words[0] in open_patterns:
-        rest = " ".join(words[1:])
+    if words[0] in open_patterns:
+        rest = " ".join(words[1:]) if len(words) > 1 else ""
         # Check if it's a URL
-        if rest.startswith("http") or "." in rest and "/" not in rest[:10]:
+        if rest and (rest.startswith("http") or ("." in rest and "/" not in rest[:10])):
             url = rest if rest.startswith("http") else f"https://{rest}"
             return [
                 ActionStep(action="open_app", target="chrome.exe"),
@@ -202,28 +162,38 @@ def parse_command(command: str) -> List[ActionStep]:
         if rest:
             exe = get_app_exe(rest)
             return [ActionStep(action="open_app", target=exe)]
+        # Just "open" with nothing - default to explorer
+        return [ActionStep(action="open_app", target="explorer.exe")]
     
-    # ===== TYPE TEXT =====
+    # CLOSE APP
+    close_patterns = ["close", "quit", "exit", "kill", "stop", "end", "terminate"]
+    if words[0] in close_patterns:
+        app_name = " ".join(words[1:]) if len(words) > 1 else ""
+        if app_name:
+            exe = get_app_exe(app_name).replace(".exe", "")
+            return [ActionStep(action="close_app", target=exe)]
+    
+    # TYPE TEXT
     type_patterns = ["type", "write", "enter", "input"]
-    if words and words[0] in type_patterns:
-        text = " ".join(words[1:])
+    if words[0] in type_patterns:
+        text = " ".join(words[1:]) if len(words) > 1 else ""
         return [ActionStep(action="type_text", content=text)]
     
-    # ===== SEARCH =====
+    # SEARCH
     if cmd.startswith("search for "):
         query = command[11:].strip()
         return [
             ActionStep(action="open_app", target="chrome.exe"),
             ActionStep(action="navigate", url=f"https://www.google.com/search?q={query}")
         ]
-    if cmd.startswith("search ") or cmd.startswith("google "):
+    if words[0] in ["search", "google"]:
         query = " ".join(words[1:])
         return [
             ActionStep(action="open_app", target="chrome.exe"),
             ActionStep(action="navigate", url=f"https://www.google.com/search?q={query}")
         ]
     
-    # ===== NAVIGATE =====
+    # NAVIGATE
     nav_patterns = ["go to", "navigate to", "visit", "browse to"]
     for pattern in nav_patterns:
         if cmd.startswith(pattern):
@@ -235,7 +205,41 @@ def parse_command(command: str) -> List[ActionStep]:
                 ActionStep(action="navigate", url=url)
             ]
     
-    # ===== CLICK (placeholder) =====
+    # ===== EXACT MATCH COMMANDS (no fuzzy) =====
+    
+    # Volume - exact keywords only
+    if cmd in ["volume up", "louder", "vol up"]:
+        return [ActionStep(action="volume_up", amount=10)]
+    if cmd in ["volume down", "quieter", "vol down"]:
+        return [ActionStep(action="volume_down", amount=10)]
+    if cmd in ["mute", "unmute", "toggle mute"]:
+        return [ActionStep(action="volume_mute")]
+    if cmd in ["max volume", "full volume"]:
+        return [ActionStep(action="volume_set", amount=100)]
+    
+    # Window - exact keywords only
+    if cmd in ["minimize", "minimise", "min"]:
+        return [ActionStep(action="minimize_window")]
+    if cmd in ["maximize", "maximise", "max", "fullscreen"]:
+        return [ActionStep(action="maximize_window")]
+    if cmd in ["restore", "restore window"]:
+        return [ActionStep(action="restore_window")]
+    
+    # System - exact keywords only
+    if cmd in ["lock", "lock screen", "lock computer"]:
+        return [ActionStep(action="lock_screen")]
+    if cmd in ["sleep", "hibernate"]:
+        return [ActionStep(action="sleep")]
+    if cmd in ["shutdown", "shut down", "power off"]:
+        return [ActionStep(action="shutdown")]
+    if cmd in ["restart", "reboot"]:
+        return [ActionStep(action="restart")]
+    
+    # Screenshot
+    if cmd in ["screenshot", "screen shot", "take screenshot", "capture screen"]:
+        return [ActionStep(action="screenshot")]
+    
+    # Click
     if cmd.startswith("click "):
         target = command[6:].strip()
         return [ActionStep(action="click", target=target)]
