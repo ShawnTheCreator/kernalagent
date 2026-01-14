@@ -437,6 +437,29 @@ async def plan_with_gemini(command: str) -> List[ActionStep]:
         except Exception as e:
             print(f"[AGENT] Gemini planning failed: {e}")
     
+    # ===== GROQ FALLBACK (Llama 3 70B) =====
+    try:
+        from app.reasoning.groq_fallback import plan_with_groq, GROQ_ENABLED
+        if GROQ_ENABLED:
+            print(f"[AGENT] Trying Groq fallback...")
+            groq_steps = await plan_with_groq(command)
+            if groq_steps:
+                steps = [
+                    ActionStep(
+                        action=s.get("action", ""),
+                        target=s.get("target"),
+                        url=s.get("url"),
+                        query=s.get("query"),
+                        content=s.get("content"),
+                        amount=s.get("amount")
+                    )
+                    for s in groq_steps
+                ]
+                print(f"[AGENT] Groq planned: {len(steps)} steps")
+                return steps
+    except Exception as e:
+        print(f"[AGENT] Groq fallback failed: {e}")
+    
     # Fallback to deterministic parsing
     print(f"[AGENT] Using deterministic parsing")
     return parse_command(command)
