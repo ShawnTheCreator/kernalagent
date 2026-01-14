@@ -12,7 +12,8 @@ namespace Kernel_Agent.Services
     public class VoiceToActionService
     {
         private readonly WindowsAutomation _automation = new WindowsAutomation();
-        private readonly string _pythonBackendUrl = "http://localhost:8000/api/agent/plan"; // Change to your deployed Python backend if needed
+        // Using LLM-First Architecture (v2) - intelligent multi-step command processing
+        private readonly string _pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
         private readonly SpeechRecognitionEngine _recognizer;
 
         public VoiceToActionService()
