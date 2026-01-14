@@ -299,6 +299,334 @@ namespace Kernel_Agent.Services
             Thread.Sleep(500);
             TypeIntoApp(text);
         }
+
+        // ===== KEYBOARD SHORTCUTS =====
+        
+        // Virtual key codes for hotkeys
+        private const byte VK_CONTROL = 0x11;
+        private const byte VK_ALT = 0x12;
+        private const byte VK_SHIFT = 0x10;
+        private const byte VK_LWIN = 0x5B;
+        private const byte VK_TAB = 0x09;
+        private const byte VK_ENTER = 0x0D;
+        private const byte VK_ESCAPE = 0x1B;
+        private const byte VK_SPACE = 0x20;
+        private const byte VK_BACKSPACE = 0x08;
+        private const byte VK_DELETE = 0x2E;
+        private const byte VK_LEFT = 0x25;
+        private const byte VK_RIGHT = 0x27;
+        private const byte VK_F5 = 0x74;
+        
+        // Media keys
+        private const byte VK_MEDIA_PLAY_PAUSE = 0xB3;
+        private const byte VK_MEDIA_NEXT_TRACK = 0xB0;
+        private const byte VK_MEDIA_PREV_TRACK = 0xB1;
+        private const byte VK_MEDIA_STOP = 0xB2;
+
+        public void Copy()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Copy (Ctrl+C)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x43, 0, 0, UIntPtr.Zero); // C key
+            keybd_event(0x43, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void Paste()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Paste (Ctrl+V)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x56, 0, 0, UIntPtr.Zero); // V key
+            keybd_event(0x56, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void Cut()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Cut (Ctrl+X)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x58, 0, 0, UIntPtr.Zero); // X key
+            keybd_event(0x58, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void Undo()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Undo (Ctrl+Z)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x5A, 0, 0, UIntPtr.Zero); // Z key
+            keybd_event(0x5A, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void Redo()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Redo (Ctrl+Y)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x59, 0, 0, UIntPtr.Zero); // Y key
+            keybd_event(0x59, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void SelectAll()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Select All (Ctrl+A)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x41, 0, 0, UIntPtr.Zero); // A key
+            keybd_event(0x41, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void Save()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Save (Ctrl+S)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x53, 0, 0, UIntPtr.Zero); // S key
+            keybd_event(0x53, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void AltTab()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Alt+Tab");
+            keybd_event(VK_ALT, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_TAB, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_ALT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void ShowDesktop()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Show Desktop (Win+D)");
+            keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+            keybd_event(0x44, 0, 0, UIntPtr.Zero); // D key
+            keybd_event(0x44, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void PressKey(string key)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Press key: {key}");
+            byte vk = key.ToLower() switch
+            {
+                "enter" => VK_ENTER,
+                "tab" => VK_TAB,
+                "escape" or "esc" => VK_ESCAPE,
+                "space" => VK_SPACE,
+                "backspace" => VK_BACKSPACE,
+                "delete" => VK_DELETE,
+                _ => 0
+            };
+            if (vk != 0)
+            {
+                keybd_event(vk, 0, 0, UIntPtr.Zero);
+                keybd_event(vk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
+        }
+
+        public void Hotkey(string keys)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Hotkey: {keys}");
+            var parts = keys.ToLower().Split('+');
+            var modifiers = new List<byte>();
+            byte mainKey = 0;
+
+            foreach (var part in parts)
+            {
+                switch (part.Trim())
+                {
+                    case "ctrl": modifiers.Add(VK_CONTROL); break;
+                    case "alt": modifiers.Add(VK_ALT); break;
+                    case "shift": modifiers.Add(VK_SHIFT); break;
+                    case "win": modifiers.Add(VK_LWIN); break;
+                    default:
+                        if (part.Length == 1 && char.IsLetterOrDigit(part[0]))
+                            mainKey = (byte)char.ToUpper(part[0]);
+                        break;
+                }
+            }
+
+            // Press modifiers
+            foreach (var mod in modifiers)
+                keybd_event(mod, 0, 0, UIntPtr.Zero);
+
+            // Press main key
+            if (mainKey != 0)
+            {
+                keybd_event(mainKey, 0, 0, UIntPtr.Zero);
+                keybd_event(mainKey, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
+
+            // Release modifiers
+            foreach (var mod in modifiers)
+                keybd_event(mod, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        // ===== MEDIA CONTROL =====
+        public void MediaPlayPause()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Media Play/Pause");
+            keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void MediaNext()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Media Next");
+            keybd_event(VK_MEDIA_NEXT_TRACK, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_MEDIA_NEXT_TRACK, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void MediaPrevious()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Media Previous");
+            keybd_event(VK_MEDIA_PREV_TRACK, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_MEDIA_PREV_TRACK, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void MediaStop()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Media Stop");
+            keybd_event(VK_MEDIA_STOP, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_MEDIA_STOP, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        // ===== BROWSER COMMANDS =====
+        public void NewTab()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] New Tab (Ctrl+T)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x54, 0, 0, UIntPtr.Zero); // T key
+            keybd_event(0x54, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void CloseTab()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Close Tab (Ctrl+W)");
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x57, 0, 0, UIntPtr.Zero); // W key
+            keybd_event(0x57, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void Refresh()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Refresh (F5)");
+            keybd_event(VK_F5, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_F5, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void GoBack()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Go Back (Alt+Left)");
+            keybd_event(VK_ALT, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_LEFT, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_ALT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void GoForward()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Go Forward (Alt+Right)");
+            keybd_event(VK_ALT, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_RIGHT, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_ALT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        // ===== MOUSE CONTROL =====
+        [DllImport("user32.dll")]
+        private static extern bool SetCursorPos(int X, int Y);
+
+        [DllImport("user32.dll")]
+        private static extern void mouse_event(uint dwFlags, int dx, int dy, uint dwData, UIntPtr dwExtraInfo);
+
+        private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+        private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
+        private const uint MOUSEEVENTF_RIGHTUP = 0x0010;
+        private const uint MOUSEEVENTF_WHEEL = 0x0800;
+
+        public void Click(int x, int y)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Click at ({x}, {y})");
+            SetCursorPos(x, y);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
+        }
+
+        public void DoubleClick(int x, int y)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Double click at ({x}, {y})");
+            SetCursorPos(x, y);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
+            Thread.Sleep(50);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
+        }
+
+        public void RightClick(int x, int y)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Right click at ({x}, {y})");
+            SetCursorPos(x, y);
+            mouse_event(MOUSEEVENTF_RIGHTDOWN, x, y, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, UIntPtr.Zero);
+        }
+
+        public void MoveMouse(int x, int y)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Move mouse to ({x}, {y})");
+            SetCursorPos(x, y);
+        }
+
+        public void Scroll(string direction, int amount = 3)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Scroll {direction}");
+            int wheelDelta = direction.ToLower() == "up" ? 120 * amount : -120 * amount;
+            mouse_event(MOUSEEVENTF_WHEEL, 0, 0, (uint)wheelDelta, UIntPtr.Zero);
+        }
+
+        // ===== BRIGHTNESS (Windows 10/11) =====
+        public void BrightnessUp(int amount = 10)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Brightness up");
+            // Use PowerShell to adjust brightness
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "powershell",
+                    Arguments = $"-Command \"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, [Math]::Min(100, (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness + {amount}))\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Brightness error: {ex.Message}");
+            }
+        }
+
+        public void BrightnessDown(int amount = 10)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Brightness down");
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "powershell",
+                    Arguments = $"-Command \"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, [Math]::Max(0, (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness - {amount}))\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Brightness error: {ex.Message}");
+            }
+        }
     }
 }
 
