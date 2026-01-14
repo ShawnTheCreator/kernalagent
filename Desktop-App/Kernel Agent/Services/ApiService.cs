@@ -304,7 +304,7 @@ namespace Kernel_Agent.Services
                 // Call Python Brain backend (LLM-First v2)
                 // Production: Render | Dev: localhost:8000
                 // ========================================
-                var pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan/v2";
+                var pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
                 
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);
@@ -326,271 +326,23 @@ namespace Kernel_Agent.Services
                 var responseJson = await response.Content.ReadAsStringAsync();
                 System.Diagnostics.Debug.WriteLine($"[COMMAND] Response: {responseJson}");
                 
-                // Parse and execute the action steps
+                // Parse and execute using SmartExecutor for reliable execution
                 using var doc = JsonDocument.Parse(responseJson);
                 var root = doc.RootElement;
                 
                 if (root.TryGetProperty("steps", out JsonElement stepsElement))
                 {
-                    var automation = new WindowsAutomation();
+                    // Use SmartExecutor for retry logic, timing, and verification
+                    var executor = new SmartExecutor();
+                    var result = await executor.ExecutePlanAsync(stepsElement);
                     
-                    foreach (var step in stepsElement.EnumerateArray())
+                    if (!result.Success)
                     {
-                        if (step.TryGetProperty("action", out JsonElement actionElement))
-                        {
-                            string action = actionElement.GetString() ?? "";
-                            System.Diagnostics.Debug.WriteLine($"[COMMAND] Executing: {action}");
-                            
-                            switch (action)
-                            {
-                                // ===== APP CONTROL =====
-                                case "open_app":
-                                    if (step.TryGetProperty("target", out JsonElement targetEl))
-                                    {
-                                        automation.OpenApplication(targetEl.GetString() ?? "");
-                                        await Task.Delay(2000);
-                                    }
-                                    break;
-                                    
-                                case "close_app":
-                                    if (step.TryGetProperty("target", out JsonElement closeTargetEl))
-                                    {
-                                        automation.CloseApplication(closeTargetEl.GetString() ?? "");
-                                    }
-                                    break;
-                                    
-                                // ===== TEXT INPUT =====
-                                case "type_text":
-                                    if (step.TryGetProperty("content", out JsonElement contentEl))
-                                    {
-                                        automation.TypeIntoApp(contentEl.GetString() ?? "");
-                                    }
-                                    break;
-                                    
-                                case "navigate":
-                                    if (step.TryGetProperty("url", out JsonElement urlEl))
-                                    {
-                                        automation.TypeIntoApp((urlEl.GetString() ?? "") + "\n");
-                                        await Task.Delay(1500);
-                                    }
-                                    break;
-                                    
-                                // ===== VOLUME CONTROL =====
-                                case "volume_up":
-                                    int upAmount = 5;
-                                    if (step.TryGetProperty("amount", out JsonElement upAmountEl))
-                                        upAmount = upAmountEl.GetInt32() / 2; // Divide by 2 since each press is ~2%
-                                    automation.VolumeUp(upAmount);
-                                    break;
-                                    
-                                case "volume_down":
-                                    int downAmount = 5;
-                                    if (step.TryGetProperty("amount", out JsonElement downAmountEl))
-                                        downAmount = downAmountEl.GetInt32() / 2;
-                                    automation.VolumeDown(downAmount);
-                                    break;
-                                    
-                                case "volume_mute":
-                                    automation.VolumeMute();
-                                    break;
-                                    
-                                case "volume_set":
-                                    // For max volume, press up 50 times
-                                    if (step.TryGetProperty("amount", out JsonElement setAmountEl) && setAmountEl.GetInt32() == 100)
-                                        automation.VolumeUp(50);
-                                    break;
-                                    
-                                // ===== WINDOW MANAGEMENT =====
-                                case "minimize_window":
-                                    automation.MinimizeWindow();
-                                    break;
-                                    
-                                case "maximize_window":
-                                    automation.MaximizeWindow();
-                                    break;
-                                    
-                                case "restore_window":
-                                    automation.RestoreWindow();
-                                    break;
-                                
-                                case "alt_tab":
-                                    automation.AltTab();
-                                    break;
-                                    
-                                case "show_desktop":
-                                    automation.ShowDesktop();
-                                    break;
-                                
-                                // ===== KEYBOARD =====
-                                case "press_key":
-                                    if (step.TryGetProperty("content", out JsonElement keyEl))
-                                    {
-                                        automation.PressKey(keyEl.GetString() ?? "");
-                                    }
-                                    break;
-                                    
-                                case "hotkey":
-                                    if (step.TryGetProperty("content", out JsonElement hotkeyEl))
-                                    {
-                                        automation.Hotkey(hotkeyEl.GetString() ?? "");
-                                    }
-                                    break;
-                                    
-                                // ===== SYSTEM COMMANDS =====
-                                case "lock_screen":
-                                    automation.LockScreen();
-                                    break;
-                                    
-                                case "sleep":
-                                    automation.Sleep();
-                                    break;
-                                    
-                                case "shutdown":
-                                    automation.Shutdown();
-                                    break;
-                                    
-                                case "restart":
-                                    automation.Restart();
-                                    break;
-                                    
-                                // ===== SCREENSHOT =====
-                                case "screenshot":
-                                    automation.TakeScreenshot();
-                                    break;
-                                
-                                // ===== BRIGHTNESS =====
-                                case "brightness_up":
-                                    int brUpAmt = 10;
-                                    if (step.TryGetProperty("amount", out JsonElement brUpEl))
-                                        brUpAmt = brUpEl.GetInt32();
-                                    automation.BrightnessUp(brUpAmt);
-                                    break;
-                                    
-                                case "brightness_down":
-                                    int brDownAmt = 10;
-                                    if (step.TryGetProperty("amount", out JsonElement brDownEl))
-                                        brDownAmt = brDownEl.GetInt32();
-                                    automation.BrightnessDown(brDownAmt);
-                                    break;
-                                
-                                // ===== SEARCH =====
-                                case "search":
-                                case "search_web":
-                                    if (step.TryGetProperty("query", out JsonElement queryEl))
-                                    {
-                                        automation.TypeIntoApp((queryEl.GetString() ?? "") + "\n");
-                                        await Task.Delay(1500);
-                                    }
-                                    break;
-                                
-                                // ===== CLIPBOARD =====
-                                case "copy":
-                                    automation.Copy();
-                                    break;
-                                    
-                                case "paste":
-                                    automation.Paste();
-                                    break;
-                                    
-                                case "cut":
-                                    automation.Cut();
-                                    break;
-                                    
-                                case "undo":
-                                    automation.Undo();
-                                    break;
-                                    
-                                case "redo":
-                                    automation.Redo();
-                                    break;
-                                    
-                                case "select_all":
-                                    automation.SelectAll();
-                                    break;
-                                    
-                                case "save":
-                                    automation.Save();
-                                    break;
-                                
-                                // ===== MEDIA =====
-                                case "media_play_pause":
-                                    automation.MediaPlayPause();
-                                    break;
-                                    
-                                case "media_next":
-                                    automation.MediaNext();
-                                    break;
-                                    
-                                case "media_previous":
-                                    automation.MediaPrevious();
-                                    break;
-                                    
-                                case "media_stop":
-                                    automation.MediaStop();
-                                    break;
-                                
-                                // ===== BROWSER =====
-                                case "new_tab":
-                                    automation.NewTab();
-                                    break;
-                                    
-                                case "close_tab":
-                                    automation.CloseTab();
-                                    break;
-                                    
-                                case "refresh":
-                                    automation.Refresh();
-                                    break;
-                                    
-                                case "go_back":
-                                    automation.GoBack();
-                                    break;
-                                    
-                                case "go_forward":
-                                    automation.GoForward();
-                                    break;
-                                
-                                // ===== MOUSE =====
-                                case "click":
-                                    if (step.TryGetProperty("x", out JsonElement xEl) && step.TryGetProperty("y", out JsonElement yEl))
-                                    {
-                                        automation.Click(xEl.GetInt32(), yEl.GetInt32());
-                                    }
-                                    break;
-                                    
-                                case "double_click":
-                                    if (step.TryGetProperty("x", out JsonElement dxEl) && step.TryGetProperty("y", out JsonElement dyEl))
-                                    {
-                                        automation.DoubleClick(dxEl.GetInt32(), dyEl.GetInt32());
-                                    }
-                                    break;
-                                    
-                                case "right_click":
-                                    if (step.TryGetProperty("x", out JsonElement rxEl) && step.TryGetProperty("y", out JsonElement ryEl))
-                                    {
-                                        automation.RightClick(rxEl.GetInt32(), ryEl.GetInt32());
-                                    }
-                                    break;
-                                    
-                                case "move_mouse":
-                                    if (step.TryGetProperty("x", out JsonElement mxEl) && step.TryGetProperty("y", out JsonElement myEl))
-                                    {
-                                        automation.MoveMouse(mxEl.GetInt32(), myEl.GetInt32());
-                                    }
-                                    break;
-                                    
-                                case "scroll":
-                                    string scrollDir = "down";
-                                    if (step.TryGetProperty("target", out JsonElement scrollDirEl))
-                                        scrollDir = scrollDirEl.GetString() ?? "down";
-                                    automation.Scroll(scrollDir);
-                                    break;
-                                    
-                                default:
-                                    System.Diagnostics.Debug.WriteLine($"[COMMAND] Unknown action: {action}");
-                                    break;
-                            }
-                        }
+                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Plan execution failed: {result.Error}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Plan completed: {result.ActionResults.Count} actions in {result.TotalExecutionTimeMs}ms");
                     }
                 }
                 
