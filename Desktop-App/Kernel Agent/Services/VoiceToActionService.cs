@@ -52,8 +52,23 @@ namespace Kernel_Agent.Services
             var response = await client.PostAsync(_pythonBackendUrl, content);
             if (!response.IsSuccessStatusCode) return null;
             var json = await response.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine($"[VOICE] API Response: {json}");
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.EnumerateArray().Select(element => element).ToArray();
+            
+            // The API returns {"session_id": "...", "steps": [...]}
+            // We need to extract the "steps" array
+            if (doc.RootElement.TryGetProperty("steps", out var stepsElement))
+            {
+                return stepsElement.EnumerateArray().Select(element => element.Clone()).ToArray();
+            }
+            
+            // Fallback: try root as array (old format)
+            if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                return doc.RootElement.EnumerateArray().Select(element => element.Clone()).ToArray();
+            }
+            
+            return null;
         }
 
         private async Task ExecuteActionPlan(JsonElement[] steps)
