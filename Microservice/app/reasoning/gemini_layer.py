@@ -238,7 +238,7 @@ class GeminiReasoningLayer:
                     {"role": "user", "parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}
                 ],
                 config={
-                    "temperature": 0.3,  # Lower for more deterministic output
+                    "temperature": 0.1,  # Very low for deterministic output
                     "max_output_tokens": 1024,
                 }
             )

@@ -246,12 +246,12 @@ def parse_command(command: str) -> List[ActionStep]:
 
 
 # ===== GEMINI REASONING LAYER INTEGRATION =====
-# Gemini is DISABLED by default for stability
-# Set GEMINI_ENABLED=true environment variable to enable
+# Gemini is ENABLED by default with improved prompts
+# Set GEMINI_ENABLED=false environment variable to disable
 import os
 
 _gemini_layer = None
-GEMINI_ENABLED = os.environ.get("GEMINI_ENABLED", "false").lower() == "true"
+GEMINI_ENABLED = os.environ.get("GEMINI_ENABLED", "true").lower() != "false"
 
 def get_gemini_layer():
     """Lazy initialization of Gemini layer."""

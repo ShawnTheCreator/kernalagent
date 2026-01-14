@@ -2,80 +2,92 @@
 Gemini Reasoning Layer - Prompt Templates
 
 System and user prompts for planning and recovery.
+Includes explicit examples to guide Gemini to correct outputs.
 """
 
 from .skills import get_skills_for_prompt
 
-PLANNING_SYSTEM_PROMPT = f"""You are a planning assistant for a desktop automation system.
+# Build the system prompt with explicit examples
+PLANNING_SYSTEM_PROMPT = """You are a desktop automation planner. Convert user commands to action plans.
 
-YOUR ROLE:
-- Convert user intent into a structured action plan
-- Select ONLY from the available skills listed below
-- Output ONLY valid JSON, no explanations or markdown
+AVAILABLE SKILLS (use EXACTLY these names):
+- Open Application: Opens an app (params: target = app name like "notepad", "chrome", "word")
+- Close Application: Closes an app (params: target = app name)
+- Type Text: Types text (params: text = what to type)
+- Navigate URL: Opens URL in browser (params: url)
+- Search Web: Searches Google (params: query)
+- Minimize Window: Minimizes current window (no params)
+- Maximize Window: Maximizes current window (no params)
+- Volume Up: Increases volume (params: amount = number, default 10)
+- Volume Down: Decreases volume (params: amount = number)
+- Mute Volume: Toggles mute (no params)
+- Lock Screen: Locks computer (no params)
+- Take Screenshot: Captures screen (no params)
+- Sleep: Puts computer to sleep (no params)
 
-AVAILABLE SKILLS:
-{get_skills_for_prompt()}
+EXAMPLES - Follow these EXACTLY:
+
+User: "open notepad"
+Output: {"intent_summary":"Open Notepad","plan":[{"step":1,"skill":"Open Application","params":{"target":"notepad"},"rationale":"Opens Notepad"}],"confidence":0.95,"fallback_available":true}
+
+User: "open chrome"
+Output: {"intent_summary":"Open Chrome browser","plan":[{"step":1,"skill":"Open Application","params":{"target":"chrome"},"rationale":"Opens Chrome"}],"confidence":0.95,"fallback_available":true}
+
+User: "close notepad"
+Output: {"intent_summary":"Close Notepad","plan":[{"step":1,"skill":"Close Application","params":{"target":"notepad"},"rationale":"Closes Notepad"}],"confidence":0.95,"fallback_available":true}
+
+User: "volume up"
+Output: {"intent_summary":"Increase volume","plan":[{"step":1,"skill":"Volume Up","params":{"amount":10},"rationale":"Increases system volume"}],"confidence":0.95,"fallback_available":true}
+
+User: "mute"
+Output: {"intent_summary":"Mute audio","plan":[{"step":1,"skill":"Mute Volume","params":{},"rationale":"Toggles mute"}],"confidence":0.95,"fallback_available":true}
+
+User: "minimize"
+Output: {"intent_summary":"Minimize window","plan":[{"step":1,"skill":"Minimize Window","params":{},"rationale":"Minimizes current window"}],"confidence":0.95,"fallback_available":true}
+
+User: "maximize"
+Output: {"intent_summary":"Maximize window","plan":[{"step":1,"skill":"Maximize Window","params":{},"rationale":"Maximizes current window"}],"confidence":0.95,"fallback_available":true}
+
+User: "take screenshot"
+Output: {"intent_summary":"Take screenshot","plan":[{"step":1,"skill":"Take Screenshot","params":{},"rationale":"Captures screen"}],"confidence":0.95,"fallback_available":true}
+
+User: "lock screen"
+Output: {"intent_summary":"Lock computer","plan":[{"step":1,"skill":"Lock Screen","params":{},"rationale":"Locks the computer"}],"confidence":0.95,"fallback_available":true}
+
+User: "type hello world"
+Output: {"intent_summary":"Type text","plan":[{"step":1,"skill":"Type Text","params":{"text":"hello world"},"rationale":"Types the text"}],"confidence":0.95,"fallback_available":true}
+
+User: "search for cats"
+Output: {"intent_summary":"Search Google for cats","plan":[{"step":1,"skill":"Open Application","params":{"target":"chrome"},"rationale":"Need browser"},{"step":2,"skill":"Search Web","params":{"query":"cats"},"rationale":"Performs search"}],"confidence":0.90,"fallback_available":true}
 
 STRICT RULES:
-1. Use ONLY skills from the list above
-2. Output ONLY valid JSON matching the schema
-3. Keep plans to 5 steps or fewer
-4. Do NOT invent new skills
-5. Do NOT include execution details (coordinates, timing, etc.)
-6. Set confidence lower if the request is ambiguous
-7. NO markdown code blocks, just raw JSON
-
-OUTPUT FORMAT:
-{{
-  "intent_summary": "Brief description of what user wants",
-  "plan": [
-    {{"step": 1, "skill": "Skill Name", "params": {{}}, "rationale": "Why this step"}}
-  ],
-  "confidence": 0.0-1.0,
-  "fallback_available": true
-}}"""
+1. Output ONLY raw JSON - no markdown, no code blocks, no explanations
+2. Use EXACT skill names from the list above
+3. Maximum 5 steps per plan
+4. Match the examples format exactly"""
 
 PLANNING_USER_TEMPLATE = """USER REQUEST: {user_command}
 
-CURRENT CONTEXT:
-- Active Window: {active_window}
-- Recent Actions: {recent_actions}
-- Previous Failures: {failures}
+Output the JSON plan only. No explanation."""
 
-Generate an action plan to fulfill this request. Output JSON only."""
+RECOVERY_SYSTEM_PROMPT = """You are a recovery planner. When an action fails, propose alternatives.
 
-RECOVERY_SYSTEM_PROMPT = f"""You are a recovery planner for a desktop automation system.
+AVAILABLE SKILLS: Open Application, Close Application, Type Text, Navigate URL, Search Web, Minimize Window, Maximize Window, Volume Up, Volume Down, Mute Volume, Lock Screen, Take Screenshot, Sleep
 
-When an action fails, you analyze the failure and propose an alternative approach.
+RULES:
+1. Maximum 3 recovery steps
+2. Use only available skills
+3. Set should_abort=true if recovery impossible
+4. Output ONLY raw JSON
 
-AVAILABLE SKILLS:
-{get_skills_for_prompt()}
+EXAMPLE:
+{"failure_analysis":"Element not visible","recovery_plan":[{"step":1,"skill":"Scroll Page","params":{"direction":"down"},"rationale":"Make element visible"}],"confidence":0.75,"should_abort":false}"""
 
-STRICT RULES:
-1. Propose maximum 3 recovery steps
-2. Use ONLY available skills
-3. Set should_abort=true if recovery is impossible
-4. Output ONLY valid JSON
-5. NO markdown code blocks
+RECOVERY_USER_TEMPLATE = """Failed action: {failed_step}
+Reason: {failure_reason}
+Attempt: {attempt}/{max_attempts}
 
-OUTPUT FORMAT:
-{{
-  "failure_analysis": "What went wrong",
-  "recovery_plan": [
-    {{"step": 1, "skill": "Skill Name", "params": {{}}, "rationale": "Why"}}
-  ],
-  "confidence": 0.0-1.0,
-  "should_abort": false
-}}"""
-
-RECOVERY_USER_TEMPLATE = """The previous action failed. Analyze and propose a recovery plan.
-
-ORIGINAL PLAN: {original_plan}
-FAILED STEP: {failed_step}
-FAILURE REASON: {failure_reason}
-ATTEMPT: {attempt} of {max_attempts}
-
-Propose a recovery plan or set should_abort=true if impossible."""
+Output recovery JSON or set should_abort=true."""
 
 
 def build_planning_prompt(
@@ -86,10 +98,7 @@ def build_planning_prompt(
 ) -> tuple:
     """Build system and user prompts for planning."""
     user_prompt = PLANNING_USER_TEMPLATE.format(
-        user_command=user_command,
-        active_window=active_window,
-        recent_actions=recent_actions,
-        failures=failures
+        user_command=user_command
     )
     return PLANNING_SYSTEM_PROMPT, user_prompt
 
@@ -104,10 +113,10 @@ def build_recovery_prompt(
     """Build system and user prompts for recovery."""
     import json
     user_prompt = RECOVERY_USER_TEMPLATE.format(
-        original_plan=json.dumps(original_plan, indent=2),
-        failed_step=json.dumps(failed_step, indent=2),
+        failed_step=json.dumps(failed_step),
         failure_reason=failure_reason,
         attempt=attempt,
         max_attempts=max_attempts
     )
     return RECOVERY_SYSTEM_PROMPT, user_prompt
+
