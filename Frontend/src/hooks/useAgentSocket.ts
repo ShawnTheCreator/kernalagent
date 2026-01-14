@@ -23,7 +23,7 @@ import type { AgentEvent, ConnectionState } from '@/types/agentEvents';
 import { normalizeEvent, addEventToBuffer } from '@/lib/eventNormalizer';
 
 // Configuration
-const WS_URL = 'ws://localhost:8000/ws/stream';
+const WS_URL = 'wss://kernalagent.onrender.com/ws/stream';
 const MAX_EVENTS = 50;
 const INITIAL_RECONNECT_DELAY = 1000;   // 1 second
 const MAX_RECONNECT_DELAY = 30000;      // 30 seconds

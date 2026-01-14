@@ -66,6 +66,9 @@ Available tools and their parameters:
     - x: x coordinate (for click/move)
     - y: y coordinate (for click/move)
     - direction: "up" | "down" (for scroll)
+
+13. virtual_desktop
+    - action: "switch_left" | "switch_right" | "new" | "close" | "task_view"
 """
 
 # ===== THE CORE PROMPT =====
@@ -146,6 +149,17 @@ Input: "type hello world"
   "reasoning": "Type the specified text",
   "actions": [
     {{"tool": "text_input", "action": "type", "content": "hello world"}}
+  ]
+}}
+
+Input: "open notepad and type hello"
+{{
+  "intent": "multi_step",
+  "confidence": 0.98,
+  "reasoning": "Opens notepad then types hello",
+  "actions": [
+    {{"tool": "app_launcher", "action": "open", "target": "notepad.exe"}},
+    {{"tool": "text_input", "action": "type", "content": "hello"}}
   ]
 }}
 
