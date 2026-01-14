@@ -274,10 +274,12 @@ def get_gemini_layer():
 async def plan_with_gemini(command: str) -> List[ActionStep]:
     """
     Try to get a plan from Gemini first.
-    Falls back to deterministic parsing if Gemini fails.
+    Falls back to deterministic parsing if Gemini fails or returns nonsense.
     
     Philosophy: "Gemini thinks. Python decides. C# executes."
     """
+    cmd_lower = command.lower().strip()
+    
     gemini = get_gemini_layer()
     
     if gemini and gemini.enabled:
@@ -289,6 +291,36 @@ async def plan_with_gemini(command: str) -> List[ActionStep]:
                 actions = gemini.convert_plan_to_actions(plan)
                 
                 if actions:
+                    first_action = actions[0].get("action", "")
+                    
+                    # ===== INTENT VALIDATION =====
+                    # Check if Gemini's action makes sense for the command
+                    is_valid_intent = True
+                    
+                    # If user says "open X" but action is not open_app, that's wrong
+                    if cmd_lower.startswith(("open ", "launch ", "start ", "run ")):
+                        if first_action != "open_app":
+                            print(f"[AGENT] Intent mismatch: '{cmd_lower}' got '{first_action}'")
+                            is_valid_intent = False
+                    
+                    # If user says "close X" but action is not close_app, that's wrong
+                    if cmd_lower.startswith(("close ", "quit ", "exit ", "kill ")):
+                        if first_action != "close_app":
+                            print(f"[AGENT] Intent mismatch: '{cmd_lower}' got '{first_action}'")
+                            is_valid_intent = False
+                    
+                    # If user says "type X" but action is not type_text, that's wrong
+                    if cmd_lower.startswith(("type ", "write ")):
+                        if first_action != "type_text":
+                            print(f"[AGENT] Intent mismatch: '{cmd_lower}' got '{first_action}'")
+                            is_valid_intent = False
+                    
+                    if not is_valid_intent:
+                        print(f"[AGENT] Falling back to deterministic due to intent mismatch")
+                        return parse_command(command)
+                    
+                    # ===== END INTENT VALIDATION =====
+                    
                     steps = []
                     for action in actions:
                         step = ActionStep(
