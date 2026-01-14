@@ -225,32 +225,96 @@ class GeminiReasoningLayer:
         
         return actions
     
+    # Rate limit tracking
+    _rate_limit_until: float = 0
+    _consecutive_failures: int = 0
+    _max_retries: int = 2
+    
     async def _call_gemini(
         self,
         system_prompt: str,
         user_prompt: str
     ) -> Optional[str]:
-        """Call Gemini API with prompts."""
-        try:
-            response = self.client.models.generate_content(
-                model=self.model_id,
-                contents=[
-                    {"role": "user", "parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}
-                ],
-                config={
-                    "temperature": 0.1,  # Very low for deterministic output
-                    "max_output_tokens": 1024,
-                }
-            )
-            
-            if response and response.text:
-                return response.text.strip()
-            
+        """
+        Call Gemini API with improved error handling.
+        
+        Features:
+        - Exponential backoff on failures
+        - Rate limit detection and cooldown
+        - Retry logic for transient errors
+        - Detailed logging
+        """
+        import time
+        
+        # Check if we're in rate limit cooldown
+        current_time = time.time()
+        if current_time < GeminiReasoningLayer._rate_limit_until:
+            wait_time = GeminiReasoningLayer._rate_limit_until - current_time
+            print(f"[GEMINI] Rate limited, waiting {wait_time:.1f}s")
             return None
-            
-        except Exception as e:
-            print(f"[GEMINI] API call failed: {e}")
-            return None
+        
+        for attempt in range(self._max_retries + 1):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_id,
+                    contents=[
+                        {"role": "user", "parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}
+                    ],
+                    config={
+                        "temperature": 0.1,  # Very low for deterministic output
+                        "max_output_tokens": 1024,
+                    }
+                )
+                
+                if response and response.text:
+                    # Success - reset failure counter
+                    GeminiReasoningLayer._consecutive_failures = 0
+                    return response.text.strip()
+                
+                return None
+                
+            except Exception as e:
+                error_str = str(e)
+                GeminiReasoningLayer._consecutive_failures += 1
+                
+                # Handle rate limiting (429)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    # Extract retry delay if provided, default to 30s
+                    import re
+                    match = re.search(r'retry.*?(\d+)', error_str.lower())
+                    wait_seconds = int(match.group(1)) if match else 30
+                    GeminiReasoningLayer._rate_limit_until = time.time() + wait_seconds
+                    print(f"[GEMINI] Rate limited. Cooldown: {wait_seconds}s")
+                    return None
+                
+                # Handle overloaded model (503)
+                elif "503" in error_str or "UNAVAILABLE" in error_str:
+                    if attempt < self._max_retries:
+                        backoff = (2 ** attempt) * 0.5  # 0.5s, 1s, 2s
+                        print(f"[GEMINI] Model overloaded. Retry {attempt+1}/{self._max_retries} in {backoff}s")
+                        import asyncio
+                        await asyncio.sleep(backoff)
+                        continue
+                    else:
+                        print(f"[GEMINI] Model overloaded. Max retries exceeded.")
+                        return None
+                
+                # Handle invalid API key (400)
+                elif "400" in error_str or "API_KEY_INVALID" in error_str:
+                    print(f"[GEMINI] Invalid API key. Check GOOGLE_API_KEY env var.")
+                    self.enabled = False  # Disable to avoid repeated failures
+                    return None
+                
+                # Other errors
+                else:
+                    print(f"[GEMINI] API error (attempt {attempt+1}): {error_str[:100]}")
+                    if attempt < self._max_retries:
+                        import asyncio
+                        await asyncio.sleep(0.5)
+                        continue
+                    return None
+        
+        return None
     
     def _parse_json_response(self, response: str) -> Optional[Dict[str, Any]]:
         """Parse JSON from Gemini response, handling markdown code blocks."""

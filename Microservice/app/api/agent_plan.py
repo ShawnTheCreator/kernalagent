@@ -12,6 +12,17 @@ from pydantic import BaseModel
 from typing import List, Optional
 import uuid
 import re
+import time
+import logging
+from datetime import datetime
+
+# ===== STRUCTURED LOGGING =====
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%H:%M:%S'
+)
+logger = logging.getLogger("agent")
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
@@ -40,6 +51,10 @@ class PlanResponse(BaseModel):
     session_id: str
     steps: List[ActionStep]
     schema_version: str = "1.0.0"
+    # Metadata for debugging and monitoring
+    source: Optional[str] = None  # "gemini" or "deterministic"
+    processing_time_ms: Optional[int] = None
+    timestamp: Optional[str] = None
 
 
 # App name variations and typo tolerance
@@ -437,17 +452,36 @@ async def get_action_plan(request: PlanRequest):
         {"session_id": "...", "steps": [{"action": "open_app", "target": "notepad.exe"}]}
     """
     session_id = request.session_id or str(uuid.uuid4())
+    start_time = time.time()
+    source = "deterministic"  # Default, updated if Gemini succeeds
+    
+    logger.info(f"📥 Command: '{request.command}'")
     
     try:
         # Try Gemini first, fallback to deterministic
         steps = await plan_with_gemini(request.command)
         
+        # Determine source based on steps (Gemini sets internal flag)
+        gemini = get_gemini_layer()
+        if gemini and gemini.enabled:
+            source = "gemini"  # Attempted Gemini
+        
+        processing_time = int((time.time() - start_time) * 1000)
+        
+        # Log result
+        action_summary = ", ".join([s.action for s in steps[:3]])
+        logger.info(f"📤 Result: [{source}] {len(steps)} step(s): {action_summary} ({processing_time}ms)")
+        
         return PlanResponse(
             session_id=session_id,
             steps=steps,
-            schema_version="1.0.0"
+            schema_version="1.0.0",
+            source=source,
+            processing_time_ms=processing_time,
+            timestamp=datetime.now().isoformat()
         )
     except Exception as e:
+        logger.error(f"❌ Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -493,12 +527,57 @@ async def get_gemini_plan(request: PlanRequest):
 async def agent_health():
     """Health check for agent API."""
     gemini = get_gemini_layer()
-    gemini_status = "enabled" if (gemini and gemini.enabled) else "disabled"
+    
+    gemini_info = {
+        "enabled": False,
+        "status": "disabled"
+    }
+    
+    if gemini:
+        gemini_info["enabled"] = gemini.enabled
+        if gemini.enabled:
+            # Check rate limit status
+            import time
+            from app.reasoning.gemini_layer import GeminiReasoningLayer
+            
+            if time.time() < GeminiReasoningLayer._rate_limit_until:
+                wait_time = int(GeminiReasoningLayer._rate_limit_until - time.time())
+                gemini_info["status"] = f"rate_limited ({wait_time}s remaining)"
+            else:
+                gemini_info["status"] = "ready"
+            
+            gemini_info["consecutive_failures"] = GeminiReasoningLayer._consecutive_failures
+        else:
+            gemini_info["status"] = "disabled"
     
     return {
         "status": "ready", 
         "version": "1.0.0",
-        "gemini": gemini_status
+        "gemini": gemini_info,
+        "timestamp": datetime.now().isoformat()
     }
 
 
+@router.get("/status")
+async def agent_status():
+    """Detailed status endpoint for monitoring."""
+    gemini = get_gemini_layer()
+    
+    return {
+        "api": "ready",
+        "gemini_enabled": GEMINI_ENABLED,
+        "gemini_initialized": gemini is not None and gemini.enabled,
+        "supported_actions": [
+            "open_app", "close_app", "type_text", "navigate", "search_web",
+            "volume_up", "volume_down", "volume_mute",
+            "minimize_window", "maximize_window", "restore_window",
+            "copy", "paste", "cut", "undo", "redo", "select_all", "save",
+            "alt_tab", "show_desktop", "press_key", "hotkey",
+            "media_play_pause", "media_next", "media_previous", "media_stop",
+            "new_tab", "close_tab", "refresh", "go_back", "go_forward",
+            "click", "double_click", "right_click", "scroll",
+            "brightness_up", "brightness_down",
+            "lock_screen", "sleep", "shutdown", "restart", "screenshot"
+        ],
+        "version": "1.0.0"
+    }
