@@ -301,9 +301,9 @@ namespace Kernel_Agent.Services
             try
             {
                 // ========================================
-                // Call Python Brain backend
+                // Call Python Brain backend (LLM-First v2)
                 // ========================================
-                var pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan";
+                var pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
                 
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);
@@ -432,6 +432,21 @@ namespace Kernel_Agent.Services
                                 // ===== SCREENSHOT =====
                                 case "screenshot":
                                     automation.TakeScreenshot();
+                                    break;
+                                
+                                // ===== BRIGHTNESS =====
+                                case "brightness_up":
+                                    int brUpAmt = 10;
+                                    if (step.TryGetProperty("amount", out JsonElement brUpEl))
+                                        brUpAmt = brUpEl.GetInt32();
+                                    automation.BrightnessUp(brUpAmt);
+                                    break;
+                                    
+                                case "brightness_down":
+                                    int brDownAmt = 10;
+                                    if (step.TryGetProperty("amount", out JsonElement brDownEl))
+                                        brDownAmt = brDownEl.GetInt32();
+                                    automation.BrightnessDown(brDownAmt);
                                     break;
                                     
                                 default:
