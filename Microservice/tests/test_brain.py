@@ -27,7 +27,7 @@ def get_test_image() -> str:
 
 async def test_brain():
     """Test the WebSocket connection and AI response."""
-    uri = "ws://localhost:8000/ws/stream"
+    uri = "wss://kernalagent.onrender.com/ws/stream"
     
     print("[TEST] Connecting to Kernal Agent Brain...")
     async with websockets.connect(uri) as websocket:

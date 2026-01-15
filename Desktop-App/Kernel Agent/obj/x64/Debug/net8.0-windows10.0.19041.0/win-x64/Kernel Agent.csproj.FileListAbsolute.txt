@@ -618,10 +618,6 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\qualifiers.txt
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\qualifiers.txt.intermediate
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\MultipleQualifiersPerDimensionFound.txt
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\resources.pri
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppxManifest.xml
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ProjectArchitectures.txt
-C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\x64\Debug\net8.0-windows10.0.19041.0\win-x64\.winmd_cache\$Microsoft.Web.WebView2.Core.winmd_638789222360000000.json
 C:\Users\anime\Downloads\ghost-ai---cognitive-desktop-copilot\kernalagent-contrib\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.exe
 C:\Users\anime\Downloads\ghost-ai---cognitive-desktop-copilot\kernalagent-contrib\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\App.xbf
 C:\Users\anime\Downloads\ghost-ai---cognitive-desktop-copilot\kernalagent-contrib\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\BlankPage1.xbf
@@ -1251,3 +1247,12 @@ C:\Users\anime\Downloads\ghost-ai---cognitive-desktop-copilot\kernalagent-contri
 C:\Users\anime\Downloads\ghost-ai---cognitive-desktop-copilot\kernalagent-contrib\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\StoreLogo.png
 C:\Users\anime\Downloads\ghost-ai---cognitive-desktop-copilot\kernalagent-contrib\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\Wide310x150Logo.scale-200.png
 C:\Users\anime\Downloads\ghost-ai---cognitive-desktop-copilot\kernalagent-contrib\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.pri
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\.nuget\mouse-keyboard-hook-logo.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\LockScreenLogo.scale-200.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\SplashScreen.scale-200.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\Square150x150Logo.scale-200.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\Square44x44Logo.scale-200.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\Square44x44Logo.targetsize-24_altform-unplated.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\StoreLogo.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\Wide310x150Logo.scale-200.png
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.pri

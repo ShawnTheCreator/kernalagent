@@ -22,6 +22,9 @@ namespace Kernel_Agent
         private bool _isRecording = false;
         private string _loginDeviceId = Guid.NewGuid().ToString();
         private FirestoreRealtimeListener? _firestoreListener;
+        
+        // Continuous voice service for always-listening mode
+        private ContinuousVoiceService? _voiceService;
 
         public MainWindow()
         {
@@ -176,6 +179,9 @@ namespace Kernel_Agent
                         System.Diagnostics.Debug.WriteLine($"[UI] Firestore listener failed: {fsEx.Message}");
                         // Don't crash the app - continue without real-time updates
                     }
+                    
+                    // Start continuous voice listening
+                    StartContinuousVoiceListening();
                 });
             }
             catch (Exception ex)
@@ -213,6 +219,53 @@ namespace Kernel_Agent
                 // Auto-scroll to bottom (if ScrollViewer is accessible, or just let users scroll)
                 // If ThoughtLog is in a ScrollViewer, it would be nice to scroll to end.
             });
+        }
+
+        private async void StartContinuousVoiceListening()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[UI] Initializing continuous voice service...");
+                
+                _voiceService = new ContinuousVoiceService();
+                
+                // Subscribe to events for UI updates
+                _voiceService.OnStatusChanged += (status) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog($"[Voice] {status}");
+                    });
+                };
+                
+                _voiceService.OnSpeechRecognized += (text) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog($"You said: \"{text}\"", true);
+                    });
+                };
+                
+                _voiceService.OnCommandExecuted += (command) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog($"[Voice] Executed: {command}");
+                    });
+                };
+                
+                // Initialize and start listening
+                await _voiceService.InitializeAsync();
+                _voiceService.StartListening();
+                
+                System.Diagnostics.Debug.WriteLine("[UI] Continuous voice listening started!");
+                AddToThoughtLog("[Voice] Always-on listening enabled. Speak naturally!");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UI] Voice service failed: {ex.Message}");
+                AddToThoughtLog($"[Voice] Could not start: {ex.Message}");
+            }
         }
 
         private async void CommandInput_KeyDown(object sender, KeyRoutedEventArgs e)

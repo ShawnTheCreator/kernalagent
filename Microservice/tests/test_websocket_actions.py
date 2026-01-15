@@ -7,7 +7,7 @@ import websockets
 import json
 import random
 
-WS_URL = "ws://localhost:8000/ws/stream"
+WS_URL = "wss://kernalagent.onrender.com/ws/stream"
 
 # Sample actions to send
 SAMPLE_ACTIONS = [

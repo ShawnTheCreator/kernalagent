@@ -163,9 +163,37 @@ def parse_command(command: str) -> List[ActionStep]:
     # ===== EXPLICIT PATTERNS - CHECK FIRST =====
     
     # OPEN APP (highest priority for "open X" commands)
+    # Also handles compound commands like "open notepad and type hello"
     open_patterns = ["open", "launch", "start", "run"]
     if words[0] in open_patterns:
         rest = " ".join(words[1:]) if len(words) > 1 else ""
+        
+        # Check for compound command: "open X and type Y"
+        compound_keywords = [" and type ", " and write ", " then type ", " then write "]
+        for keyword in compound_keywords:
+            if keyword in rest.lower():
+                parts = rest.lower().split(keyword, 1)
+                app_name = parts[0].strip()
+                text_to_type = parts[1].strip()
+                exe = get_app_exe(app_name)
+                return [
+                    ActionStep(action="open_app", target=exe),
+                    ActionStep(action="type_text", content=text_to_type)
+                ]
+        
+        # Check for "open X and search Y"
+        search_keywords = [" and search ", " and google ", " then search "]
+        for keyword in search_keywords:
+            if keyword in rest.lower():
+                parts = rest.lower().split(keyword, 1)
+                app_name = parts[0].strip()
+                query = parts[1].strip()
+                exe = get_app_exe(app_name)
+                return [
+                    ActionStep(action="open_app", target=exe),
+                    ActionStep(action="search_web", query=query)
+                ]
+        
         # Check if it's a URL
         if rest and (rest.startswith("http") or ("." in rest and "/" not in rest[:10])):
             url = rest if rest.startswith("http") else f"https://{rest}"
@@ -342,6 +370,18 @@ def parse_command(command: str) -> List[ActionStep]:
             return [ActionStep(action="click", x=int(parts[0]), y=int(parts[1]))]
         else:
             return [ActionStep(action="click", target=" ".join(parts))]
+    
+    # ===== VIRTUAL DESKTOP =====
+    if cmd in ["next desktop", "switch desktop right", "desktop right", "right desktop"]:
+        return [ActionStep(action="switch_desktop_right")]
+    if cmd in ["previous desktop", "switch desktop left", "desktop left", "left desktop", "last desktop"]:
+        return [ActionStep(action="switch_desktop_left")]
+    if cmd in ["new desktop", "create desktop", "add desktop"]:
+        return [ActionStep(action="new_desktop")]
+    if cmd in ["close desktop", "remove desktop", "delete desktop"]:
+        return [ActionStep(action="close_desktop")]
+    if cmd in ["task view", "show desktops", "show all desktops", "desktop view", "view desktops"]:
+        return [ActionStep(action="task_view")]
     
     # ===== DEFAULT: Try as app name =====
     exe = get_app_exe(cmd)

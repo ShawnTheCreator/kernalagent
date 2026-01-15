@@ -182,6 +182,15 @@ TOOL_TO_ACTION_MAP: Dict[str, Dict[str, str]] = {
         "scroll": "scroll",
         "move": "move_mouse",
     },
+    
+    # Virtual Desktop
+    "virtual_desktop": {
+        "switch_left": "switch_desktop_left",
+        "switch_right": "switch_desktop_right",
+        "new": "new_desktop",
+        "close": "close_desktop",
+        "task_view": "task_view",
+    },
 }
 
 

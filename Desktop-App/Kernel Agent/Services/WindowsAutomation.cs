@@ -673,6 +673,60 @@ namespace Kernel_Agent.Services
                 System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Brightness error: {ex.Message}");
             }
         }
+
+        // ===== VIRTUAL DESKTOP CONTROL (Windows 10/11) =====
+        public void SwitchDesktopLeft()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Switch Desktop Left (Win+Ctrl+Left)");
+            keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_LEFT, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void SwitchDesktopRight()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Switch Desktop Right (Win+Ctrl+Right)");
+            keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_RIGHT, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void NewDesktop()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] New Desktop (Win+Ctrl+D)");
+            keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x44, 0, 0, UIntPtr.Zero); // D key
+            keybd_event(0x44, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void CloseDesktop()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Close Desktop (Win+Ctrl+F4)");
+            keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, 0, UIntPtr.Zero);
+            keybd_event(0x73, 0, 0, UIntPtr.Zero); // F4 key (0x73)
+            keybd_event(0x73, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public void TaskView()
+        {
+            System.Diagnostics.Debug.WriteLine("[AUTOMATION] Task View (Win+Tab)");
+            keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_TAB, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
     }
 }
 

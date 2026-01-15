@@ -13,7 +13,7 @@ namespace Kernel_Agent.Services
     {
         private readonly WindowsAutomation _automation = new WindowsAutomation();
         // Using LLM-First Architecture (v2) - intelligent multi-step command processing
-        private readonly string _pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
+        private readonly string _pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan/v2";
         private readonly SpeechRecognitionEngine _recognizer;
 
         public VoiceToActionService()
@@ -81,15 +81,15 @@ namespace Kernel_Agent.Services
                 switch (action)
                 {
                     // ===== APP CONTROL =====
-                    // ===== APP CONTROL =====
                     case "open_app":
-                        bool success = _automation.OpenApplication(step.GetProperty("target").GetString() ?? "");
+                        string appTarget = step.GetProperty("target").GetString() ?? "";
+                        bool success = _automation.OpenApplication(appTarget);
                         if (!success)
                         {
-                            System.Diagnostics.Debug.WriteLine("[VOICE] Failed to open/verify app. Aborting plan.");
-                            // Future: Take screenshot and ask user for help
-                            return; 
+                            System.Diagnostics.Debug.WriteLine("[VOICE] App may not be fully ready, continuing anyway...");
                         }
+                        // Always wait for app to stabilize before next action
+                        await Task.Delay(1500);
                         break;
                     case "close_app":
                         _automation.CloseApplication(step.GetProperty("target").GetString() ?? "");
@@ -259,6 +259,29 @@ namespace Kernel_Agent.Services
                     case "brightness_down":
                         int brDown = step.TryGetProperty("amount", out var brDownAmt) ? brDownAmt.GetInt32() : 10;
                         _automation.BrightnessDown(brDown);
+                        break;
+                    
+                    // ===== VIRTUAL DESKTOP =====
+                    case "switch_desktop_left":
+                    case "desktop_left":
+                    case "previous_desktop":
+                        _automation.SwitchDesktopLeft();
+                        break;
+                    case "switch_desktop_right":
+                    case "desktop_right":
+                    case "next_desktop":
+                        _automation.SwitchDesktopRight();
+                        break;
+                    case "new_desktop":
+                    case "create_desktop":
+                        _automation.NewDesktop();
+                        break;
+                    case "close_desktop":
+                        _automation.CloseDesktop();
+                        break;
+                    case "task_view":
+                    case "show_desktops":
+                        _automation.TaskView();
                         break;
                     
                     default:

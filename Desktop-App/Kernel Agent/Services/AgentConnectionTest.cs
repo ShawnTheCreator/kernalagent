@@ -14,7 +14,7 @@ namespace Kernel_Agent.Services
     /// </summary>
     public static class AgentConnectionTest
     {
-        private static readonly string BASE_URL = "http://localhost:8000";
+        private static readonly string BASE_URL = "https://kernalagent.onrender.com";
         private static readonly string PLAN_ENDPOINT = "/api/agent/plan";
 
         /// <summary>
