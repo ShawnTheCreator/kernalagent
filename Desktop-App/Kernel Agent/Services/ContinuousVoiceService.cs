@@ -12,10 +12,23 @@ using Google.Protobuf;
 namespace Kernel_Agent.Services
 {
     /// <summary>
+    /// Voice states for visual feedback in the orb.
+    /// </summary>
+    public enum VoiceState
+    {
+        Idle,       // Calm breathing
+        Listening,  // Blue pulse - listening for input
+        Processing, // Spinner - recognizing/thinking
+        Speaking,   // Glow expansion - agent responding
+        Success     // Green flash - command completed
+    }
+
+    /// <summary>
     /// Enhanced voice service with:
     /// - Continuous background listening
     /// - Silence/pause detection to know when sentence ends
     /// - Google Cloud Speech API for accurate recognition
+    /// - Voice state events for visual feedback
     /// - Works even when app is minimized
     /// </summary>
     public class ContinuousVoiceService : IDisposable
@@ -47,6 +60,11 @@ namespace Kernel_Agent.Services
         public event Action<string>? OnSpeechRecognized;
         public event Action<string>? OnCommandExecuted;
         public event Action<bool>? OnListeningStateChanged;
+        
+        /// <summary>
+        /// Fired when voice state changes - use for orb visual feedback.
+        /// </summary>
+        public event Action<VoiceState>? OnVoiceStateChanged;
 
         public bool IsListening => _isListening;
 
@@ -85,6 +103,7 @@ namespace Kernel_Agent.Services
                 
                 OnStatusChanged?.Invoke("Listening...");
                 OnListeningStateChanged?.Invoke(true);
+                OnVoiceStateChanged?.Invoke(VoiceState.Listening);
                 
                 System.Diagnostics.Debug.WriteLine("[VOICE] Started continuous listening");
             }
@@ -188,6 +207,9 @@ namespace Kernel_Agent.Services
 
             try
             {
+                // Signal processing state
+                OnVoiceStateChanged?.Invoke(VoiceState.Processing);
+                
                 // Send to Google Cloud Speech
                 var response = await _speechClient.RecognizeAsync(new RecognitionConfig
                 {
@@ -210,18 +232,25 @@ namespace Kernel_Agent.Services
                     OnSpeechRecognized?.Invoke(transcript);
                     OnStatusChanged?.Invoke($"Heard: \"{transcript}\"");
                     
+                    // Signal speaking/executing state
+                    OnVoiceStateChanged?.Invoke(VoiceState.Speaking);
+                    
                     // Execute the command
                     await ExecuteCommandAsync(transcript);
+                    
+                    // Signal success
+                    OnVoiceStateChanged?.Invoke(VoiceState.Success);
                 }
-                else
-                {
-                    OnStatusChanged?.Invoke("Listening...");
-                }
+                
+                // Return to listening state
+                OnStatusChanged?.Invoke("Listening...");
+                OnVoiceStateChanged?.Invoke(VoiceState.Listening);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[VOICE] Recognition error: {ex.Message}");
                 OnStatusChanged?.Invoke("Listening...");
+                OnVoiceStateChanged?.Invoke(VoiceState.Listening);
             }
         }
 

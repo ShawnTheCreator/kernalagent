@@ -3,23 +3,127 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
-using Windows.UI; // For Color
+using Windows.UI;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Kernel_Agent.Services;
 
 namespace Kernel_Agent
 {
     public sealed partial class MemoryPage : Page
     {
         private static readonly Random _random = new Random();
+        private readonly ApiService _api = ApiService.Instance;
+        private List<SkillDto> _skills = new();
 
         public MemoryPage()
         {
             this.InitializeComponent();
-            this.Loaded += (s, e) => GenerateNeuralMap();
         }
 
-        // Standard implementation for internal calls
+        private async void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            GenerateNeuralMap();
+            await LoadSkillsAsync();
+        }
+
+        private async Task LoadSkillsAsync()
+        {
+            ShowLoading(true);
+            
+            try
+            {
+                _skills = await _api.GetMySkillsAsync();
+                
+                if (_skills.Count > 0)
+                {
+                    SkillsListView.ItemsSource = _skills;
+                    SkillsCountText.Text = $"{_skills.Count} skills learned";
+                    CognitiveNodesText.Text = $"SKILLS LOADED: {_skills.Count}";
+                    MemoryIntegrityText.Text = "API: CONNECTED";
+                    MemoryIntegrityText.Foreground = new SolidColorBrush(Color.FromArgb(255, 52, 168, 83));
+                }
+                else
+                {
+                    SkillsCountText.Text = "No skills found";
+                    CognitiveNodesText.Text = "SKILLS LOADED: 0";
+                    MemoryIntegrityText.Text = "No skills yet - start using commands!";
+                    MemoryIntegrityText.Foreground = new SolidColorBrush(Color.FromArgb(255, 251, 188, 4));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MEMORY] Load error: {ex.Message}");
+                SkillsCountText.Text = "Failed to load";
+                MemoryIntegrityText.Text = "API: OFFLINE";
+                MemoryIntegrityText.Foreground = new SolidColorBrush(Color.FromArgb(255, 234, 67, 53));
+            }
+            finally
+            {
+                ShowLoading(false);
+            }
+        }
+
+        private void ShowLoading(bool isLoading)
+        {
+            if (FindName("LoadingProgress") is ProgressRing progress)
+            {
+                progress.IsActive = isLoading;
+                progress.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
+            }
+            if (FindName("RefreshSkillsButton") is Button btn)
+            {
+                btn.IsEnabled = !isLoading;
+            }
+        }
+
+        private void SkillsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SkillsListView.SelectedItem is SkillDto skill)
+            {
+                ShowSkillDetails(skill);
+            }
+        }
+
+        private void ShowSkillDetails(SkillDto skill)
+        {
+            // Hide neural canvas, show details panel
+            if (FindName("SkillDetailsPanel") is Grid panel)
+                panel.Visibility = Visibility.Visible;
+            if (FindName("NeuralCanvas") is Canvas canvas)
+                canvas.Visibility = Visibility.Collapsed;
+
+            // Populate details
+            if (FindName("DetailSkillName") is TextBlock name)
+                name.Text = skill.Name;
+            if (FindName("DetailSkillIntent") is TextBlock intent)
+                intent.Text = skill.IntentSignature;
+            if (FindName("DetailConfidence") is TextBlock conf)
+                conf.Text = $"{(skill.Confidence * 100):F0}%";
+            if (FindName("DetailSuccessCount") is TextBlock count)
+                count.Text = skill.SuccessCount.ToString();
+            if (FindName("DetailLastUsed") is TextBlock lastUsed)
+            {
+                if (!string.IsNullOrEmpty(skill.LastUsedAt))
+                {
+                    if (DateTime.TryParse(skill.LastUsedAt, out var dt))
+                        lastUsed.Text = dt.ToString("MMM dd");
+                    else
+                        lastUsed.Text = skill.LastUsedAt;
+                }
+                else
+                {
+                    lastUsed.Text = "Never";
+                }
+            }
+        }
+
+        private async void RefreshSkillsButton_Click(object sender, RoutedEventArgs e)
+        {
+            await LoadSkillsAsync();
+        }
+
         private void GenerateNeuralMap()
         {
             if (NeuralCanvas == null) return;
@@ -27,13 +131,11 @@ namespace Kernel_Agent
             NeuralCanvas.Children.Clear();
             List<Point> nodePoints = new List<Point>();
 
-            // Retrieval of brushes with hardcoded fallbacks if Resources are missing
             var purpleBrush = Application.Current.Resources["GeminiPurpleBrush"] as SolidColorBrush
                               ?? new SolidColorBrush(Color.FromArgb(255, 142, 117, 255));
             var blueBrush = Application.Current.Resources["GoogleBlue"] as SolidColorBrush
                             ?? new SolidColorBrush(Color.FromArgb(255, 66, 133, 244));
 
-            // Compute safe bounds based on current window size
             int maxX = (int)Math.Max(NeuralCanvas.ActualWidth - 40, 100);
             int maxY = (int)Math.Max(NeuralCanvas.ActualHeight - 40, 100);
 
@@ -76,12 +178,6 @@ namespace Kernel_Agent
                     NeuralCanvas.Children.Insert(0, synapse);
                 }
             }
-        }
-
-        // This handles the button click from XAML
-        private void OnOptimizeWeightsClick(object sender, RoutedEventArgs e)
-        {
-            GenerateNeuralMap();
         }
     }
 }

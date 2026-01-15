@@ -16,7 +16,7 @@ namespace Kernel_Agent
 {
     public sealed partial class MainWindow : Window
     {
-        private OrbOverlayWindow _orbOverlayWindow = new OrbOverlayWindow();
+        private OrbOverlayWindow? _orbOverlayWindow;
         private WaveInEvent? _waveIn;
         private SpeechClient _speechClient;
         private bool _isRecording = false;
@@ -225,13 +225,15 @@ namespace Kernel_Agent
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[UI] Initializing continuous voice service...");
+                System.Diagnostics.Debug.WriteLine("[UI] *** Initializing continuous voice service...");
+                AddToThoughtLog("[Voice] Initializing...");
                 
                 _voiceService = new ContinuousVoiceService();
                 
                 // Subscribe to events for UI updates
                 _voiceService.OnStatusChanged += (status) =>
                 {
+                    System.Diagnostics.Debug.WriteLine($"[VOICE-EVENT] Status: {status}");
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
                         AddToThoughtLog($"[Voice] {status}");
@@ -240,31 +242,67 @@ namespace Kernel_Agent
                 
                 _voiceService.OnSpeechRecognized += (text) =>
                 {
+                    System.Diagnostics.Debug.WriteLine($"[VOICE-EVENT] Recognized: {text}");
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
-                        AddToThoughtLog($"You said: \"{text}\"", true);
+                        AddToThoughtLog($"🎤 You said: \"{text}\"", true);
                     });
                 };
                 
                 _voiceService.OnCommandExecuted += (command) =>
                 {
+                    System.Diagnostics.Debug.WriteLine($"[VOICE-EVENT] Executed: {command}");
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
-                        AddToThoughtLog($"[Voice] Executed: {command}");
+                        AddToThoughtLog($"✓ Executed: {command}");
+                    });
+                };
+                
+                // Connect voice states to orb visual feedback
+                _voiceService.OnVoiceStateChanged += (state) =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"[VOICE-EVENT] State: {state}");
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (_orbOverlayWindow != null)
+                        {
+                            switch (state)
+                            {
+                                case VoiceState.Idle:
+                                    _orbOverlayWindow.StartIdleAnimation();
+                                    break;
+                                case VoiceState.Listening:
+                                    _orbOverlayWindow.SetListening();
+                                    break;
+                                case VoiceState.Processing:
+                                    _orbOverlayWindow.SetProcessing();
+                                    break;
+                                case VoiceState.Speaking:
+                                    _orbOverlayWindow.SetSpeaking();
+                                    break;
+                                case VoiceState.Success:
+                                    _orbOverlayWindow.ShowSuccess();
+                                    break;
+                            }
+                        }
                     });
                 };
                 
                 // Initialize and start listening
+                System.Diagnostics.Debug.WriteLine("[UI] *** Calling InitializeAsync...");
                 await _voiceService.InitializeAsync();
+                System.Diagnostics.Debug.WriteLine("[UI] *** InitializeAsync complete!");
+                
                 _voiceService.StartListening();
                 
-                System.Diagnostics.Debug.WriteLine("[UI] Continuous voice listening started!");
-                AddToThoughtLog("[Voice] Always-on listening enabled. Speak naturally!");
+                System.Diagnostics.Debug.WriteLine("[UI] *** Continuous voice listening started!");
+                AddToThoughtLog("🎤 [Voice] Listening! Speak naturally.");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UI] Voice service failed: {ex.Message}");
-                AddToThoughtLog($"[Voice] Could not start: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[UI] *** Voice service FAILED: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[UI] *** Stack: {ex.StackTrace}");
+                AddToThoughtLog($"❌ [Voice] Error: {ex.Message}");
             }
         }
 
@@ -691,12 +729,38 @@ namespace Kernel_Agent
             {
                 if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Minimized)
                 {
-                    // Do not close the main window to avoid crashes. 
-                    // Just activate the orb overlay.
-                    
+                    // Create and show the floating orb overlay
                     if (_orbOverlayWindow == null)
                     {
                         _orbOverlayWindow = new OrbOverlayWindow();
+                        
+                        // Wire up orb events
+                        _orbOverlayWindow.OnExpandRequested += () =>
+                        {
+                            // Restore main window
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                this.Activate();
+                                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                                var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                                var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+                                if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p)
+                                {
+                                    p.Restore();
+                                }
+                            });
+                        };
+                        
+                        _orbOverlayWindow.OnExitRequested += () =>
+                        {
+                            // Close entire application
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                _orbOverlayWindow?.Close();
+                                _orbOverlayWindow = null;
+                                this.Close();
+                            });
+                        };
                     }
                     
                     try 

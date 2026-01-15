@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -13,7 +14,8 @@ namespace Kernel_Agent.Services
         private static readonly string API_BASE_URL = 
             (Environment.GetEnvironmentVariable("API_BASE_URL") ?? "https://kernal-agent-backend.onrender.com/api").TrimEnd('/') + "/";
         
-        private static readonly string BASE_URL = "https://kernal-agent-brain.onrender.com/"; // Python microservice - Not used directly anymore?
+        // Legacy reference - Python microservice is at: https://kernalagent.onrender.com/
+        private static readonly string BASE_URL = "https://kernalagent.onrender.com/";
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
 
@@ -355,6 +357,111 @@ namespace Kernel_Agent.Services
                 return null;
             }
         }
+
+        // =====================================================
+        // NEW: Python Microservice Endpoints for Real Data
+        // =====================================================
+        private static readonly string MICROSERVICE_URL = 
+            Environment.GetEnvironmentVariable("MICROSERVICE_URL") ?? "https://kernalagent.onrender.com";
+
+        public async Task<List<SkillDto>> GetMySkillsAsync()
+        {
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                if (string.IsNullOrEmpty(token)) return new List<SkillDto>();
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await client.GetAsync($"{MICROSERVICE_URL}/me/skills");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var skills = JsonSerializer.Deserialize<List<SkillDto>>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    return skills ?? new List<SkillDto>();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetMySkills error: {ex.Message}");
+            }
+            return new List<SkillDto>();
+        }
+
+        public async Task<List<SessionDto>> GetMySessionsAsync()
+        {
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                if (string.IsNullOrEmpty(token)) return new List<SessionDto>();
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await client.GetAsync($"{MICROSERVICE_URL}/me/sessions");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var sessions = JsonSerializer.Deserialize<List<SessionDto>>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    return sessions ?? new List<SessionDto>();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetMySessions error: {ex.Message}");
+            }
+            return new List<SessionDto>();
+        }
+
+        public async Task<MemoryDto?> GetMyMemoryAsync()
+        {
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                if (string.IsNullOrEmpty(token)) return null;
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await client.GetAsync($"{MICROSERVICE_URL}/me/memory");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    return JsonSerializer.Deserialize<MemoryDto>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetMyMemory error: {ex.Message}");
+            }
+            return null;
+        }
+
+        public async Task<DashboardStatsDto?> GetDashboardStatsAsync()
+        {
+            try
+            {
+                return await GetAsync<DashboardStatsDto>("dashboard/stats");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetDashboardStats error: {ex.Message}");
+            }
+            return null;
+        }
     }
 
     public class AuthResponse
@@ -368,6 +475,50 @@ namespace Kernel_Agent.Services
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+    }
+
+    // =====================================================
+    // DTOs for Real Backend Data
+    // =====================================================
+
+    public class SkillDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string IntentSignature { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public float Confidence { get; set; }
+        public int SuccessCount { get; set; }
+        public string? LastUsedAt { get; set; }
+        public string? CreatedAt { get; set; }
+    }
+
+    public class SessionDto
+    {
+        public string SessionId { get; set; } = string.Empty;
+        public string Intent { get; set; } = string.Empty;
+        public string StartedAt { get; set; } = string.Empty;
+        public string? EndedAt { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public float Confidence { get; set; }
+        public int StepCount { get; set; }
+    }
+
+    public class MemoryDto
+    {
+        public List<string> FrequentSkills { get; set; } = new();
+        public List<string> FailurePatterns { get; set; } = new();
+        public List<string> SuccessPatterns { get; set; } = new();
+        public string? UpdatedAt { get; set; }
+    }
+
+    public class DashboardStatsDto
+    {
+        public int TotalTasks { get; set; }
+        public double SuccessRate { get; set; }
+        public int AverageLatency { get; set; }
+        public string Uptime { get; set; } = string.Empty;
+        public int ActiveSkills { get; set; }
     }
 }
 

@@ -24,6 +24,61 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agent")
 
+# ===== KERNEL VOICE PERSONA =====
+# System prompt for voice interactions - concise, professional, and proactive
+KERNEL_VOICE_PROMPT = """
+You are the Kernel Agent voice core. Be concise and professional.
+
+VOICE STYLE:
+- Keep responses to 1-2 short sentences
+- Never use three words when one will do
+- Speak with calm confidence
+
+RESPONSE PATTERNS:
+- Acknowledge immediately: "On it. Opening [app]."
+- Report progress briefly: "Searching for your template..."
+- Confirm completion: "Done. [App] is ready."
+- If audio unclear: "Could you repeat that?"
+- For dangerous actions: "Delete all files? Say 'yes' to confirm."
+
+PERSONALITY:
+- Minimalist and efficient
+- Proactive but not chatty
+- Calm and capable
+"""
+
+def format_voice_response(action: str, target: str = None, success: bool = True) -> str:
+    """
+    Generate concise voice response for an action.
+    These are meant to be spoken by TTS - keep them short!
+    """
+    if not success:
+        return "Something went wrong. Could you try again?"
+    
+    # Acknowledge patterns
+    responses = {
+        "open_app": f"Opening {target or 'app'}.",
+        "close_app": f"Closing {target or 'app'}.",
+        "type_text": "Typing now.",
+        "navigate": f"Going to {target or 'page'}.",
+        "search_web": f"Searching for {target or 'that'}.",
+        "volume_up": "Volume up.",
+        "volume_down": "Volume down.",
+        "volume_mute": "Muted.",
+        "minimize_window": "Minimized.",
+        "maximize_window": "Maximized.",
+        "screenshot": "Screenshot taken.",
+        "copy": "Copied.",
+        "paste": "Pasted.",
+        "save": "Saved.",
+        "media_play_pause": "Playing.",
+        "brightness_up": "Brighter.",
+        "brightness_down": "Dimmer.",
+    }
+    
+    return responses.get(action, "Done.")
+
+
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
 
