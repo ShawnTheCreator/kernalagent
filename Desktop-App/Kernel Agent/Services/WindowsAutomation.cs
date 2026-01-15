@@ -5,8 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Text;
 using WindowsInput;
 
 namespace Kernel_Agent.Services
@@ -28,6 +30,43 @@ namespace Kernel_Agent.Services
         
         [DllImport("user32.dll")]
         private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+        
+        // ===== Dialog Detection API Imports =====
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+        
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+        
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+        
+        [DllImport("user32.dll")]
+        private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+        
+        [DllImport("user32.dll")]
+        private static extern bool IsWindowVisible(IntPtr hWnd);
+        
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+        
+        [DllImport("user32.dll")]
+        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        
+        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+        
+        // Message constants for button clicks
+        private const uint WM_COMMAND = 0x0111;
+        private const uint BN_CLICKED = 0;
+        
+        // Button IDs for common dialogs
+        private const int IDOK = 1;
+        private const int IDCANCEL = 2;
+        private const int IDYES = 6;
+        private const int IDNO = 7;
         
         // Virtual Key Codes
         private const byte VK_VOLUME_UP = 0xAF;
@@ -726,6 +765,216 @@ namespace Kernel_Agent.Services
             keybd_event(VK_TAB, 0, 0, UIntPtr.Zero);
             keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        // ===== DIALOG DETECTION AND HANDLING =====
+        
+        /// <summary>
+        /// Information about a detected dialog window.
+        /// </summary>
+        public class DialogInfo
+        {
+            public IntPtr Handle { get; set; }
+            public string Title { get; set; } = "";
+            public string ClassName { get; set; } = "";
+            public DialogType Type { get; set; } = DialogType.Unknown;
+            public bool HasYesNo { get; set; }
+            public bool HasOkCancel { get; set; }
+        }
+        
+        public enum DialogType
+        {
+            Unknown,
+            SaveAs,
+            FileExists,
+            Confirmation,
+            Error,
+            Warning
+        }
+        
+        /// <summary>
+        /// Check if a dialog window is currently visible (blocking interaction).
+        /// </summary>
+        public bool IsDialogPresent()
+        {
+            var dialogInfo = GetDialogInfo();
+            return dialogInfo != null;
+        }
+        
+        /// <summary>
+        /// Get information about the currently visible dialog, if any.
+        /// </summary>
+        public DialogInfo? GetDialogInfo()
+        {
+            IntPtr foreground = GetForegroundWindow();
+            if (foreground == IntPtr.Zero)
+                return null;
+            
+            var className = new StringBuilder(256);
+            GetClassName(foreground, className, 256);
+            string classStr = className.ToString();
+            
+            var title = new StringBuilder(256);
+            GetWindowText(foreground, title, 256);
+            string titleStr = title.ToString();
+            
+            System.Diagnostics.Debug.WriteLine($"[DIALOG] Foreground: class='{classStr}' title='{titleStr}'");
+            
+            // Check for common dialog classes
+            bool isDialog = classStr.Contains("#32770") ||  // Standard Windows dialog
+                           classStr.Contains("Dialog") ||
+                           classStr.Contains("Popup") ||
+                           titleStr.Contains("Save As") ||
+                           titleStr.Contains("Confirm") ||
+                           titleStr.Contains("Replace") ||
+                           titleStr.Contains("already exists");
+            
+            if (!isDialog)
+                return null;
+            
+            var info = new DialogInfo
+            {
+                Handle = foreground,
+                Title = titleStr,
+                ClassName = classStr,
+                Type = DetectDialogType(titleStr, classStr)
+            };
+            
+            // Check for Yes/No buttons
+            IntPtr yesBtn = FindWindowEx(foreground, IntPtr.Zero, "Button", "Yes");
+            IntPtr noBtn = FindWindowEx(foreground, IntPtr.Zero, "Button", "No");
+            info.HasYesNo = yesBtn != IntPtr.Zero && noBtn != IntPtr.Zero;
+            
+            // Alt: check for &Yes (accelerator key)
+            if (!info.HasYesNo)
+            {
+                yesBtn = FindWindowEx(foreground, IntPtr.Zero, "Button", "&Yes");
+                noBtn = FindWindowEx(foreground, IntPtr.Zero, "Button", "&No");
+                info.HasYesNo = yesBtn != IntPtr.Zero && noBtn != IntPtr.Zero;
+            }
+            
+            // Check for OK/Cancel buttons
+            IntPtr okBtn = FindWindowEx(foreground, IntPtr.Zero, "Button", "OK");
+            IntPtr cancelBtn = FindWindowEx(foreground, IntPtr.Zero, "Button", "Cancel");
+            info.HasOkCancel = okBtn != IntPtr.Zero && cancelBtn != IntPtr.Zero;
+            
+            System.Diagnostics.Debug.WriteLine($"[DIALOG] Detected: type={info.Type} hasYesNo={info.HasYesNo} hasOkCancel={info.HasOkCancel}");
+            
+            return info;
+        }
+        
+        /// <summary>
+        /// Detect the type of dialog based on title and class.
+        /// </summary>
+        private DialogType DetectDialogType(string title, string className)
+        {
+            string lowerTitle = title.ToLower();
+            
+            if (lowerTitle.Contains("save as"))
+                return DialogType.SaveAs;
+            
+            if (lowerTitle.Contains("already exists") || 
+                lowerTitle.Contains("replace") ||
+                lowerTitle.Contains("overwrite"))
+                return DialogType.FileExists;
+            
+            if (lowerTitle.Contains("confirm") ||
+                lowerTitle.Contains("are you sure"))
+                return DialogType.Confirmation;
+            
+            if (lowerTitle.Contains("error"))
+                return DialogType.Error;
+            
+            if (lowerTitle.Contains("warning"))
+                return DialogType.Warning;
+            
+            // Check class name for standard dialog
+            if (className.Contains("#32770"))
+                return DialogType.Confirmation;
+            
+            return DialogType.Unknown;
+        }
+        
+        /// <summary>
+        /// Click the Yes button on a dialog.
+        /// Returns true if successful.
+        /// </summary>
+        public bool DismissDialogWithYes()
+        {
+            IntPtr foreground = GetForegroundWindow();
+            if (foreground == IntPtr.Zero)
+                return false;
+            
+            // Try different button texts
+            string[] yesTexts = { "Yes", "&Yes", "Да" };
+            foreach (var text in yesTexts)
+            {
+                IntPtr btn = FindWindowEx(foreground, IntPtr.Zero, "Button", text);
+                if (btn != IntPtr.Zero)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DIALOG] Clicking Yes button");
+                    PostMessage(btn, WM_COMMAND, (IntPtr)(BN_CLICKED << 16 | IDYES), btn);
+                    Thread.Sleep(100);
+                    return true;
+                }
+            }
+            
+            // Alternative: press Enter (often activates default button)
+            System.Diagnostics.Debug.WriteLine($"[DIALOG] No Yes button found, pressing Enter");
+            keybd_event(VK_ENTER, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_ENTER, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            Thread.Sleep(100);
+            return true;
+        }
+        
+        /// <summary>
+        /// Click the No/Cancel button on a dialog.
+        /// </summary>
+        public bool DismissDialogWithNo()
+        {
+            IntPtr foreground = GetForegroundWindow();
+            if (foreground == IntPtr.Zero)
+                return false;
+            
+            string[] noTexts = { "No", "&No", "Cancel", "Нет" };
+            foreach (var text in noTexts)
+            {
+                IntPtr btn = FindWindowEx(foreground, IntPtr.Zero, "Button", text);
+                if (btn != IntPtr.Zero)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DIALOG] Clicking No/Cancel button");
+                    PostMessage(btn, WM_COMMAND, (IntPtr)(BN_CLICKED << 16 | IDNO), btn);
+                    Thread.Sleep(100);
+                    return true;
+                }
+            }
+            
+            // Alternative: press Escape
+            System.Diagnostics.Debug.WriteLine($"[DIALOG] No button found, pressing Escape");
+            keybd_event(VK_ESCAPE, 0, 0, UIntPtr.Zero);
+            keybd_event(VK_ESCAPE, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            Thread.Sleep(100);
+            return true;
+        }
+        
+        /// <summary>
+        /// Wait for a dialog to appear after an action.
+        /// Returns dialog info if one appears within timeout, null otherwise.
+        /// </summary>
+        public async Task<DialogInfo?> WaitForDialogAsync(int timeoutMs = 1000)
+        {
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                var dialog = GetDialogInfo();
+                if (dialog != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DIALOG] Dialog appeared: {dialog.Title}");
+                    return dialog;
+                }
+                await Task.Delay(100);
+            }
+            return null;
         }
     }
 }

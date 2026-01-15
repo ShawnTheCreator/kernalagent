@@ -56,13 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 },
             });
             if (response.ok) {
-                console.log('[AUTH] User synced to Firestore successfully');
+                // User synced to Firestore successfully
             } else {
-                console.warn('[AUTH] Failed to sync user to Firestore:', response.status);
+                // Failed to sync - non-critical, continue
             }
-        } catch (error) {
-            console.warn('[AUTH] Error syncing user to Firestore:', error);
-            // Don't throw - this is a background sync, not critical for auth flow
+        } catch {
+            // Non-critical background sync failed - don't block auth flow
         }
     };
 

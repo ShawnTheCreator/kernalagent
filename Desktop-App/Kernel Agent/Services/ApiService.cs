@@ -304,7 +304,7 @@ namespace Kernel_Agent.Services
                 // Call Python Brain backend (LLM-First v2)
                 // Production: Render | Dev: localhost:8000
                 // ========================================
-                var pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan/v2";
+                var pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
                 
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);

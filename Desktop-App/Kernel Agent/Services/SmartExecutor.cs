@@ -25,6 +25,16 @@ namespace Kernel_Agent.Services
         private string _currentGoal = "";  // Track original command for recovery
         private string _lastOpenedApp = ""; // Track last opened app for focus before typing
         
+        // Actions that may trigger dialogs and need proactive checking
+        private static readonly System.Collections.Generic.HashSet<string> RiskyActions = new() {
+            "save", "hotkey", "press_key", "type_text"
+        };
+        
+        // Hotkeys that commonly trigger dialogs
+        private static readonly System.Collections.Generic.HashSet<string> DialogTriggerHotkeys = new() {
+            "ctrl+s", "ctrl+shift+s", "ctrl+n", "ctrl+o", "ctrl+w", "alt+f4"
+        };
+        
         public SmartExecutor()
         {
             _automation = new WindowsAutomation();
@@ -99,69 +109,85 @@ namespace Kernel_Agent.Services
 
         /// <summary>
         /// Execute a plan (list of actions) with proper sequencing and VISION RECOVERY.
+        /// Now includes PROACTIVE DIALOG DETECTION after risky actions.
         /// </summary>
         public async Task<PlanExecutionResult> ExecutePlanAsync(JsonElement stepsElement)
         {
             var result = new PlanExecutionResult();
             var stopwatch = Stopwatch.StartNew();
+            int stepIndex = 0;
+            int totalSteps = 0;
+            
+            // Count total steps
+            foreach (var _ in stepsElement.EnumerateArray())
+                totalSteps++;
 
             foreach (var step in stepsElement.EnumerateArray())
             {
+                stepIndex++;
                 var actionResult = await ExecuteActionAsync(step);
                 result.ActionResults.Add(actionResult);
                 
-                // Get action name for proactive checks
+                // Get action details for dialog checking
                 string actionName = "";
+                string hotkeyContent = "";
                 if (step.TryGetProperty("action", out var actionEl))
                     actionName = actionEl.GetString() ?? "";
-
-                // PROACTIVE VISION CHECK after EVERY action
-                // Verifies the action actually worked (Chrome opened, text typed, etc.)
-                if (actionResult.Success && !string.IsNullOrEmpty(_currentGoal))
+                if (step.TryGetProperty("content", out var contentEl))
+                    hotkeyContent = contentEl.GetString() ?? "";
+                
+                // ===== PROACTIVE DIALOG DETECTION =====
+                // Check for dialogs after risky actions (save, hotkey, etc.)
+                bool shouldCheckDialog = RiskyActions.Contains(actionName) ||
+                    (actionName == "hotkey" && DialogTriggerHotkeys.Contains(hotkeyContent.ToLower()));
+                
+                if (shouldCheckDialog && actionResult.Success)
                 {
-                    // Skip verification for simple/instant actions
-                    bool needsVerification = actionName switch
-                    {
-                        "open_app" => true,
-                        "type_text" => true,
-                        "search_web" => true,
-                        "search" => true,
-                        "navigate" => true,
-                        "click" => true,
-                        _ => false  // Don't verify volume, brightness, etc.
-                    };
+                    Debug.WriteLine($"[EXECUTOR] Checking for dialog after: {actionName} ({hotkeyContent})");
                     
-                    if (needsVerification)
+                    // Wait briefly for dialog to appear
+                    await Task.Delay(500);
+                    
+                    var dialogInfo = await _automation.WaitForDialogAsync(1000);
+                    
+                    if (dialogInfo != null)
                     {
-                        Debug.WriteLine($"[EXECUTOR] Vision verification after {actionName}...");
-                        await Task.Delay(1500); // Wait for action effects to appear
+                        Debug.WriteLine($"[EXECUTOR] 🔔 DIALOG DETECTED: '{dialogInfo.Title}' (type={dialogInfo.Type})");
                         
-                        var verification = await _visionRecovery.AttemptRecoveryAsync(
-                            _currentGoal,
-                            $"verify:{actionName}",
-                            "proactive_verification"
-                        );
+                        // Handle known dialogs automatically
+                        bool dialogHandled = await HandleKnownDialogAsync(dialogInfo);
                         
-                        // If vision found a blocker and suggests action
-                        if (verification.Success && verification.RecoveryAction != null)
+                        if (!dialogHandled)
                         {
-                            Debug.WriteLine($"[EXECUTOR] Vision found issue: {verification.Blocker}");
-                            Debug.WriteLine($"[EXECUTOR] Vision suggests: {verification.RecoveryAction.Action}");
+                            // Unknown dialog - call vision recovery
+                            Debug.WriteLine($"[EXECUTOR] Unknown dialog, calling vision recovery...");
                             
-                            var recoveryExec = await ExecuteRecoveryAction(verification.RecoveryAction);
-                            if (recoveryExec.Success)
+                            if (!string.IsNullOrEmpty(_currentGoal))
                             {
-                                Debug.WriteLine("[EXECUTOR] Issue resolved! Continuing...");
-                                result.ActionResults.Add(recoveryExec);
-                                await Task.Delay(500);
+                                var recoveryResult = await _visionRecovery.AttemptRecoveryAsync(
+                                    _currentGoal,
+                                    actionName,
+                                    $"Dialog appeared: {dialogInfo.Title}",
+                                    dialogInfo.Title,
+                                    "",
+                                    null,
+                                    stepIndex,
+                                    totalSteps,
+                                    actionName,
+                                    true
+                                );
+                                
+                                if (recoveryResult.Success && recoveryResult.RecoveryAction != null)
+                                {
+                                    Debug.WriteLine($"[EXECUTOR] Vision recovery suggests: {recoveryResult.RecoveryAction.Action}");
+                                    var recoveryExec = await ExecuteRecoveryAction(recoveryResult.RecoveryAction);
+                                    result.ActionResults.Add(recoveryExec);
+                                }
                             }
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"[EXECUTOR] Vision verified {actionName} OK");
                         }
                     }
                 }
+                // ===== END PROACTIVE DIALOG DETECTION =====
 
                 if (!actionResult.Success)
                 {
@@ -217,6 +243,65 @@ namespace Kernel_Agent.Services
         }
         
         /// <summary>
+        /// Handle known dialog types automatically.
+        /// Returns true if dialog was handled, false if it needs vision recovery.
+        /// </summary>
+        private async Task<bool> HandleKnownDialogAsync(WindowsAutomation.DialogInfo dialogInfo)
+        {
+            Debug.WriteLine($"[EXECUTOR] HandleKnownDialogAsync: type={dialogInfo.Type}");
+            
+            switch (dialogInfo.Type)
+            {
+                case WindowsAutomation.DialogType.FileExists:
+                    // File exists - click Yes to replace (most common user intent)
+                    Debug.WriteLine("[EXECUTOR] ✅ Auto-handling: File exists → Click Yes to replace");
+                    _automation.DismissDialogWithYes();
+                    await Task.Delay(300);
+                    return true;
+                    
+                case WindowsAutomation.DialogType.Confirmation:
+                    // General confirmation - click Yes
+                    if (dialogInfo.HasYesNo)
+                    {
+                        Debug.WriteLine("[EXECUTOR] ✅ Auto-handling: Confirmation → Click Yes");
+                        _automation.DismissDialogWithYes();
+                        await Task.Delay(300);
+                        return true;
+                    }
+                    if (dialogInfo.HasOkCancel)
+                    {
+                        Debug.WriteLine("[EXECUTOR] ✅ Auto-handling: Confirmation → Press Enter for OK");
+                        _automation.PressKey("enter");
+                        await Task.Delay(300);
+                        return true;
+                    }
+                    break;
+                    
+                case WindowsAutomation.DialogType.SaveAs:
+                    // Save As dialog - we're already typing the filename, just continue
+                    Debug.WriteLine("[EXECUTOR] ℹ️ Save As dialog detected - filename entry expected");
+                    return true;  // Not an error, we're in the middle of saving
+                    
+                case WindowsAutomation.DialogType.Error:
+                    // Error dialog - log but don't auto-dismiss (needs user attention)
+                    Debug.WriteLine($"[EXECUTOR] ⚠️ Error dialog detected: {dialogInfo.Title}");
+                    return false;  // Let vision recovery handle it
+                    
+                case WindowsAutomation.DialogType.Warning:
+                    // Warning dialog - proceed with caution
+                    Debug.WriteLine($"[EXECUTOR] ⚠️ Warning dialog - calling vision for decision");
+                    return false;  // Let vision decide
+                    
+                case WindowsAutomation.DialogType.Unknown:
+                default:
+                    Debug.WriteLine("[EXECUTOR] ❓ Unknown dialog type - calling vision");
+                    return false;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
         /// Execute a recovery action from vision analysis.
         /// </summary>
         private async Task<ExecutionResult> ExecuteRecoveryAction(RecoveryAction recovery)
@@ -229,10 +314,17 @@ namespace Kernel_Agent.Services
                 switch (recovery.Action)
                 {
                     case "click":
-                        if (recovery.X.HasValue && recovery.Y.HasValue)
+                        Debug.WriteLine($"[EXECUTOR] Recovery click: X={recovery.X}, Y={recovery.Y}");
+                        if (recovery.X.HasValue && recovery.Y.HasValue && recovery.X > 0 && recovery.Y > 0)
                         {
+                            Debug.WriteLine($"[EXECUTOR] Clicking at ({recovery.X}, {recovery.Y})");
                             _automation.Click(recovery.X.Value, recovery.Y.Value);
                             result.Success = true;
+                        }
+                        else
+                        {
+                            Debug.WriteLine("[EXECUTOR] Click skipped - no valid coordinates");
+                            result.Error = "No valid coordinates for click";
                         }
                         break;
                         
@@ -652,26 +744,50 @@ namespace Kernel_Agent.Services
         public VisionRecoveryService()
         {
             _client = new HttpClient();
-            _client.Timeout = TimeSpan.FromSeconds(30);
+            _client.Timeout = TimeSpan.FromSeconds(60);  // Increased for Gemma 3
         }
         
         /// <summary>
         /// Call the vision recovery API to get suggested recovery action.
+        /// Now includes execution context for smarter vision analysis.
         /// </summary>
         public async Task<VisionRecoveryResult> AttemptRecoveryAsync(
             string originalCommand, 
             string failedAction, 
-            string errorReason)
+            string errorReason,
+            string focusedWindow = "",
+            string focusedProcess = "",
+            string[] openedApps = null,
+            int stepNumber = 0,
+            int totalSteps = 0,
+            string lastAction = "",
+            bool lastResult = true)
         {
             try
             {
+                // Get currently focused window if not provided
+                if (string.IsNullOrEmpty(focusedWindow))
+                {
+                    focusedWindow = GetForegroundWindowTitle();
+                    focusedProcess = GetForegroundProcessName();
+                }
+                
                 Debug.WriteLine($"[VISION] Requesting recovery for: {failedAction}");
+                Debug.WriteLine($"[VISION] Context: Focused={focusedWindow}, Step={stepNumber}");
                 
                 var requestBody = new
                 {
                     original_command = originalCommand,
                     failed_action = failedAction,
-                    error_reason = errorReason
+                    error_reason = errorReason,
+                    // Context for Vision
+                    focused_window = focusedWindow,
+                    focused_process = focusedProcess,
+                    opened_apps = openedApps ?? Array.Empty<string>(),
+                    step_number = stepNumber,
+                    total_steps = totalSteps,
+                    last_action = lastAction,
+                    last_result = lastResult
                 };
                 
                 var json = JsonSerializer.Serialize(requestBody);
@@ -704,15 +820,20 @@ namespace Kernel_Agent.Services
                 // Parse recovery action if present
                 if (root.TryGetProperty("recovery_action", out var ra) && ra.ValueKind != JsonValueKind.Null)
                 {
+                    int? xVal = null, yVal = null;
+                    try { if (ra.TryGetProperty("x", out var x) && x.ValueKind == JsonValueKind.Number) xVal = x.GetInt32(); } catch { }
+                    try { if (ra.TryGetProperty("y", out var y) && y.ValueKind == JsonValueKind.Number) yVal = y.GetInt32(); } catch { }
+                    
                     result.RecoveryAction = new RecoveryAction
                     {
                         Action = ra.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "",
-                        X = ra.TryGetProperty("x", out var x) ? x.GetInt32() : null,
-                        Y = ra.TryGetProperty("y", out var y) ? y.GetInt32() : null,
+                        X = xVal,
+                        Y = yVal,
                         Content = ra.TryGetProperty("content", out var ct) ? ct.GetString() : null,
                         Target = ra.TryGetProperty("target", out var t) ? t.GetString() : null,
                         Reasoning = ra.TryGetProperty("reasoning", out var r) ? r.GetString() : null
                     };
+                    Debug.WriteLine($"[VISION] Parsed recovery: action={result.RecoveryAction.Action} x={xVal} y={yVal}");
                 }
                 
                 return result;
@@ -722,6 +843,44 @@ namespace Kernel_Agent.Services
                 Debug.WriteLine($"[VISION] Recovery error: {ex.Message}");
                 return new VisionRecoveryResult { Success = false, Message = ex.Message };
             }
+        }
+        
+        // P/Invoke for getting foreground window
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+        
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+        
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+        
+        private string GetForegroundWindowTitle()
+        {
+            try
+            {
+                IntPtr hWnd = GetForegroundWindow();
+                var sb = new System.Text.StringBuilder(256);
+                if (GetWindowText(hWnd, sb, 256) > 0)
+                {
+                    return sb.ToString();
+                }
+            }
+            catch { }
+            return "";
+        }
+        
+        private string GetForegroundProcessName()
+        {
+            try
+            {
+                IntPtr hWnd = GetForegroundWindow();
+                GetWindowThreadProcessId(hWnd, out uint processId);
+                var process = System.Diagnostics.Process.GetProcessById((int)processId);
+                return process.ProcessName;
+            }
+            catch { }
+            return "";
         }
     }
 }

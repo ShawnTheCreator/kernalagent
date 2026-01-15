@@ -147,14 +147,8 @@ function LoginPageContent() {
         }
     };
 
-    // Show loading while checking auth state
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-black">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+    // Note: We no longer block on loading state - the form appears instantly
+    // If user is already logged in, the useEffect above will redirect them
 
     return (
         <AuthLayout>

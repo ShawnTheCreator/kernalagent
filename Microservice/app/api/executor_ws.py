@@ -22,11 +22,16 @@ Protocol:
 import asyncio
 import uuid
 import json
+import logging
 from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict, Optional, Any
 
 from app.executor import CommandGenerator, Target, Command, ActionType
+
+# Setup logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 router = APIRouter()
 
@@ -34,8 +39,37 @@ router = APIRouter()
 SESSIONS: Dict[str, dict] = {}
 
 
-def parse_command(command: str) -> list:
-    """Parse command string into action steps."""
+async def parse_command_llm(command: str, session_id: str) -> list:
+    """
+    Parse command using LLM-first planner with fallback to deterministic.
+    This replaces the old simple parse_command function.
+    """
+    logger.info(f"[WS/EXECUTOR] Parsing command with LLM: '{command}'")
+    
+    try:
+        from app.reasoning.llm_planner import plan_command_with_fallback
+        
+        # Use the LLM planner
+        steps = await plan_command_with_fallback(command, session_id)
+        
+        logger.info(f"[WS/EXECUTOR] LLM returned {len(steps)} steps")
+        for i, step in enumerate(steps):
+            logger.info(f"[WS/EXECUTOR]   Step {i+1}: {step}")
+        
+        return steps
+        
+    except Exception as e:
+        logger.error(f"[WS/EXECUTOR] LLM planner failed: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback to simple parsing if LLM completely fails
+        return parse_command_simple(command)
+
+
+def parse_command_simple(command: str) -> list:
+    """Simple fallback parser (old logic)."""
+    logger.warning(f"[WS/EXECUTOR] Using SIMPLE parser (fallback) for: {command}")
     cmd = command.lower().strip()
     
     APP_MAPPING = {
@@ -101,7 +135,7 @@ async def executor_websocket(websocket: WebSocket):
         "completed_count": 0
     }
     
-    print(f"[WS/EXECUTOR] Connected: {session_id}")
+    logger.info(f"[WS/EXECUTOR] ✅ Connected: {session_id}")
     
     # Send connected confirmation
     await websocket.send_json({
@@ -122,7 +156,7 @@ async def executor_websocket(websocket: WebSocket):
                     # Resume existing session
                     if client_session in SESSIONS:
                         session_id = client_session
-                        print(f"[WS/EXECUTOR] Resumed session: {session_id}")
+                        logger.info(f"[WS/EXECUTOR] Resumed session: {session_id}")
                 
                 await websocket.send_json({
                     "type": "connected",
@@ -135,7 +169,10 @@ async def executor_websocket(websocket: WebSocket):
                 command_text = data.get("payload", "")
                 command_id = data.get("command_id", str(uuid.uuid4())[:8])
                 
-                print(f"[WS/EXECUTOR] Command: '{command_text}' (id: {command_id})")
+                logger.info(f"[WS/EXECUTOR] ========================================")
+                logger.info(f"[WS/EXECUTOR] 📥 COMMAND RECEIVED: '{command_text}'")
+                logger.info(f"[WS/EXECUTOR] Command ID: {command_id}")
+                logger.info(f"[WS/EXECUTOR] ========================================")
                 
                 # Send status update
                 await websocket.send_json({
@@ -144,8 +181,8 @@ async def executor_websocket(websocket: WebSocket):
                     "command_id": command_id
                 })
                 
-                # Parse command into steps
-                steps = parse_command(command_text)
+                # Parse command into steps using LLM planner
+                steps = await parse_command_llm(command_text, session_id)
                 
                 # Track in session
                 SESSIONS[session_id]["last_command"] = command_text
@@ -163,7 +200,7 @@ async def executor_websocket(websocket: WebSocket):
                     }
                 })
                 
-                print(f"[WS/EXECUTOR] Sent {len(steps)} steps for command '{command_text}'")
+                logger.info(f"[WS/EXECUTOR] 📤 SENT {len(steps)} steps for command '{command_text}'")
             
             # === RESULT (from C# executor) ===
             elif msg_type == "result":
@@ -172,7 +209,7 @@ async def executor_websocket(websocket: WebSocket):
                 step_index = data.get("step_index", 0)
                 error = data.get("error")
                 
-                print(f"[WS/EXECUTOR] Result: cmd={command_id}, step={step_index}, status={status}")
+                logger.info(f"[WS/EXECUTOR] 📊 Result: cmd={command_id}, step={step_index}, status={status}")
                 
                 if command_id in SESSIONS[session_id]["pending_commands"]:
                     if status == "SUCCESS":
@@ -206,7 +243,7 @@ async def executor_websocket(websocket: WebSocket):
                 })
                 
                 # TODO: Integrate with app.engine.vision.analyze_frame()
-                print(f"[WS/EXECUTOR] Frame received ({len(image_data)} chars)")
+                logger.info(f"[WS/EXECUTOR] 🖼️ Frame received ({len(image_data)} chars)")
             
             # === PING (keepalive) ===
             elif msg_type == "ping":
@@ -220,12 +257,12 @@ async def executor_websocket(websocket: WebSocket):
                 })
     
     except WebSocketDisconnect:
-        print(f"[WS/EXECUTOR] Disconnected: {session_id}")
+        logger.info(f"[WS/EXECUTOR] ❌ Disconnected: {session_id}")
         # Keep session data for potential reconnect
     except Exception as e:
-        print(f"[WS/EXECUTOR] Error: {e}")
+        logger.error(f"[WS/EXECUTOR] 💥 Error: {e}")
         import traceback
-        traceback.print_exc()
+        logger.error(traceback.format_exc())
     finally:
         # Cleanup old sessions after some time
         pass

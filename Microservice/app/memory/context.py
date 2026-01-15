@@ -36,6 +36,11 @@ class SessionContext:
         # Active application context
         self.active_app: Optional[str] = None
         
+        # Vision observations (from recovery system)
+        self.vision_observations: List[str] = []
+        self.focused_window: Optional[str] = None
+        self.focused_process: Optional[str] = None
+        
         # Action history (circular buffer)
         self.history: deque = deque(maxlen=max_history)
         
@@ -92,8 +97,23 @@ class SessionContext:
             "last_action": self.last_action,
             "last_command": self.last_command,
             "active_app": self.active_app,
+            "focused_window": self.focused_window,
+            "focused_process": self.focused_process,
+            "vision_observations": self.vision_observations[-3:] if self.vision_observations else [],
             "preferences": self.preferences,
         }
+    
+    def add_vision_observation(self, observation: str):
+        """Add observation from Vision system."""
+        self.vision_observations.append(observation)
+        # Keep last 10
+        if len(self.vision_observations) > 10:
+            self.vision_observations = self.vision_observations[-10:]
+    
+    def update_focused_window(self, window: str, process: str):
+        """Update focused window info from C#."""
+        self.focused_window = window
+        self.focused_process = process
 
 
 # ===== SESSION STORE =====

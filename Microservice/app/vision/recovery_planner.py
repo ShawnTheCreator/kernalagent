@@ -3,14 +3,16 @@ Recovery Planner - Orchestrates vision-based failure recovery.
 
 Flow:
 1. Action fails -> Capture screenshot
-2. Analyze with Gemini Vision
-3. Get recovery action
-4. Execute recovery
-5. Verify success
+2. Pass ExecutionContext to Vision
+3. Vision analyzes with full context
+4. Get recovery action
+5. Execute recovery
+6. Feed result back to context
 """
 
 import logging
 from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
 from .screen_capture import capture_screen_base64
 from .vision_analyzer import get_vision_analyzer
 
@@ -21,6 +23,78 @@ MAX_RECOVERY_ATTEMPTS = 3
 
 # Minimum confidence to attempt recovery
 MIN_CONFIDENCE = 0.5
+
+
+@dataclass
+class ExecutionContext:
+    """
+    Shared context between Vision and LLM.
+    Tracks desktop state for intelligent decision-making.
+    """
+    original_goal: str = ""
+    current_step: int = 0
+    total_steps: int = 0
+    focused_window: str = ""
+    focused_process: str = ""
+    opened_apps: List[str] = field(default_factory=list)
+    last_action: str = ""
+    last_result: bool = True
+    last_error: str = ""
+    action_history: List[Dict[str, Any]] = field(default_factory=list)
+    vision_observations: List[str] = field(default_factory=list)
+    
+    def to_prompt_context(self) -> str:
+        """Convert to text for vision prompt."""
+        ctx = f"""EXECUTION CONTEXT:
+- Goal: {self.original_goal}
+- Step: {self.current_step}/{self.total_steps}
+- Focused Window: {self.focused_window or 'unknown'}
+- Process: {self.focused_process or 'unknown'}
+- Recently Opened: {', '.join(self.opened_apps[-3:]) if self.opened_apps else 'none'}
+- Last Action: {self.last_action}
+- Last Result: {'SUCCESS' if self.last_result else 'FAILED - ' + self.last_error}
+
+RECENT OBSERVATIONS:
+{chr(10).join('- ' + o for o in self.vision_observations[-3:]) if self.vision_observations else '- No prior observations'}
+"""
+        return ctx
+    
+    def add_observation(self, observation: str):
+        """Add a vision observation."""
+        self.vision_observations.append(observation)
+        # Keep last 10
+        if len(self.vision_observations) > 10:
+            self.vision_observations = self.vision_observations[-10:]
+    
+    def record_action(self, action: str, target: str, result: bool, error: str = ""):
+        """Record an action result."""
+        self.action_history.append({
+            "action": action,
+            "target": target,
+            "result": result,
+            "error": error
+        })
+        self.last_action = f"{action}({target})" if target else action
+        self.last_result = result
+        self.last_error = error
+
+
+# Global context (singleton)
+_execution_context: Optional[ExecutionContext] = None
+
+
+def get_execution_context() -> ExecutionContext:
+    """Get singleton ExecutionContext."""
+    global _execution_context
+    if _execution_context is None:
+        _execution_context = ExecutionContext()
+    return _execution_context
+
+
+def reset_execution_context():
+    """Reset context for new goal."""
+    global _execution_context
+    _execution_context = ExecutionContext()
 
 
 class RecoveryPlanner:

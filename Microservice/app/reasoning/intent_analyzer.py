@@ -10,8 +10,13 @@ Architecture:
 
 import os
 import json
+import logging
 from typing import Dict, Any, Optional, List
 from google import genai
+
+# Setup logger for this module
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # ===== LLM CONFIGURATION =====
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
@@ -99,15 +104,61 @@ Your job is to convert natural language commands into structured action plans.
   ]
 }}
 
+## CRITICAL PARSING RULES:
+1. The word "and" is a SEPARATOR between actions
+2. For "type X and Y", the content is ONLY "X" (everything before "and")
+3. Split the command by "and" first, then process each part separately
+
 ## Examples:
 
-Input: "open notepad"
+Input: "type hello and press enter"
+WRONG: {{"tool": "text_input", "content": "hello and press enter"}}
+CORRECT:
 {{
-  "intent": "single_action",
-  "confidence": 0.98,
-  "reasoning": "Clear request to open notepad application",
+  "intent": "multi_step",
   "actions": [
-    {{"tool": "app_launcher", "action": "open", "target": "notepad.exe"}}
+    {{"tool": "text_input", "action": "type", "content": "hello"}},
+    {{"tool": "keyboard", "action": "press", "keys": "enter"}}
+  ]
+}}
+
+Input: "open notepad and type Hello World and press ctrl+s"
+WRONG: {{"tool": "text_input", "content": "Hello World and press ctrl+s"}}
+CORRECT:
+{{
+  "intent": "multi_step",
+  "confidence": 0.98,
+  "reasoning": "Open notepad → type 'Hello World' → save with Ctrl+S",
+  "actions": [
+    {{"tool": "app_launcher", "action": "open", "target": "notepad.exe"}},
+    {{"tool": "text_input", "action": "type", "content": "Hello World"}},
+    {{"tool": "keyboard", "action": "hotkey", "keys": "ctrl+s"}}
+  ]
+}}
+
+Input: "type test.txt and press enter"
+CORRECT:
+{{
+  "intent": "multi_step",
+  "actions": [
+    {{"tool": "text_input", "action": "type", "content": "test.txt"}},
+    {{"tool": "keyboard", "action": "press", "keys": "enter"}}
+  ]
+}}
+
+Input: "open notepad and type Hello World and press ctrl+s and type test.txt and press enter"
+WRONG: {{"tool": "text_input", "content": "Hello World and press ctrl+s and type test.txt and press enter"}}
+CORRECT:
+{{
+  "intent": "multi_step",
+  "confidence": 0.96,
+  "reasoning": "5 steps: open → type text → save → type filename → confirm",
+  "actions": [
+    {{"tool": "app_launcher", "action": "open", "target": "notepad.exe"}},
+    {{"tool": "text_input", "action": "type", "content": "Hello World"}},
+    {{"tool": "keyboard", "action": "hotkey", "keys": "ctrl+s"}},
+    {{"tool": "text_input", "action": "type", "content": "test.txt"}},
+    {{"tool": "keyboard", "action": "press", "keys": "enter"}}
   ]
 }}
 
@@ -115,53 +166,13 @@ Input: "open chrome and search for cats"
 {{
   "intent": "multi_step",
   "confidence": 0.95,
-  "reasoning": "Opens browser then performs search",
   "actions": [
     {{"tool": "app_launcher", "action": "open", "target": "chrome.exe"}},
     {{"tool": "browser", "action": "search", "query": "cats"}}
   ]
 }}
 
-Input: "reduce the brightness"
-{{
-  "intent": "single_action",
-  "confidence": 0.97,
-  "reasoning": "User wants to decrease screen brightness",
-  "actions": [
-    {{"tool": "brightness_control", "action": "down", "amount": 10}}
-  ]
-}}
-
-Input: "make it louder"
-{{
-  "intent": "single_action",
-  "confidence": 0.95,
-  "reasoning": "Increase volume",
-  "actions": [
-    {{"tool": "volume_control", "action": "up", "amount": 10}}
-  ]
-}}
-
-Input: "type hello world"
-{{
-  "intent": "single_action",
-  "confidence": 0.99,
-  "reasoning": "Type the specified text",
-  "actions": [
-    {{"tool": "text_input", "action": "type", "content": "hello world"}}
-  ]
-}}
-
-Input: "open notepad and type hello"
-{{
-  "intent": "multi_step",
-  "confidence": 0.98,
-  "reasoning": "Opens notepad then types hello",
-  "actions": [
-    {{"tool": "app_launcher", "action": "open", "target": "notepad.exe"}},
-    {{"tool": "text_input", "action": "type", "content": "hello"}}
-  ]
-}}
+REMEMBER: Split by "and" FIRST, then parse each piece separately!
 
 Now analyze this command:
 """
@@ -184,18 +195,18 @@ class IntentAnalyzer:
         if GEMINI_API_KEY:
             try:
                 self.gemini_client = genai.Client()
-                print("[INTENT] Gemini client initialized")
+                logger.info("[INTENT] Gemini client initialized")
             except Exception as e:
-                print(f"[INTENT] Gemini init failed: {e}")
+                logger.error(f"[INTENT] Gemini init failed: {e}")
         
         # Groq (Fallback)
         if GROQ_API_KEY:
             try:
                 from groq import Groq
                 self.groq_client = Groq(api_key=GROQ_API_KEY)
-                print("[INTENT] Groq client initialized")
+                logger.info("[INTENT] Groq client initialized")
             except Exception as e:
-                print(f"[INTENT] Groq init failed: {e}")
+                logger.error(f"[INTENT] Groq init failed: {e}")
     
     async def analyze(
         self, 
@@ -229,7 +240,7 @@ class IntentAnalyzer:
         
         # Fallback to Groq if Gemini fails
         if not result and self.groq_client:
-            print("[INTENT] Gemini failed, trying Groq...")
+            logger.warning("[INTENT] Gemini failed, trying Groq...")
             result = await self._call_groq(prompt)
         
         # Parse and validate result
@@ -262,13 +273,13 @@ class IntentAnalyzer:
             )
             
             if response and response.text:
-                print(f"[INTENT] Gemini response: {response.text[:200]}...")
+                logger.info(f"[INTENT] Gemini response received ({len(response.text)} chars)")
                 return response.text.strip()
             
             return None
             
         except Exception as e:
-            print(f"[INTENT] Gemini error: {e}")
+            logger.error(f"[INTENT] Gemini error: {e}")
             return None
     
     async def _call_groq(self, prompt: str) -> Optional[str]:
@@ -286,13 +297,13 @@ class IntentAnalyzer:
             
             if response and response.choices:
                 result = response.choices[0].message.content
-                print(f"[INTENT] Groq response: {result[:200]}...")
+                logger.info(f"[INTENT] Groq response received ({len(result)} chars)")
                 return result
             
             return None
             
         except Exception as e:
-            print(f"[INTENT] Groq error: {e}")
+            logger.error(f"[INTENT] Groq error: {e}")
             return None
     
     def _parse_response(self, response: str) -> Optional[Dict[str, Any]]:
@@ -323,8 +334,8 @@ class IntentAnalyzer:
             return None
             
         except json.JSONDecodeError as e:
-            print(f"[INTENT] JSON parse error: {e}")
-            print(f"[INTENT] Raw: {text[:200]}")
+            logger.error(f"[INTENT] JSON parse error: {e}")
+            logger.error(f"[INTENT] Raw: {text[:200]}")
             return None
 
 

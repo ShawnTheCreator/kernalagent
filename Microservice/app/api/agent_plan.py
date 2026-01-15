@@ -519,7 +519,7 @@ async def plan_with_gemini(command: str) -> List[ActionStep]:
         print(f"[AGENT] Groq fallback failed: {e}")
     
     # Fallback to deterministic parsing
-    print(f"[AGENT] Using deterministic parsing")
+    logger.warning(f"[AGENT] Using deterministic parsing for: {command}")
     return parse_command(command)
 
 
@@ -698,6 +698,11 @@ async def get_action_plan_v2(request: PlanRequest):
         # Use the new LLM-first planner
         step_dicts = await plan_command_with_fallback(request.command, session_id)
         
+        # DEBUG: Log full step_dicts 
+        logger.info(f"[DEBUG] Planner returned {len(step_dicts)} steps:")
+        for i, s in enumerate(step_dicts, 1):
+            logger.info(f"[DEBUG]   {i}. {s.get('action')} - content:{s.get('content')}")
+        
         # Convert to ActionStep objects
         steps = [
             ActionStep(
@@ -737,11 +742,19 @@ async def get_action_plan_v2(request: PlanRequest):
 # ===== VISION-BASED RECOVERY (v3) =====
 
 class RecoveryRequest(BaseModel):
-    """Request for vision-based recovery."""
+    """Request for vision-based recovery with execution context."""
     original_command: str
     failed_action: str
     error_reason: Optional[str] = "unknown"
     session_id: Optional[str] = None
+    # Context from C# executor
+    focused_window: Optional[str] = None
+    focused_process: Optional[str] = None
+    opened_apps: Optional[List[str]] = None
+    step_number: Optional[int] = None
+    total_steps: Optional[int] = None
+    last_action: Optional[str] = None
+    last_result: Optional[bool] = None
 
 
 class RecoveryResponse(BaseModel):
@@ -770,15 +783,41 @@ async def attempt_vision_recovery(request: RecoveryRequest) -> RecoveryResponse:
     """
     logger.info(f"🔍 [RECOVERY] Request for: '{request.original_command}'")
     logger.info(f"🔍 [RECOVERY] Failed action: {request.failed_action}")
+    if request.focused_window:
+        logger.info(f"🔍 [RECOVERY] Focused: {request.focused_window}")
     
     try:
-        from app.vision.recovery_planner import attempt_recovery
+        from app.vision.recovery_planner import attempt_recovery, get_execution_context
+        
+        # Populate execution context from request
+        ctx = get_execution_context()
+        ctx.original_goal = request.original_command
+        ctx.focused_window = request.focused_window or ""
+        ctx.focused_process = request.focused_process or ""
+        ctx.opened_apps = request.opened_apps or []
+        ctx.current_step = request.step_number or 0
+        ctx.total_steps = request.total_steps or 0
+        ctx.last_action = request.last_action or ""
+        if request.last_result is not None:
+            ctx.last_result = request.last_result
         
         result = attempt_recovery(
             original_goal=request.original_command,
             failed_action=request.failed_action,
             error_reason=request.error_reason or "unknown"
         )
+        
+        # BIDIRECTIONAL: Feed Vision observations back to LLM context
+        if result.get("success") and result.get("current_state"):
+            from app.memory.context import get_session
+            session = get_session(request.session_id or "default")
+            session.add_vision_observation(result.get("current_state", ""))
+            if request.focused_window:
+                session.update_focused_window(
+                    request.focused_window or "",
+                    request.focused_process or ""
+                )
+            logger.info(f"[RECOVERY] Vision→LLM: {result.get('current_state')}")
         
         if result.get("success"):
             logger.info(f"✅ [RECOVERY] Suggested: {result.get('recovery_action', {}).get('action')}")
@@ -802,5 +841,5 @@ async def attempt_vision_recovery(request: RecoveryRequest) -> RecoveryResponse:
             success=False,
             recovery_possible=False,
             message=str(e)
-        )
+            )
 

@@ -13,7 +13,8 @@ namespace Kernel_Agent.Services
     {
         private readonly WindowsAutomation _automation = new WindowsAutomation();
         // Using LLM-First Architecture (v2) - intelligent multi-step command processing
-        private readonly string _pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan/v2";
+        // DEV: Use localhost | PROD: Use https://kernalagent.onrender.com
+        private readonly string _pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
         private readonly SpeechRecognitionEngine _recognizer;
 
         public VoiceToActionService()

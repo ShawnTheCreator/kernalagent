@@ -1,43 +1,44 @@
 """
-Vision Analyzer - Gemini Vision for UI Understanding
+Vision Analyzer - Gemma 3 Vision for UI Understanding
 
 Analyzes screenshots to understand UI state and suggest recovery actions.
 Uses task-aware prompting for accurate perception.
+Uses Google's Gemma 3 27B vision model.
 """
 
 import os
 import json
+import base64
 import logging
 from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
-# Import Gemini
+# Import Google Generative AI
 try:
     import google.generativeai as genai
-    GEMINI_AVAILABLE = True
+    GENAI_AVAILABLE = True
 except ImportError:
-    GEMINI_AVAILABLE = False
-    logger.warning("Gemini not available - vision analysis disabled")
+    GENAI_AVAILABLE = False
+    logger.warning("Google GenAI not available - vision analysis disabled")
 
 
 class VisionAnalyzer:
     """
-    Analyzes screenshots using Gemini Vision to understand UI state
+    Analyzes screenshots using Gemma 3 Vision to understand UI state
     and suggest recovery actions.
     """
     
     def __init__(self):
-        # Check GOOGLE_API_KEY first (set by server startup)
         self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-        if self.api_key and GEMINI_AVAILABLE:
+        if self.api_key and GENAI_AVAILABLE:
             genai.configure(api_key=self.api_key)
-            # Use gemini-2.0-flash for vision
-            self.model = genai.GenerativeModel("gemini-2.0-flash")
-            logger.info("[VISION] VisionAnalyzer initialized with Gemini 2.0 Flash")
+            # Use Gemma 3 27B - has vision capabilities and better rate limits
+            self.model = genai.GenerativeModel("gemma-3-27b-it")
+            logger.info(f"[VISION] VisionAnalyzer initialized with Gemma 3 27B")
         else:
             self.model = None
-            logger.warning("[VISION] VisionAnalyzer disabled - no API key or Gemini not available")
+            logger.warning("[VISION] VisionAnalyzer disabled - no API key or GenAI not available")
     
     def analyze_screen(
         self, 
@@ -66,13 +67,13 @@ class VisionAnalyzer:
             # Build task-aware prompt
             prompt = self._build_analysis_prompt(original_goal, failed_action)
             
-            # Create image part
+            # Create image part for Google GenAI
             image_part = {
                 "mime_type": "image/png",
                 "data": screenshot_base64
             }
             
-            # Call Gemini Vision
+            # Call Gemma 3 Vision
             response = self.model.generate_content([prompt, image_part])
             
             # Parse response
@@ -89,54 +90,60 @@ class VisionAnalyzer:
                 "error": str(e)
             }
     
-    def _build_analysis_prompt(self, goal: str, failed_action: Optional[str]) -> str:
-        """Build task-aware prompt for vision analysis."""
+    def _build_analysis_prompt(self, goal: str, failed_action: Optional[str], context_text: str = "") -> str:
+        """Build task-aware prompt for vision analysis with execution context."""
         
-        prompt = f"""You are an automation recovery vision system.
+        prompt = f"""You are an automation recovery vision system with CONTEXTUAL AWARENESS.
 
-ORIGINAL USER GOAL: "{goal}"
-{"FAILED ACTION: " + failed_action if failed_action else ""}
+{context_text if context_text else f'GOAL: "{goal}"'}
+{"VERIFYING: " + failed_action if failed_action else ""}
 
 Analyze this screenshot and determine:
 1. What is currently visible on screen?
-2. What is blocking progress toward the goal?
+2. Is the goal being achieved or is something blocking?
 3. What is the NEXT action to take?
 
 RESPOND IN JSON ONLY:
 {{
   "current_state": "describe what's visible",
   "target_app_visible": true/false,
-  "blocker": "what's preventing progress (dialog, wrong window, etc.)",
-  "visible_elements": ["list of clickable UI elements"],
+  "goal_achieved": true/false,
+  "blocker": "what's preventing progress (dialog, wrong window, etc.) or null if no blocker",
+  "visible_elements": ["list of clickable UI elements with approximate positions"],
   "suggested_action": {{
-    "action": "click|type_text|press_key|wait|open_app",
+    "action": "click|type_text|press_key|wait|open_app|none",
     "target": "what to click or type",
     "x": 0,
     "y": 0,
+    "content": "text to type if type_text",
     "reasoning": "why this action"
   }},
   "confidence": 0.0-1.0
 }}
 
-IMPORTANT RULES:
-- If you see a profile picker dialog (Chrome, Edge), click on a profile to continue
+CRITICAL RULES:
+- If goal_achieved is true, set action to "none"
+- For CLICK: provide ACTUAL x,y pixel coordinates from the screenshot
+- If you see a profile picker (Chrome/Edge), click on a profile
 - If a dialog is blocking, close it or click through it
-- If the wrong app is focused, suggest switching or opening the correct app
-- Provide x,y coordinates if clicking is needed
-- Be specific about what UI element to interact with
+- If focused window doesn't match goal, suggest opening correct app
+- Be specific about element positions
 
 JSON ONLY, NO MARKDOWN:"""
         
         return prompt
     
     def _parse_response(self, response_text: str) -> Dict[str, Any]:
-        """Parse Gemini response into structured data."""
+        """Parse Groq response into structured data."""
         try:
             # Remove markdown code blocks if present
             text = response_text.strip()
             if text.startswith("```"):
                 lines = text.split("\n")
-                text = "\n".join(lines[1:-1])
+                # Remove first and last lines (``` markers)
+                text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+            if text.startswith("json"):
+                text = text[4:].strip()
             
             return json.loads(text)
         except json.JSONDecodeError:
