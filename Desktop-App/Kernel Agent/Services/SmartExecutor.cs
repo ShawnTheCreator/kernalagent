@@ -108,6 +108,40 @@ namespace Kernel_Agent.Services
             {
                 var actionResult = await ExecuteActionAsync(step);
                 result.ActionResults.Add(actionResult);
+                
+                // Get action name for proactive checks
+                string actionName = "";
+                if (step.TryGetProperty("action", out var actionEl))
+                    actionName = actionEl.GetString() ?? "";
+
+                // PROACTIVE VISION CHECK for open_app (even if "succeeded")
+                // Chrome profile picker, UAC dialogs, etc. may block progress
+                if (actionResult.Success && actionName == "open_app" && !string.IsNullOrEmpty(_currentGoal))
+                {
+                    Debug.WriteLine("[EXECUTOR] Proactive vision check after open_app...");
+                    await Task.Delay(1500); // Wait for any dialogs to appear
+                    
+                    var proactiveCheck = await _visionRecovery.AttemptRecoveryAsync(
+                        _currentGoal,
+                        "verify_app_ready",
+                        "proactive_check"
+                    );
+                    
+                    // If vision found a blocker and suggests action
+                    if (proactiveCheck.Success && proactiveCheck.RecoveryAction != null)
+                    {
+                        Debug.WriteLine($"[EXECUTOR] Vision found blocker: {proactiveCheck.Blocker}");
+                        Debug.WriteLine($"[EXECUTOR] Vision suggests: {proactiveCheck.RecoveryAction.Action}");
+                        
+                        var recoveryExec = await ExecuteRecoveryAction(proactiveCheck.RecoveryAction);
+                        if (recoveryExec.Success)
+                        {
+                            Debug.WriteLine("[EXECUTOR] Blocker cleared! Continuing...");
+                            result.ActionResults.Add(recoveryExec);
+                            await Task.Delay(500);
+                        }
+                    }
+                }
 
                 if (!actionResult.Success)
                 {
