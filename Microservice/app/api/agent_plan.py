@@ -9,7 +9,7 @@ Supports flexible/fuzzy command matching for typos.
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 import re
 import time
