@@ -27,6 +27,67 @@ class ActionSchema(BaseModel):
     direction: Optional[str] = None
 
 
+# ===== APP NAME ALIASES =====
+# Maps common app names to Windows executables
+APP_ALIASES: Dict[str, str] = {
+    # IDEs
+    "vscode": "code",
+    "vs code": "code",
+    "visual studio code": "code",
+    "visual studio": "devenv",
+    
+    # Browsers
+    "chrome": "chrome",
+    "google chrome": "chrome",
+    "edge": "msedge",
+    "microsoft edge": "msedge",
+    "firefox": "firefox",
+    
+    # Office
+    "word": "winword",
+    "excel": "excel",
+    "powerpoint": "powerpnt",
+    "outlook": "outlook",
+    
+    # System
+    "notepad": "notepad",
+    "calculator": "calc",
+    "calc": "calc",
+    "explorer": "explorer",
+    "file explorer": "explorer",
+    "cmd": "cmd",
+    "terminal": "wt",
+    "powershell": "powershell",
+    
+    # Media
+    "spotify": "spotify",
+    "vlc": "vlc",
+}
+
+
+def normalize_app_name(app_name: str) -> str:
+    """
+    Normalize app name to Windows executable.
+    
+    Examples:
+        "vscode" -> "code"
+        "visual studio code" -> "code"
+        "chrome" -> "chrome"
+    """
+    if not app_name:
+        return app_name
+    
+    # Remove .exe if present for lookup
+    lookup_name = app_name.lower().replace(".exe", "").strip()
+    
+    # Check aliases
+    if lookup_name in APP_ALIASES:
+        return APP_ALIASES[lookup_name]
+    
+    # Return original (without .exe, will be added later)
+    return lookup_name
+
+
 # ===== TOOL REGISTRY =====
 # Maps LLM tool names to C# executor action names
 
@@ -149,9 +210,11 @@ def convert_to_executor_action(llm_action: Dict[str, Any]) -> Dict[str, Any]:
     # Map parameters
     if "target" in llm_action:
         target = llm_action["target"]
-        # Ensure .exe extension for app names
-        if tool == "app_launcher" and target and not target.endswith(".exe"):
-            target = f"{target}.exe"
+        # Normalize app names (vscode -> code, etc.)
+        if tool == "app_launcher" and target:
+            target = normalize_app_name(target)
+            if not target.endswith(".exe"):
+                target = f"{target}.exe"
         executor_action["target"] = target
     
     if "content" in llm_action:

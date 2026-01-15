@@ -2,27 +2,37 @@ using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Net.Http;
+using System.Text;
 
 namespace Kernel_Agent.Services
 {
     /// <summary>
-    /// SmartExecutor - Reliable action execution with verification, retry, and timing.
+    /// SmartExecutor - Reliable action execution with verification, retry, and VISION RECOVERY.
     /// 
-    /// Improvements over basic execution:
+    /// Features:
     /// 1. Verification - checks if actions succeeded
     /// 2. Retry logic - retries failed actions with backoff
     /// 3. Smart timing - waits for apps to be ready
-    /// 4. Execution logging - detailed logs for debugging
+    /// 4. VISION RECOVERY - calls AI when stuck to auto-recover
     /// </summary>
     public class SmartExecutor
     {
         private readonly WindowsAutomation _automation;
+        private readonly VisionRecoveryService _visionRecovery;
         private const int MAX_RETRIES = 3;
         private const int BASE_DELAY_MS = 100;
+        private string _currentGoal = "";  // Track original command for recovery
         
         public SmartExecutor()
         {
             _automation = new WindowsAutomation();
+            _visionRecovery = new VisionRecoveryService();
+        }
+        
+        public void SetOriginalGoal(string goal)
+        {
+            _currentGoal = goal;
         }
 
         /// <summary>
@@ -87,7 +97,7 @@ namespace Kernel_Agent.Services
         }
 
         /// <summary>
-        /// Execute a plan (list of actions) with proper sequencing.
+        /// Execute a plan (list of actions) with proper sequencing and VISION RECOVERY.
         /// </summary>
         public async Task<PlanExecutionResult> ExecutePlanAsync(JsonElement stepsElement)
         {
@@ -101,10 +111,35 @@ namespace Kernel_Agent.Services
 
                 if (!actionResult.Success)
                 {
-                    // On failure, we can either:
-                    // 1. Stop the plan (current behavior)
-                    // 2. Skip and continue
-                    // 3. Ask user for help
+                    Debug.WriteLine($"[EXECUTOR] Action failed: {actionResult.Action}, attempting vision recovery...");
+                    
+                    // Attempt vision-based recovery
+                    if (!string.IsNullOrEmpty(_currentGoal))
+                    {
+                        var recoveryResult = await _visionRecovery.AttemptRecoveryAsync(
+                            _currentGoal, 
+                            actionResult.Action, 
+                            actionResult.Error ?? "unknown"
+                        );
+                        
+                        if (recoveryResult.Success && recoveryResult.RecoveryAction != null)
+                        {
+                            Debug.WriteLine($"[EXECUTOR] Vision recovery suggested: {recoveryResult.RecoveryAction.Action}");
+                            
+                            // Execute recovery action
+                            var recoveryExec = await ExecuteRecoveryAction(recoveryResult.RecoveryAction);
+                            
+                            if (recoveryExec.Success)
+                            {
+                                Debug.WriteLine("[EXECUTOR] Recovery successful! Continuing plan...");
+                                result.ActionResults.Add(recoveryExec);
+                                await GetInterActionDelay(recoveryExec.Action);
+                                continue; // Continue with next step
+                            }
+                        }
+                    }
+                    
+                    // Recovery failed or not available
                     Debug.WriteLine($"[EXECUTOR] Plan aborted due to failed action: {actionResult.Action}");
                     result.Success = false;
                     result.Error = $"Failed at action: {actionResult.Action}";
@@ -124,6 +159,67 @@ namespace Kernel_Agent.Services
             }
 
             Debug.WriteLine($"[EXECUTOR] Plan completed: {result.ActionResults.Count} actions in {result.TotalExecutionTimeMs}ms");
+            return result;
+        }
+        
+        /// <summary>
+        /// Execute a recovery action from vision analysis.
+        /// </summary>
+        private async Task<ExecutionResult> ExecuteRecoveryAction(RecoveryAction recovery)
+        {
+            Debug.WriteLine($"[EXECUTOR] Executing recovery: {recovery.Action}");
+            var result = new ExecutionResult { Action = recovery.Action };
+            
+            try
+            {
+                switch (recovery.Action)
+                {
+                    case "click":
+                        if (recovery.X.HasValue && recovery.Y.HasValue)
+                        {
+                            _automation.Click(recovery.X.Value, recovery.Y.Value);
+                            result.Success = true;
+                        }
+                        break;
+                        
+                    case "type_text":
+                        if (!string.IsNullOrEmpty(recovery.Content))
+                        {
+                            _automation.TypeIntoApp(recovery.Content);
+                            result.Success = true;
+                        }
+                        break;
+                        
+                    case "press_key":
+                        if (!string.IsNullOrEmpty(recovery.Content))
+                        {
+                            _automation.PressKey(recovery.Content);
+                            result.Success = true;
+                        }
+                        break;
+                        
+                    case "open_app":
+                        if (!string.IsNullOrEmpty(recovery.Target))
+                        {
+                            result.Success = _automation.OpenApplication(recovery.Target);
+                        }
+                        break;
+                        
+                    case "wait":
+                        await Task.Delay(1000);
+                        result.Success = true;
+                        break;
+                        
+                    default:
+                        result.Error = $"Unknown recovery action: {recovery.Action}";
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Error = ex.Message;
+            }
+            
             return result;
         }
 
@@ -451,5 +547,117 @@ namespace Kernel_Agent.Services
         public string? Error { get; set; }
         public int TotalExecutionTimeMs { get; set; }
         public System.Collections.Generic.List<ExecutionResult> ActionResults { get; set; } = new();
+    }
+    
+    /// <summary>
+    /// Recovery action from vision analysis.
+    /// </summary>
+    public class RecoveryAction
+    {
+        public string Action { get; set; } = "";
+        public int? X { get; set; }
+        public int? Y { get; set; }
+        public string? Content { get; set; }
+        public string? Target { get; set; }
+        public string? Reasoning { get; set; }
+    }
+    
+    /// <summary>
+    /// Result of vision recovery attempt.
+    /// </summary>
+    public class VisionRecoveryResult
+    {
+        public bool Success { get; set; }
+        public bool RecoveryPossible { get; set; }
+        public RecoveryAction? RecoveryAction { get; set; }
+        public string? CurrentState { get; set; }
+        public string? Blocker { get; set; }
+        public double? Confidence { get; set; }
+        public string? Message { get; set; }
+    }
+    
+    /// <summary>
+    /// Service to call Python vision recovery API.
+    /// Uses Gemini Vision to analyze screen and suggest recovery actions.
+    /// </summary>
+    public class VisionRecoveryService
+    {
+        private readonly string _recoveryUrl = "http://localhost:8000/api/agent/recover";
+        private readonly HttpClient _client;
+        
+        public VisionRecoveryService()
+        {
+            _client = new HttpClient();
+            _client.Timeout = TimeSpan.FromSeconds(30);
+        }
+        
+        /// <summary>
+        /// Call the vision recovery API to get suggested recovery action.
+        /// </summary>
+        public async Task<VisionRecoveryResult> AttemptRecoveryAsync(
+            string originalCommand, 
+            string failedAction, 
+            string errorReason)
+        {
+            try
+            {
+                Debug.WriteLine($"[VISION] Requesting recovery for: {failedAction}");
+                
+                var requestBody = new
+                {
+                    original_command = originalCommand,
+                    failed_action = failedAction,
+                    error_reason = errorReason
+                };
+                
+                var json = JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                
+                var response = await _client.PostAsync(_recoveryUrl, content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    Debug.WriteLine($"[VISION] Recovery API error: {response.StatusCode}");
+                    return new VisionRecoveryResult { Success = false, Message = $"API error: {response.StatusCode}" };
+                }
+                
+                var responseJson = await response.Content.ReadAsStringAsync();
+                Debug.WriteLine($"[VISION] Recovery response: {responseJson}");
+                
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+                
+                var result = new VisionRecoveryResult
+                {
+                    Success = root.TryGetProperty("success", out var s) && s.GetBoolean(),
+                    RecoveryPossible = root.TryGetProperty("recovery_possible", out var rp) && rp.GetBoolean(),
+                    CurrentState = root.TryGetProperty("current_state", out var cs) ? cs.GetString() : null,
+                    Blocker = root.TryGetProperty("blocker", out var b) ? b.GetString() : null,
+                    Confidence = root.TryGetProperty("confidence", out var c) ? c.GetDouble() : null,
+                    Message = root.TryGetProperty("message", out var m) ? m.GetString() : null
+                };
+                
+                // Parse recovery action if present
+                if (root.TryGetProperty("recovery_action", out var ra) && ra.ValueKind != JsonValueKind.Null)
+                {
+                    result.RecoveryAction = new RecoveryAction
+                    {
+                        Action = ra.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "",
+                        X = ra.TryGetProperty("x", out var x) ? x.GetInt32() : null,
+                        Y = ra.TryGetProperty("y", out var y) ? y.GetInt32() : null,
+                        Content = ra.TryGetProperty("content", out var ct) ? ct.GetString() : null,
+                        Target = ra.TryGetProperty("target", out var t) ? t.GetString() : null,
+                        Reasoning = ra.TryGetProperty("reasoning", out var r) ? r.GetString() : null
+                    };
+                }
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[VISION] Recovery error: {ex.Message}");
+                return new VisionRecoveryResult { Success = false, Message = ex.Message };
+            }
+        }
     }
 }

@@ -692,3 +692,75 @@ async def get_action_plan_v2(request: PlanRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===== VISION-BASED RECOVERY (v3) =====
+
+class RecoveryRequest(BaseModel):
+    """Request for vision-based recovery."""
+    original_command: str
+    failed_action: str
+    error_reason: Optional[str] = "unknown"
+    session_id: Optional[str] = None
+
+
+class RecoveryResponse(BaseModel):
+    """Response from vision recovery."""
+    success: bool
+    recovery_possible: bool
+    recovery_action: Optional[Dict[str, Any]] = None
+    current_state: Optional[str] = None
+    blocker: Optional[str] = None
+    confidence: Optional[float] = None
+    message: Optional[str] = None
+
+
+@router.post("/recover")
+async def attempt_vision_recovery(request: RecoveryRequest) -> RecoveryResponse:
+    """
+    Attempt vision-based recovery when an action fails.
+    
+    Flow:
+    1. Capture screenshot of current screen
+    2. Analyze with Gemini Vision
+    3. Determine what's blocking progress
+    4. Suggest recovery action
+    
+    Call this when C# executor fails on an action.
+    """
+    logger.info(f"🔍 [RECOVERY] Request for: '{request.original_command}'")
+    logger.info(f"🔍 [RECOVERY] Failed action: {request.failed_action}")
+    
+    try:
+        from app.vision.recovery_planner import attempt_recovery
+        
+        result = attempt_recovery(
+            original_goal=request.original_command,
+            failed_action=request.failed_action,
+            error_reason=request.error_reason or "unknown"
+        )
+        
+        if result.get("success"):
+            logger.info(f"✅ [RECOVERY] Suggested: {result.get('recovery_action', {}).get('action')}")
+        else:
+            logger.warning(f"⚠️ [RECOVERY] Failed: {result.get('message')}")
+        
+        return RecoveryResponse(
+            success=result.get("success", False),
+            recovery_possible=result.get("recovery_possible", False),
+            recovery_action=result.get("recovery_action"),
+            current_state=result.get("current_state"),
+            blocker=result.get("blocker"),
+            confidence=result.get("confidence"),
+            message=result.get("message")
+        )
+    except Exception as e:
+        logger.error(f"❌ [RECOVERY] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return RecoveryResponse(
+            success=False,
+            recovery_possible=False,
+            message=str(e)
+        )
+
