@@ -23,6 +23,7 @@ namespace Kernel_Agent.Services
         private const int MAX_RETRIES = 3;
         private const int BASE_DELAY_MS = 100;
         private string _currentGoal = "";  // Track original command for recovery
+        private string _lastOpenedApp = ""; // Track last opened app for focus before typing
         
         public SmartExecutor()
         {
@@ -290,6 +291,9 @@ namespace Kernel_Agent.Services
                         result.Success = _automation.OpenApplication(target);
                         if (result.Success)
                         {
+                            // Track the app for focusing before typing
+                            _lastOpenedApp = target.Replace(".exe", "").Replace(".EXE", "");
+                            Debug.WriteLine($"[EXECUTOR] Tracking last app: {_lastOpenedApp}");
                             // Wait for app window to be ready
                             await Task.Delay(500);
                         }
@@ -308,6 +312,13 @@ namespace Kernel_Agent.Services
                 case "type_text":
                     if (step.TryGetProperty("content", out JsonElement contentEl))
                     {
+                        // Focus the last opened app before typing
+                        if (!string.IsNullOrEmpty(_lastOpenedApp))
+                        {
+                            Debug.WriteLine($"[EXECUTOR] Focusing {_lastOpenedApp} before typing");
+                            _automation.FocusWindow(_lastOpenedApp);
+                            await Task.Delay(200);
+                        }
                         _automation.TypeIntoApp(contentEl.GetString() ?? "");
                         result.Success = true;
                     }

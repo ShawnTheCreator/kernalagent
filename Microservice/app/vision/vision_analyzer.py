@@ -28,7 +28,8 @@ class VisionAnalyzer:
     """
     
     def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        # Check GOOGLE_API_KEY first (set by server startup)
+        self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
         if self.api_key and GEMINI_AVAILABLE:
             genai.configure(api_key=self.api_key)
             # Use gemini-2.0-flash for vision
