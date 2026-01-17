@@ -90,6 +90,24 @@ Your job is to convert natural language commands into structured action plans.
 4. Infer missing details from context
 5. Use confidence score (0.0 to 1.0) to indicate certainty
 
+## CRITICAL: SPELLING & TYPO CORRECTION
+Users may have spelling mistakes, typos, or voice recognition errors. You MUST:
+1. Auto-correct common typos and interpret the intended meaning
+2. Common misspellings to recognize:
+   - "ant", "nad", "adn", "anf" → "and" (the separator word)
+   - "notpad", "notepadd", "notepd" → "notepad"
+   - "chorme", "crome", "gogle chrome", "googel" → "chrome"
+   - "youtoube", "utube", "youtub" → "youtube"
+   - "tipe", "tyep", "typee" → "type"
+   - "opne", "oepn", "oen" → "open"
+   - "clsoe", "closee", "colse" → "close"
+   - "volum", "volumee" → "volume"
+   - "helo", "heloo", "hellow" → "hello"
+   - Names like "buhle", "john", "sarah" should be preserved exactly (proper nouns)
+3. Focus on INTENT, not exact spelling
+4. If a word looks like a typo of a known action/app, correct it
+5. Preserve proper nouns and user-specified text content exactly as-is
+
 ## Output Format:
 {{
   "intent": "single_action" | "multi_step" | "unclear",
@@ -208,6 +226,78 @@ class IntentAnalyzer:
             except Exception as e:
                 logger.error(f"[INTENT] Groq init failed: {e}")
     
+    def _normalize_typos(self, command: str) -> str:
+        """
+        Normalize common typos and spelling mistakes in commands.
+        This preprocesses the command before sending to LLM.
+        """
+        import re
+        
+        # Dictionary of common typos -> corrections
+        # Format: typo_pattern: correct_word
+        typo_corrections = {
+            # "and" variants (critical separator)
+            r'\bant\b': 'and',
+            r'\badn\b': 'and',
+            r'\bnad\b': 'and',
+            r'\banf\b': 'and',
+            r'\band\s+and\b': 'and',  # double "and"
+            
+            # "open" variants
+            r'\bopne\b': 'open',
+            r'\boepn\b': 'open',
+            r'\boen\b': 'open',
+            r'\bopem\b': 'open',
+            
+            # "close" variants
+            r'\bclsoe\b': 'close',
+            r'\bcloase\b': 'close',
+            r'\bcolse\b': 'close',
+            
+            # "type" variants
+            r'\btipe\b': 'type',
+            r'\btyep\b': 'type',
+            r'\btpye\b': 'type',
+            r'\btyoe\b': 'type',
+            
+            # App names
+            r'\bnotpad\b': 'notepad',
+            r'\bnotepadd\b': 'notepad',
+            r'\bnotepd\b': 'notepad',
+            r'\bchorme\b': 'chrome',
+            r'\bcrome\b': 'chrome',
+            r'\bgoolge\b': 'google',
+            r'\bgoogel\b': 'google',
+            r'\bgogle\b': 'google',
+            r'\byoutube\b': 'youtube',
+            r'\byoutueb\b': 'youtube',
+            r'\byoutub\b': 'youtube',
+            r'\butube\b': 'youtube',
+            r'\bfirefxo\b': 'firefox',
+            r'\bfirefoc\b': 'firefox',
+            
+            # Common words
+            r'\bsercah\b': 'search',
+            r'\bsaerch\b': 'search',
+            r'\bserach\b': 'search',
+            r'\bbrowsr\b': 'browser',
+            r'\bbrwoser\b': 'browser',
+            r'\bvoluem\b': 'volume',
+            r'\bvolum\b': 'volume',
+            r'\bpreess\b': 'press',
+            r'\bperss\b': 'press',
+            r'\benteer\b': 'enter',
+            r'\bentr\b': 'enter',
+        }
+        
+        normalized = command.lower()
+        
+        for typo_pattern, correction in typo_corrections.items():
+            normalized = re.sub(typo_pattern, correction, normalized, flags=re.IGNORECASE)
+        
+        return normalized
+
+    
     async def analyze(
         self, 
         command: str, 
@@ -223,6 +313,11 @@ class IntentAnalyzer:
         Returns:
             Structured plan with intent, confidence, and actions
         """
+        # Preprocess command to fix common typos
+        normalized_command = self._normalize_typos(command)
+        if normalized_command != command:
+            logger.info(f"[INTENT] Typo correction: '{command}' → '{normalized_command}'")
+        
         # Build prompt with context if available
         prompt = INTENT_ANALYZER_PROMPT
         
@@ -233,7 +328,7 @@ class IntentAnalyzer:
             if context.get("active_app"):
                 prompt += f"- Active app: {context['active_app']}\n"
         
-        prompt += f"\nUser command: \"{command}\""
+        prompt += f'\nUser command: "{normalized_command}"'
         
         # Try Gemini first
         result = await self._call_gemini(prompt)

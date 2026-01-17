@@ -738,7 +738,7 @@ namespace Kernel_Agent.Services
     /// </summary>
     public class VisionRecoveryService
     {
-        private readonly string _recoveryUrl = "http://localhost:8000/api/agent/recover";
+        private readonly string _recoveryUrl = "https://kernalagent.onrender.com/api/agent/recover";
         private readonly HttpClient _client;
         
         public VisionRecoveryService()
