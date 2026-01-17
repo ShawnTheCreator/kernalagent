@@ -655,6 +655,38 @@ namespace Kernel_Agent.Services
                     result.Success = true;
                     break;
 
+                // ===== VIRTUAL DESKTOP =====
+                case "switch_desktop_left":
+                case "desktop_left":
+                case "previous_desktop":
+                    _automation.SwitchDesktopLeft();
+                    result.Success = true;
+                    break;
+
+                case "switch_desktop_right":
+                case "desktop_right":
+                case "next_desktop":
+                    _automation.SwitchDesktopRight();
+                    result.Success = true;
+                    break;
+
+                case "new_desktop":
+                case "create_desktop":
+                    _automation.NewDesktop();
+                    result.Success = true;
+                    break;
+
+                case "close_desktop":
+                    _automation.CloseDesktop();
+                    result.Success = true;
+                    break;
+
+                case "task_view":
+                case "show_desktops":
+                    _automation.TaskView();
+                    result.Success = true;
+                    break;
+
                 default:
                     result.Success = false;
                     result.Error = $"Unknown action: {action}";

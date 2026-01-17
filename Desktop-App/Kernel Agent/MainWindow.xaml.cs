@@ -619,6 +619,11 @@ namespace Kernel_Agent
                 _waveIn.DataAvailable += OnAudioDataAvailable;
                 _waveIn.StartRecording();
                 _isRecording = true;
+                
+                // Visual feedback - turn button red when recording
+                InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 220, 53, 69)); // Red
+                AddToThoughtLog("[Voice] 🎤 Recording started - speak now!");
+                
                 System.Diagnostics.Debug.WriteLine("Voice Recording Started.");
             }
             catch (NAudio.MmException ex)
@@ -661,6 +666,10 @@ namespace Kernel_Agent
             _waveIn?.StopRecording();
             _waveIn?.Dispose();
             _isRecording = false;
+            
+            // Reset button color back to transparent/default
+            InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)); // Transparent
+            AddToThoughtLog("[Voice] Recording stopped");
         }
 
         private async void OnAudioDataAvailable(object sender, WaveInEventArgs e)
