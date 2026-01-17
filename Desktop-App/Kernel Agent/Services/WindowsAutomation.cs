@@ -123,6 +123,12 @@ namespace Kernel_Agent.Services
                 
                 string processName = exeName.Replace(".exe", "").Replace(".EXE", "");
                 
+                // Special handling for Chrome - open with default profile to skip profile picker
+                if (exeName.ToLowerInvariant().Contains("chrome"))
+                {
+                    return OpenChromeWithProfile();
+                }
+                
                 // Method 1: Try shell execute
                 try
                 {
@@ -221,6 +227,93 @@ namespace Kernel_Agent.Services
                 System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Error waiting for app: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Opens Chrome with default profile to skip the profile picker.
+        /// Falls back to pressing Enter if profile picker appears.
+        /// </summary>
+        private bool OpenChromeWithProfile(string profileName = "Default")
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opening Chrome with profile: {profileName}");
+                
+                // Find Chrome executable
+                string chromePath = null;
+                var paths = new[]
+                {
+                    @"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                    @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                    Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe")
+                };
+                
+                foreach (var path in paths)
+                {
+                    if (File.Exists(path))
+                    {
+                        chromePath = path;
+                        break;
+                    }
+                }
+                
+                if (chromePath == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("[AUTOMATION] Chrome not found, trying shell execute");
+                    Process.Start(new ProcessStartInfo { FileName = "chrome.exe", UseShellExecute = true });
+                    return WaitForAppReadyAndSelectProfile("chrome");
+                }
+                
+                // Open Chrome with profile directory to skip profile picker
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = chromePath,
+                    Arguments = $"--profile-directory=\"{profileName}\"",
+                    UseShellExecute = true
+                };
+                
+                Process.Start(startInfo);
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Chrome started with profile: {profileName}");
+                
+                return WaitForAppReady("chrome");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Chrome open error: {ex.Message}");
+                // Fallback: try normal open and handle profile picker
+                try
+                {
+                    Process.Start(new ProcessStartInfo { FileName = "chrome.exe", UseShellExecute = true });
+                    return WaitForAppReadyAndSelectProfile("chrome");
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Wait for app and if it's Chrome, press Enter to select first profile if picker appears.
+        /// </summary>
+        private bool WaitForAppReadyAndSelectProfile(string processName)
+        {
+            var result = WaitForAppReady(processName);
+            
+            if (result && processName.ToLowerInvariant().Contains("chrome"))
+            {
+                // Give a moment for profile picker to potentially appear
+                Thread.Sleep(500);
+                
+                // Press Enter to select the default/first profile (works if profile picker is shown)
+                System.Diagnostics.Debug.WriteLine("[AUTOMATION] Pressing Enter to select profile (if picker shown)");
+                PressKey("enter");
+                
+                // Wait a bit more for actual Chrome window
+                Thread.Sleep(1000);
+            }
+            
+            return result;
         }
 
         // ===== CLOSE APPLICATION =====

@@ -25,6 +25,12 @@ namespace Kernel_Agent
         
         // Continuous voice service for always-listening mode
         private ContinuousVoiceService? _voiceService;
+        
+        // Voice recording state
+        private string _currentTranscript = "";
+        private DateTime _lastSpeechTime = DateTime.Now;
+        private System.Timers.Timer? _silenceTimer;
+        private const int SILENCE_THRESHOLD_MS = 1500; // 1.5 seconds of silence = auto-send
 
         public MainWindow()
         {
@@ -590,99 +596,85 @@ namespace Kernel_Agent
 
         #region Voice Intelligence (Fixed Logic)
 
+        // Audio buffer for collecting speech
+        private List<byte> _audioBuffer = new List<byte>();
+        private SpeechClient.StreamingRecognizeStream? _streamingCall;
+        private Task? _responseTask;
+
         private void VoiceInputButton_Click(object sender, RoutedEventArgs e)
         {
             if (!_isRecording) StartVoiceInput();
-            else StopVoiceInput();
+            else StopVoiceInputAndSend();
         }
 
-        private void StartVoiceInput()
+        private async void StartVoiceInput()
         {
             try
             {
-                // Check if already recording
-                if (_isRecording)
+                if (_isRecording) return;
+                if (_speechClient == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("Already recording.");
+                    AddToThoughtLog("[Voice] ⚠️ Speech client not initialized. Check Google credentials.");
                     return;
                 }
 
+                // Reset state
+                _currentTranscript = "";
+                _audioBuffer.Clear();
+                _lastSpeechTime = DateTime.Now;
+                
                 // Dispose any existing instance
-                if (_waveIn != null)
-                {
-                    _waveIn.Dispose();
-                    _waveIn = null;
-                }
+                _waveIn?.Dispose();
+                _waveIn = null;
 
-                _waveIn = new WaveInEvent();
-                _waveIn.WaveFormat = new WaveFormat(16000, 1); // 16kHz Mono for Speech
+                _waveIn = new WaveInEvent
+                {
+                    WaveFormat = new WaveFormat(16000, 1), // 16kHz Mono for Speech
+                    BufferMilliseconds = 100
+                };
+                
                 _waveIn.DataAvailable += OnAudioDataAvailable;
                 _waveIn.StartRecording();
                 _isRecording = true;
                 
                 // Visual feedback - turn button red when recording
                 InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 220, 53, 69)); // Red
+                CommandInput.PlaceholderText = "🎤 Listening... Speak now!";
                 AddToThoughtLog("[Voice] 🎤 Recording started - speak now!");
+                
+                // Start silence detection timer
+                _silenceTimer?.Stop();
+                _silenceTimer = new System.Timers.Timer(500); // Check every 500ms
+                _silenceTimer.Elapsed += CheckForSilence;
+                _silenceTimer.Start();
+                
+                // Start streaming recognition
+                await StartStreamingRecognition();
                 
                 System.Diagnostics.Debug.WriteLine("Voice Recording Started.");
             }
             catch (NAudio.MmException ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Microphone access error: {ex.Message}");
-                _isRecording = false;
-                _waveIn?.Dispose();
-                _waveIn = null;
-                
-                // Show error to user
-                this.DispatcherQueue.TryEnqueue(async () =>
-                {
-                    // Wait for ContentFrame to be loaded and have XamlRoot
-                    while (ContentFrame?.XamlRoot == null)
-                    {
-                        await Task.Delay(50);
-                    }
-                    
-                    var dialog = new ContentDialog
-                    {
-                        Title = "Microphone Access Error",
-                        Content = "Unable to access microphone. Please check:\n1. Microphone permissions are enabled\n2. No other application is using the microphone\n3. A microphone is connected and working",
-                        CloseButtonText = "OK",
-                        XamlRoot = ContentFrame.XamlRoot
-                    };
-                    await dialog.ShowAsync();
-                });
+                HandleMicrophoneError(ex.Message);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Voice recording error: {ex.Message}");
+                AddToThoughtLog($"[Voice] Error: {ex.Message}");
                 _isRecording = false;
                 _waveIn?.Dispose();
                 _waveIn = null;
             }
         }
 
-        private void StopVoiceInput()
+        private async Task StartStreamingRecognition()
         {
-            _waveIn?.StopRecording();
-            _waveIn?.Dispose();
-            _isRecording = false;
-            
-            // Reset button color back to transparent/default
-            InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)); // Transparent
-            AddToThoughtLog("[Voice] Recording stopped");
-        }
-
-        private async void OnAudioDataAvailable(object sender, WaveInEventArgs e)
-        {
-            if (_speechClient == null) return;
-
             try
             {
-                // Start a bidirectional streaming call
-                using var streamingCall = _speechClient.StreamingRecognize();
-
-                // Step 1: Send Configuration
-                await streamingCall.WriteAsync(new StreamingRecognizeRequest
+                _streamingCall = _speechClient.StreamingRecognize();
+                
+                // Send configuration
+                await _streamingCall.WriteAsync(new StreamingRecognizeRequest
                 {
                     StreamingConfig = new StreamingRecognitionConfig
                     {
@@ -691,43 +683,165 @@ namespace Kernel_Agent
                             Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
                             SampleRateHertz = 16000,
                             LanguageCode = "en-US",
+                            EnableAutomaticPunctuation = true,
                         },
-                        InterimResults = true
+                        InterimResults = true,
+                        SingleUtterance = false
                     }
                 });
-
-                // Step 2: Send Audio Buffer
-                await streamingCall.WriteAsync(new StreamingRecognizeRequest
+                
+                // Start reading responses in background
+                _responseTask = Task.Run(async () =>
                 {
-                    AudioContent = Google.Protobuf.ByteString.CopyFrom(e.Buffer, 0, e.BytesRecorded)
-                });
-
-                // Step 3: Complete the write for this chunk
-                await streamingCall.WriteCompleteAsync();
-
-                // Step 4: Process Results using await foreach (Fixes MoveNext/Current error)
-                // 
-                await foreach (var response in streamingCall.GetResponseStream())
-                {
-                    foreach (var result in response.Results)
+                    try
                     {
-                        if (result.Alternatives.Count > 0 && CommandInput != null)
+                        await foreach (var response in _streamingCall.GetResponseStream())
                         {
-                            string transcript = result.Alternatives[0].Transcript;
-
-                            // UI elements must be updated on the UI Thread
-                            this.DispatcherQueue.TryEnqueue(() =>
+                            foreach (var result in response.Results)
                             {
-                                CommandInput.Text = transcript;
-                            });
+                                if (result.Alternatives.Count > 0)
+                                {
+                                    string transcript = result.Alternatives[0].Transcript;
+                                    bool isFinal = result.IsFinal;
+                                    
+                                    _lastSpeechTime = DateTime.Now; // Reset silence timer
+                                    
+                                    // Update UI on main thread
+                                    this.DispatcherQueue.TryEnqueue(() =>
+                                    {
+                                        if (isFinal)
+                                        {
+                                            _currentTranscript = transcript;
+                                            CommandInput.Text = transcript;
+                                            System.Diagnostics.Debug.WriteLine($"[VOICE] Final: {transcript}");
+                                        }
+                                        else
+                                        {
+                                            CommandInput.Text = transcript + "...";
+                                            System.Diagnostics.Debug.WriteLine($"[VOICE] Interim: {transcript}");
+                                        }
+                                    });
+                                }
+                            }
                         }
                     }
-                }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Response stream error: {ex.Message}");
+                    }
+                });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Voice recognition error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Streaming init error: {ex.Message}");
             }
+        }
+
+        private async void OnAudioDataAvailable(object? sender, WaveInEventArgs e)
+        {
+            if (!_isRecording || _streamingCall == null || e.BytesRecorded == 0) return;
+
+            try
+            {
+                // Send audio data to Google
+                await _streamingCall.WriteAsync(new StreamingRecognizeRequest
+                {
+                    AudioContent = Google.Protobuf.ByteString.CopyFrom(e.Buffer, 0, e.BytesRecorded)
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Audio send error: {ex.Message}");
+            }
+        }
+
+        private void CheckForSilence(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (!_isRecording) return;
+            
+            var silenceDuration = (DateTime.Now - _lastSpeechTime).TotalMilliseconds;
+            
+            // If we have text and silence exceeded threshold, auto-send
+            if (!string.IsNullOrWhiteSpace(_currentTranscript) && silenceDuration >= SILENCE_THRESHOLD_MS)
+            {
+                System.Diagnostics.Debug.WriteLine($"[VOICE] Silence detected ({silenceDuration}ms), auto-sending...");
+                
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    StopVoiceInputAndSend();
+                });
+            }
+        }
+
+        private async void StopVoiceInputAndSend()
+        {
+            _silenceTimer?.Stop();
+            _silenceTimer?.Dispose();
+            _silenceTimer = null;
+            
+            _waveIn?.StopRecording();
+            _waveIn?.Dispose();
+            _waveIn = null;
+            _isRecording = false;
+            
+            // Close streaming call
+            try
+            {
+                if (_streamingCall != null)
+                {
+                    await _streamingCall.WriteCompleteAsync();
+                    _streamingCall = null;
+                }
+            }
+            catch { }
+            
+            // Reset button color
+            InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+            CommandInput.PlaceholderText = "Command Agent...";
+            
+            // Send the command if we have transcribed text
+            string command = CommandInput.Text?.Trim() ?? "";
+            if (!string.IsNullOrWhiteSpace(command) && !command.EndsWith("..."))
+            {
+                AddToThoughtLog($"[Voice] 📤 Sending: \"{command}\"");
+                CommandInput.Text = "";
+                await ApiService.Instance.SendCommandAsync(command);
+            }
+            else if (!string.IsNullOrWhiteSpace(_currentTranscript))
+            {
+                AddToThoughtLog($"[Voice] 📤 Sending: \"{_currentTranscript}\"");
+                CommandInput.Text = "";
+                await ApiService.Instance.SendCommandAsync(_currentTranscript);
+            }
+            else
+            {
+                AddToThoughtLog("[Voice] Recording stopped (no speech detected)");
+            }
+        }
+
+        private void HandleMicrophoneError(string message)
+        {
+            System.Diagnostics.Debug.WriteLine($"Microphone access error: {message}");
+            _isRecording = false;
+            _waveIn?.Dispose();
+            _waveIn = null;
+            
+            this.DispatcherQueue.TryEnqueue(async () =>
+            {
+                AddToThoughtLog($"[Voice] ⚠️ Microphone error: {message}");
+                
+                if (ContentFrame?.XamlRoot != null)
+                {
+                    var dialog = new ContentDialog
+                    {
+                        Title = "Microphone Access Error",
+                        Content = "Unable to access microphone. Please check:\n1. Microphone permissions are enabled\n2. No other application is using the microphone\n3. A microphone is connected and working",
+                        CloseButtonText = "OK",
+                        XamlRoot = ContentFrame.XamlRoot
+                    };
+                    await dialog.ShowAsync();
+                }
+            });
         }
 
         #endregion
