@@ -210,7 +210,9 @@ def parse_command(command: str) -> List[ActionStep]:
     3. Default fallback
     """
     cmd = command.lower().strip()
+    original_cmd = command.strip()  # Keep original for preserving text case
     words = cmd.split()
+    original_words = original_cmd.split()
     
     if not words:
         return [ActionStep(action="open_app", target="notepad.exe")]
@@ -222,14 +224,43 @@ def parse_command(command: str) -> List[ActionStep]:
     open_patterns = ["open", "launch", "start", "run"]
     if words[0] in open_patterns:
         rest = " ".join(words[1:]) if len(words) > 1 else ""
+        original_rest = " ".join(original_words[1:]) if len(original_words) > 1 else ""
         
-        # Check for compound command: "open X and type Y"
-        compound_keywords = [" and type ", " and write ", " then type ", " then write "]
+        # Check for compound command: "open X and type Y" (with misspelling tolerance)
+        # Handles: "and type", "ant type", "an type", "nd type", "then type", etc.
+        compound_keywords = [
+            " and type ", " and write ", " then type ", " then write ",
+            " ant type ", " an type ", " nd type ",  # Common misspellings
+            " ant write ", " an write ", " nd write ",
+            " & type ", " + type ",  # Alternate patterns
+        ]
+        
+        # Also try regex for more flexible matching
+        import re
+        # Match any variation of "and/ant/an/nd" + type/write
+        compound_pattern = re.compile(r'\s+(and?t?|an|nd|then|&)\s+(type|write)\s+', re.IGNORECASE)
+        compound_match = compound_pattern.search(rest)
+        
+        if compound_match:
+            # Split at the match position - use original_rest to preserve case
+            match_start = compound_match.start()
+            match_end = compound_match.end()
+            app_name = rest[:match_start].strip()
+            text_to_type = original_rest[match_end:].strip()  # Preserve original case!
+            exe = get_app_exe(app_name)
+            logger.info(f"Compound command detected: open '{app_name}' + type '{text_to_type}'")
+            return [
+                ActionStep(action="open_app", target=exe),
+                ActionStep(action="type_text", content=text_to_type)
+            ]
+        
+        # Fallback: exact keyword matching  
         for keyword in compound_keywords:
             if keyword in rest.lower():
-                parts = rest.lower().split(keyword, 1)
-                app_name = parts[0].strip()
-                text_to_type = parts[1].strip()
+                # Find keyword position in lowercased version, extract from original
+                keyword_pos = rest.lower().find(keyword)
+                app_name = rest[:keyword_pos].strip()
+                text_to_type = original_rest[keyword_pos + len(keyword):].strip()  # Preserve case!
                 exe = get_app_exe(app_name)
                 return [
                     ActionStep(action="open_app", target=exe),
