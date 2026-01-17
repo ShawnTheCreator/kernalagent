@@ -1256,3 +1256,5 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\StoreLogo.png
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Assets\Wide310x150Logo.scale-200.png
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Kernel Agent.pri
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\.env
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\kernal-agent-68a0608e1242.json
