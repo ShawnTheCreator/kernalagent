@@ -178,3 +178,5 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\Debug\net8.0-wi
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\qualifiers.txt
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\qualifiers.txt.intermediate
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\MultipleQualifiersPerDimensionFound.txt
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\.env
+C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\kernal-agent-68a0608e1242.json

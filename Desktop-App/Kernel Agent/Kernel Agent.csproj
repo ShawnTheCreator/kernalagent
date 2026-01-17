@@ -61,6 +61,20 @@
     <PackageReference Include="System.Speech" Version="8.0.0" />
     <PackageReference Include="WindowsInput" Version="6.4.0" />
   </ItemGroup>
+  
+  <!-- Copy credentials and env files to output -->
+  <ItemGroup>
+    <None Update=".env">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="kernal-agent-68a0608e1242.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="service-account.json" Condition="Exists('service-account.json')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
   <ItemGroup>
     <Page Update="SettingsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
