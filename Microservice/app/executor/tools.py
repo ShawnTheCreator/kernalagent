@@ -191,6 +191,20 @@ TOOL_TO_ACTION_MAP: Dict[str, Dict[str, str]] = {
         "close": "close_desktop",
         "task_view": "task_view",
     },
+    
+    # Wait/Delay
+    "wait": {
+        "wait": "wait",
+    },
+    
+    # YouTube shortcuts
+    "youtube": {
+        "skip_ad": "youtube_skip_ad",
+        "play": "youtube_play",
+        "pause": "youtube_pause",
+        "fullscreen": "youtube_fullscreen",
+        "next_video": "youtube_next",
+    },
 }
 
 

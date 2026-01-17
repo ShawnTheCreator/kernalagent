@@ -51,7 +51,7 @@ Available tools and their parameters:
 
 7. browser
    - action: "navigate" | "search" | "new_tab" | "close_tab" | "refresh" | "back" | "forward"
-   - url: URL (for navigate)
+   - url: URL (for navigate) - for YouTube use "https://youtube.com"
    - query: search terms (for search)
 
 8. system
@@ -74,6 +74,17 @@ Available tools and their parameters:
 
 13. virtual_desktop
     - action: "switch_left" | "switch_right" | "new" | "close" | "task_view"
+
+14. wait
+    - action: "wait"
+    - duration: seconds to wait (default 2)
+    - Use this between actions that need time (page load, video start, etc.)
+
+15. youtube (shortcut for common YouTube actions)
+    - action: "skip_ad" | "play" | "pause" | "fullscreen" | "next_video"
+    - skip_ad: presses Tab then Enter to skip
+    - play/pause: presses Space or K key
+    - fullscreen: presses F key
 """
 
 # ===== THE CORE PROMPT =====
@@ -190,7 +201,48 @@ Input: "open chrome and search for cats"
   ]
 }}
 
-REMEMBER: Split by "and" FIRST, then parse each piece separately!
+Input: "open chrome go to youtube and search for trailers"
+{{
+  "intent": "multi_step",
+  "confidence": 0.97,
+  "reasoning": "Open browser, navigate to YouTube, then search",
+  "actions": [
+    {{"tool": "app_launcher", "action": "open", "target": "chrome.exe"}},
+    {{"tool": "browser", "action": "navigate", "url": "https://youtube.com"}},
+    {{"tool": "text_input", "action": "type", "content": "trailers"}},
+    {{"tool": "keyboard", "action": "press", "keys": "enter"}}
+  ]
+}}
+
+Input: "open youtube search for movie trailers and play the first one"
+{{
+  "intent": "multi_step",
+  "confidence": 0.95,
+  "reasoning": "Open YouTube, search, click first result",
+  "actions": [
+    {{"tool": "app_launcher", "action": "open", "target": "chrome.exe"}},
+    {{"tool": "browser", "action": "navigate", "url": "https://youtube.com"}},
+    {{"tool": "text_input", "action": "type", "content": "movie trailers"}},
+    {{"tool": "keyboard", "action": "press", "keys": "enter"}},
+    {{"tool": "keyboard", "action": "press", "keys": "tab"}},
+    {{"tool": "keyboard", "action": "press", "keys": "enter"}}
+  ]
+}}
+
+Input: "skip ad" or "skip this ad"
+{{
+  "intent": "single_action",
+  "confidence": 0.99,
+  "reasoning": "Press Tab to focus skip button then Enter",
+  "actions": [
+    {{"tool": "keyboard", "action": "hotkey", "keys": "tab+enter"}}
+  ]
+}}
+
+REMEMBER: 
+1. Split by "and" or "then" to find multiple actions
+2. For YouTube/browser: navigate first, then search, then interact
+3. Tab+Enter is common for clicking buttons without mouse
 
 Now analyze this command:
 """

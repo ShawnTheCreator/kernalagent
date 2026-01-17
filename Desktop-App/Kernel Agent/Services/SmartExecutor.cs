@@ -687,6 +687,41 @@ namespace Kernel_Agent.Services
                     result.Success = true;
                     break;
 
+                // ===== WAIT/DELAY =====
+                case "wait":
+                    int waitMs = step.TryGetProperty("duration", out var durEl) ? durEl.GetInt32() * 1000 : 2000;
+                    await Task.Delay(waitMs);
+                    result.Success = true;
+                    break;
+
+                // ===== YOUTUBE SHORTCUTS =====
+                case "youtube_skip_ad":
+                    // Skip ad: Tab to focus skip button, then Enter
+                    _automation.PressKey("tab");
+                    await Task.Delay(100);
+                    _automation.PressKey("enter");
+                    result.Success = true;
+                    break;
+
+                case "youtube_play":
+                case "youtube_pause":
+                    // Space or K toggles play/pause on YouTube
+                    _automation.PressKey("space");
+                    result.Success = true;
+                    break;
+
+                case "youtube_fullscreen":
+                    // F key for fullscreen on YouTube
+                    _automation.Hotkey("f");
+                    result.Success = true;
+                    break;
+
+                case "youtube_next":
+                    // Shift+N for next video on YouTube
+                    _automation.Hotkey("shift+n");
+                    result.Success = true;
+                    break;
+
                 default:
                     result.Success = false;
                     result.Error = $"Unknown action: {action}";

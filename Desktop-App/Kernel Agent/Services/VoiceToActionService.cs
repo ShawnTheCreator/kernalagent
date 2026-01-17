@@ -285,6 +285,29 @@ namespace Kernel_Agent.Services
                         _automation.TaskView();
                         break;
                     
+                    // ===== WAIT =====
+                    case "wait":
+                        int waitMs = step.TryGetProperty("duration", out var durEl) ? durEl.GetInt32() * 1000 : 2000;
+                        await Task.Delay(waitMs);
+                        break;
+                    
+                    // ===== YOUTUBE =====
+                    case "youtube_skip_ad":
+                        _automation.PressKey("tab");
+                        await Task.Delay(100);
+                        _automation.PressKey("enter");
+                        break;
+                    case "youtube_play":
+                    case "youtube_pause":
+                        _automation.PressKey("space");
+                        break;
+                    case "youtube_fullscreen":
+                        _automation.Hotkey("f");
+                        break;
+                    case "youtube_next":
+                        _automation.Hotkey("shift+n");
+                        break;
+                    
                     default:
                         System.Diagnostics.Debug.WriteLine($"[VOICE] Unknown action: {action}");
                         break;
