@@ -14,8 +14,8 @@ namespace Kernel_Agent.Services
         private static readonly string API_BASE_URL = 
             (Environment.GetEnvironmentVariable("API_BASE_URL") ?? "https://kernal-agent-backend.onrender.com/api").TrimEnd('/') + "/";
         
-        // Legacy reference - Python microservice is at: https://kernalagent.onrender.com/
-        private static readonly string BASE_URL = "https://kernalagent.onrender.com/";
+        // Development: localhost, Production: kernalagent.onrender.com
+        private static readonly string BASE_URL = "http://localhost:8000/";
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
 
@@ -306,7 +306,7 @@ namespace Kernel_Agent.Services
                 // Call Python Brain backend (LLM-First v2)
                 // Production: Render
                 // ========================================
-                var pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan/v2";
+                var pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
                 
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);
@@ -362,7 +362,7 @@ namespace Kernel_Agent.Services
         // NEW: Python Microservice Endpoints for Real Data
         // =====================================================
         private static readonly string MICROSERVICE_URL = 
-            Environment.GetEnvironmentVariable("MICROSERVICE_URL") ?? "https://kernalagent.onrender.com";
+            Environment.GetEnvironmentVariable("MICROSERVICE_URL") ?? "http://localhost:8000";
 
         public async Task<List<SkillDto>> GetMySkillsAsync()
         {

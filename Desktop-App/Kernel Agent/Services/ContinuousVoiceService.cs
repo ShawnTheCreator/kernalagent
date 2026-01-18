@@ -41,7 +41,7 @@ namespace Kernel_Agent.Services
         private const int MIN_SPEECH_DURATION_MS = 500; // Minimum speech to process
         
         private readonly WindowsAutomation _automation = new WindowsAutomation();
-        private readonly string _pythonBackendUrl = "https://kernalagent.onrender.com/api/agent/plan/v2";
+        private readonly string _pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
         
         private WaveInEvent? _waveIn;
         private SpeechClient? _speechClient;

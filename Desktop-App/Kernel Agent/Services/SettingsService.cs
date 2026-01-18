@@ -41,7 +41,7 @@ namespace Kernel_Agent.Services
 
         // Backend sync - Python Microservice
         private static readonly string MICROSERVICE_URL = 
-            Environment.GetEnvironmentVariable("MICROSERVICE_URL") ?? "https://kernalagent.onrender.com";
+            Environment.GetEnvironmentVariable("MICROSERVICE_URL") ?? "http://localhost:8000";
 
         // Local storage keys
         private const string KEY_THEME = "theme";

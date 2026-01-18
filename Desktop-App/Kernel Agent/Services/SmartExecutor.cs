@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Net.Http;
 using System.Text;
+using System.Linq;
 
 namespace Kernel_Agent.Services
 {
@@ -957,7 +958,7 @@ namespace Kernel_Agent.Services
     /// </summary>
     public class VisionRecoveryService
     {
-        private readonly string _recoveryUrl = "https://kernalagent.onrender.com/api/agent/recover";
+        private readonly string _recoveryUrl = "http://localhost:8000/api/agent/recover";
         private readonly HttpClient _client;
         
         public VisionRecoveryService()
