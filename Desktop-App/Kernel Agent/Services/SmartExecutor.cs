@@ -20,6 +20,8 @@ namespace Kernel_Agent.Services
     {
         private readonly WindowsAutomation _automation;
         private readonly VisionRecoveryService _visionRecovery;
+        private readonly UIElementFinder _uiFinder;  // NEW: UI Automation support
+        private readonly ContextManager _context;    // NEW: Context tracking
         private const int MAX_RETRIES = 3;
         private const int BASE_DELAY_MS = 100;
         private string _currentGoal = "";  // Track original command for recovery
@@ -39,11 +41,22 @@ namespace Kernel_Agent.Services
         {
             _automation = new WindowsAutomation();
             _visionRecovery = new VisionRecoveryService();
+            _uiFinder = new UIElementFinder();  // NEW: Initialize UI finder
+            _context = ContextManager.Instance;  // NEW: Get context singleton
         }
         
         public void SetOriginalGoal(string goal)
         {
             _currentGoal = goal;
+        }
+        
+        /// <summary>
+        /// Get current context for sending to Python backend.
+        /// </summary>
+        public System.Collections.Generic.Dictionary<string, object> GetContext()
+        {
+            _context.RefreshContext();
+            return _context.GetContextDict();
         }
 
         /// <summary>
@@ -719,6 +732,145 @@ namespace Kernel_Agent.Services
                 case "youtube_next":
                     // Shift+N for next video on YouTube
                     _automation.Hotkey("shift+n");
+                    result.Success = true;
+                    break;
+
+                // ===== UI AUTOMATION (Element-Based Actions) =====
+                case "click_button":
+                    if (step.TryGetProperty("target", out var btnTarget))
+                    {
+                        string buttonName = btnTarget.GetString() ?? "";
+                        Debug.WriteLine($"[EXECUTOR] UI Automation: click_button '{buttonName}'");
+                        var button = _uiFinder.FindButton(buttonName);
+                        if (button != null)
+                        {
+                            result.Success = _uiFinder.ClickElement(button);
+                        }
+                        else
+                        {
+                            result.Error = $"Button not found: {buttonName}";
+                        }
+                    }
+                    break;
+                    
+                case "click_menu":
+                    if (step.TryGetProperty("path", out var menuPath))
+                    {
+                        string path = menuPath.GetString() ?? "";
+                        Debug.WriteLine($"[EXECUTOR] UI Automation: click_menu '{path}'");
+                        var menuItem = _uiFinder.FindMenuItem(path);
+                        if (menuItem != null)
+                        {
+                            result.Success = _uiFinder.ClickElement(menuItem);
+                        }
+                        else
+                        {
+                            result.Error = $"Menu not found: {path}";
+                        }
+                    }
+                    break;
+                    
+                case "click_element":
+                case "find_and_click":
+                    if (step.TryGetProperty("target", out var elemTarget))
+                    {
+                        string description = elemTarget.GetString() ?? "";
+                        Debug.WriteLine($"[EXECUTOR] UI Automation: find_and_click '{description}'");
+                        var element = _uiFinder.FindElement(description);
+                        if (element != null)
+                        {
+                            result.Success = _uiFinder.ClickElement(element);
+                        }
+                        else
+                        {
+                            result.Error = $"Element not found: {description}";
+                        }
+                    }
+                    break;
+                    
+                case "type_in_element":
+                    if (step.TryGetProperty("target", out var inputTarget) && 
+                        step.TryGetProperty("content", out var inputContent))
+                    {
+                        string fieldName = inputTarget.GetString() ?? "";
+                        string text = inputContent.GetString() ?? "";
+                        Debug.WriteLine($"[EXECUTOR] UI Automation: type_in_element '{fieldName}' -> '{text}'");
+                        var textBox = _uiFinder.FindTextBox(fieldName);
+                        if (textBox != null)
+                        {
+                            result.Success = _uiFinder.TypeInElement(textBox, text);
+                        }
+                        else
+                        {
+                            result.Error = $"Text field not found: {fieldName}";
+                        }
+                    }
+                    break;
+                    
+                case "get_ui_elements":
+                    // Debug action to list all available UI elements
+                    Debug.WriteLine("[EXECUTOR] Getting all UI elements...");
+                    var elements = _uiFinder.GetAllElements();
+                    foreach (var elem in elements.Take(20))
+                    {
+                        Debug.WriteLine($"[UI] {elem.Type}: '{elem.Name}' ({elem.AutomationId})");
+                    }
+                    result.Success = true;
+                    break;
+
+                // ===== SKILL RECORDING & PLAYBACK =====
+                case "start_recording":
+                    if (step.TryGetProperty("target", out var skillNameEl))
+                    {
+                        string skillName = skillNameEl.GetString() ?? "unnamed_skill";
+                        Debug.WriteLine($"[EXECUTOR] 🔴 Starting skill recording: {skillName}");
+                        SkillRecorder.Instance.StartRecording(skillName);
+                        result.Success = true;
+                    }
+                    else
+                    {
+                        SkillRecorder.Instance.StartRecording($"skill_{DateTime.Now:yyyyMMdd_HHmmss}");
+                        result.Success = true;
+                    }
+                    break;
+                    
+                case "stop_recording":
+                    Debug.WriteLine("[EXECUTOR] ⏹ Stopping skill recording");
+                    var savedSkill = SkillRecorder.Instance.StopRecording(true);
+                    result.Success = savedSkill != null;
+                    if (savedSkill != null)
+                    {
+                        Debug.WriteLine($"[EXECUTOR] Saved skill: {savedSkill.Name} with {savedSkill.Actions.Count} actions");
+                    }
+                    break;
+                    
+                case "play_skill":
+                    if (step.TryGetProperty("target", out var playSkillName))
+                    {
+                        string skillToPlay = playSkillName.GetString() ?? "";
+                        Debug.WriteLine($"[EXECUTOR] ▶ Playing skill: {skillToPlay}");
+                        var skill = SkillRecorder.Instance.FindSkill(skillToPlay);
+                        if (skill != null)
+                        {
+                            // Play the skill (async)
+                            await SkillRecorder.Instance.PlaySkillAsync(skill.Name);
+                            result.Success = true;
+                        }
+                        else
+                        {
+                            result.Error = $"Skill not found: {skillToPlay}";
+                            Debug.WriteLine($"[EXECUTOR] Skill not found: {skillToPlay}");
+                        }
+                    }
+                    break;
+                    
+                case "list_skills":
+                    Debug.WriteLine("[EXECUTOR] Listing all skills...");
+                    var allSkills = SkillRecorder.Instance.GetAllSkills();
+                    foreach (var s in allSkills)
+                    {
+                        Debug.WriteLine($"[SKILL] {s.Name}: {s.ActionCount} actions, used {s.UseCount}x");
+                    }
                     result.Success = true;
                     break;
 

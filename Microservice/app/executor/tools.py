@@ -205,6 +205,24 @@ TOOL_TO_ACTION_MAP: Dict[str, Dict[str, str]] = {
         "fullscreen": "youtube_fullscreen",
         "next_video": "youtube_next",
     },
+    
+    # UI Automation (Element-Based Actions)
+    "ui_automation": {
+        "click_button": "click_button",
+        "click_menu": "click_menu",
+        "click_element": "click_element",
+        "find_and_click": "find_and_click",
+        "type_in_element": "type_in_element",
+        "get_ui_elements": "get_ui_elements",
+    },
+    
+    # Skill Management (Recording & Playback)
+    "skill_management": {
+        "start_recording": "start_recording",
+        "stop_recording": "stop_recording",
+        "play_skill": "play_skill",
+        "list_skills": "list_skills",
+    },
 }
 
 
@@ -263,6 +281,10 @@ def convert_to_executor_action(llm_action: Dict[str, Any]) -> Dict[str, Any]:
     
     if "direction" in llm_action:
         executor_action["target"] = llm_action["direction"]  # Map direction to target for scroll
+    
+    # UI Automation: map path parameter for click_menu
+    if "path" in llm_action:
+        executor_action["path"] = llm_action["path"]
     
     return executor_action
 

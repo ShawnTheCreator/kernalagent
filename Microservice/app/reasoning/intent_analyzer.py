@@ -85,6 +85,28 @@ Available tools and their parameters:
     - skip_ad: presses Tab then Enter to skip
     - play/pause: presses Space or K key
     - fullscreen: presses F key
+
+16. ui_automation (PREFERRED for clicking UI elements!)
+    - action: "click_button" | "click_menu" | "click_element" | "type_in_element"
+    - target: button/element name (e.g., "Save", "Cancel", "OK", "Submit")
+    - path: menu path for click_menu (e.g., "File > Save As", "Edit > Preferences")
+    - content: text to type (for type_in_element)
+    
+    IMPORTANT: Prefer ui_automation over mouse clicks when clicking named buttons!
+    Examples:
+    - "click the Save button" → ui_automation, action: click_button, target: "Save"
+    - "click File menu then Save As" → ui_automation, action: click_menu, path: "File > Save As"
+    - "click OK" → ui_automation, action: click_button, target: "OK"
+
+17. skill_management (Record and replay workflows!)
+    - action: "start_recording" | "stop_recording" | "play_skill" | "list_skills"
+    - target: skill name (for start_recording and play_skill)
+    
+    Examples:
+    - "learn how I do this" → skill_management, action: start_recording, target: "my_workflow"
+    - "stop learning" → skill_management, action: stop_recording
+    - "do the login thing" → skill_management, action: play_skill, target: "login"
+    - "what skills do I have" → skill_management, action: list_skills
 """
 
 # ===== THE CORE PROMPT =====
@@ -118,6 +140,16 @@ Users may have spelling mistakes, typos, or voice recognition errors. You MUST:
 3. Focus on INTENT, not exact spelling
 4. If a word looks like a typo of a known action/app, correct it
 5. Preserve proper nouns and user-specified text content exactly as-is
+
+## CONTEXT-AWARE RULES (for relative commands):
+- "this" = current active app/window
+- "it" = selection if available, else last action target, else current app
+- "that" = last action target or selection
+- "bigger" in browser/editor = zoom in/font size up; in media = volume up; else = maximize
+- "smaller" = opposite of bigger
+- "save this" = save in current app (Ctrl+S)
+- "close this" = close current window
+- "do that again" = repeat last action
 
 ## Output Format:
 {{

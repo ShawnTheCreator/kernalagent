@@ -86,6 +86,8 @@ class PlanRequest(BaseModel):
     """Request from C# Desktop Agent."""
     command: str
     session_id: Optional[str] = None
+    # NEW: Environment context from C# ContextManager
+    context: Optional[Dict[str, Any]] = None  # {active_window, active_app, app_type, clipboard, selected_text, last_action}
 
 
 class ActionStep(BaseModel):
