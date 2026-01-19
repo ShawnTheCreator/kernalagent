@@ -249,18 +249,43 @@ namespace Kernel_Agent.Services
         {
             try
             {
+                // OPTIMIZATION: Try local Python microservice FIRST (fast, no network delay)
+                // This syncs instantly when user logs in via web
+                try
+                {
+                    var localUrl = $"{MICROSERVICE_URL}/api/auth/poll?deviceId={deviceId}";
+                    using var localClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+                    var localResponse = await localClient.GetAsync(localUrl);
+                    
+                    if (localResponse.IsSuccessStatusCode)
+                    {
+                        var localJson = await localResponse.Content.ReadAsStringAsync();
+                        using var localDoc = System.Text.Json.JsonDocument.Parse(localJson);
+                        
+                        if (localDoc.RootElement.TryGetProperty("token", out var tokenEl))
+                        {
+                            var token = tokenEl.GetString();
+                            if (!string.IsNullOrEmpty(token))
+                            {
+                                System.Diagnostics.Debug.WriteLine("[API] ⚡ LOCAL auth succeeded (fast path)!");
+                                await SetAuthTokenAsync(token);
+                                return true;
+                            }
+                        }
+                    }
+                }
+                catch (Exception localEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[API] Local poll failed, trying remote: {localEx.Message}");
+                }
+                
+                // FALLBACK: Remote Render server (slower, but works if local isn't running)
                 var url = $"auth/poll?deviceId={deviceId}";
-                System.Diagnostics.Debug.WriteLine($"[API] Polling: {API_BASE_URL}{url}");
-                
                 var response = await _httpClient!.GetAsync(url);
-                
-                System.Diagnostics.Debug.WriteLine($"[API] Poll response status: {response.StatusCode}");
                 
                 if (response.IsSuccessStatusCode)
                 {
                     var responseJson = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"[API] Poll response body: {responseJson}");
-                    
                     var authResponse = JsonSerializer.Deserialize<AuthResponse>(responseJson, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
@@ -268,27 +293,17 @@ namespace Kernel_Agent.Services
 
                     if (authResponse != null && !string.IsNullOrEmpty(authResponse.Token))
                     {
-                        System.Diagnostics.Debug.WriteLine("[API] Token received! Saving...");
+                        System.Diagnostics.Debug.WriteLine("[API] Token received from remote!");
                         await SetAuthTokenAsync(authResponse.Token);
                         return true;
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("[API] Response OK but no token in body");
                     }
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    // 404 with "Login pending" is expected - not an error
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"[API] Login pending (404): {responseBody}");
-                    return false; // Keep polling
+                    // 404 = still waiting for login
+                    return false;
                 }
-                else
-                {
-                    var errorBody = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"[API] Poll failed with status {response.StatusCode}: {errorBody}");
-                }
+                
                 return false;
             }
             catch (Exception ex)

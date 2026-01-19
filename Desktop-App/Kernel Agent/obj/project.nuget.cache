@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "EJPI2XCIaXs=",
+  "dgSpecHash": "uB5Q307p0AQ=",
   "success": true,
-  "projectFilePath": "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+  "projectFilePath": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\anime\\.nuget\\packages\\dotenv.net\\4.0.0\\dotenv.net.4.0.0.nupkg.sha512",
     "C:\\Users\\anime\\.nuget\\packages\\firebaseadmin\\3.4.0\\firebaseadmin.3.4.0.nupkg.sha512",

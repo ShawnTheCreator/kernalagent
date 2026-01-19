@@ -51,12 +51,23 @@ def capture_screen() -> Optional[str]:
         return None
 
 
-def capture_screen_base64() -> Optional[str]:
+def capture_screen_base64(
+    max_width: int = 1280,
+    max_height: int = 720,
+    use_jpeg: bool = True,
+    jpeg_quality: int = 75
+) -> Optional[str]:
     """
     Capture screen and return as base64 encoded string.
     
+    Args:
+        max_width: Maximum width after resize (default 1280 for faster API)
+        max_height: Maximum height after resize (default 720)
+        use_jpeg: Use JPEG instead of PNG (smaller, ~70% reduction)
+        jpeg_quality: JPEG quality 0-100 (default 75, good balance)
+    
     Returns:
-        Base64 encoded PNG image, or None if capture failed
+        Base64 encoded image, or None if capture failed
     """
     if not PIL_AVAILABLE:
         logger.error("PIL not available for screen capture")
@@ -67,18 +78,32 @@ def capture_screen_base64() -> Optional[str]:
         
         # Capture full screen
         screenshot = ImageGrab.grab()
+        original_size = screenshot.size
         
-        # Resize for API efficiency (max 1920x1080)
-        max_size = (1920, 1080)
+        # Resize for API efficiency
+        max_size = (max_width, max_height)
         screenshot.thumbnail(max_size, Image.Resampling.LANCZOS)
         
-        # Convert to base64
+        # Convert to base64 with optional compression
         buffer = io.BytesIO()
-        screenshot.save(buffer, format="PNG")
-        buffer.seek(0)
         
-        img_base64 = base64.b64encode(buffer.read()).decode("utf-8")
-        logger.info(f"[VISION] Screenshot captured ({len(img_base64)} bytes)")
+        if use_jpeg:
+            # Convert RGBA to RGB for JPEG (no alpha channel)
+            if screenshot.mode == 'RGBA':
+                screenshot = screenshot.convert('RGB')
+            screenshot.save(buffer, format="JPEG", quality=jpeg_quality, optimize=True)
+            img_format = "JPEG"
+        else:
+            screenshot.save(buffer, format="PNG", optimize=True)
+            img_format = "PNG"
+        
+        buffer.seek(0)
+        img_bytes = buffer.read()
+        img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+        
+        # Log size info
+        size_kb = len(img_bytes) / 1024
+        logger.info(f"[VISION] Screenshot: {original_size} → {screenshot.size}, {img_format}, {size_kb:.1f}KB")
         
         return img_base64
     except Exception as e:

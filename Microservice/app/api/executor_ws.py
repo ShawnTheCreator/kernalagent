@@ -231,6 +231,35 @@ async def executor_websocket(websocket: WebSocket):
                             "success": True
                         })
             
+            # === STEP_PROGRESS (real-time step updates from C#) ===
+            elif msg_type == "step_progress":
+                command_id = data.get("command_id")
+                step_index = data.get("step_index", 0)
+                total_steps = data.get("total_steps", 0)
+                action = data.get("action", "")
+                status = data.get("status", "running")  # running, success, failed
+                details = data.get("details", "")
+                
+                logger.info(f"[WS/EXECUTOR] 📈 Progress: step {step_index + 1}/{total_steps} - {action} ({status})")
+                
+                # Broadcast progress (could be sent to UI WebSocket)
+                # For now, just log it - UI can subscribe to this
+                SESSIONS[session_id]["current_step"] = {
+                    "index": step_index,
+                    "total": total_steps,
+                    "action": action,
+                    "status": status,
+                    "details": details
+                }
+                
+                # Echo back confirmation
+                await websocket.send_json({
+                    "type": "progress_ack",
+                    "command_id": command_id,
+                    "step_index": step_index,
+                    "received": True
+                })
+            
             # === FRAME (screenshot for vision analysis) ===
             elif msg_type == "frame":
                 # Placeholder for vision integration

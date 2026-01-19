@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {}
+    "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {}
   },
   "projects": {
-    "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {
+    "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+        "projectUniqueName": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
         "projectName": "Kernel Agent",
-        "projectPath": "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+        "projectPath": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
         "packagesPath": "C:\\Users\\anime\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\anime\\Downloads\\ghost-ai---cognitive-desktop-copilot\\kernalagent-contrib\\Desktop-App\\Kernel Agent\\obj\\",
+        "outputPath": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

@@ -122,6 +122,13 @@ Your job is to convert natural language commands into structured action plans.
 3. Handle multi-step commands (e.g., "open chrome and go to youtube")
 4. Infer missing details from context
 5. Use confidence score (0.0 to 1.0) to indicate certainty
+6. CRITICAL: For AMBIGUOUS VISUAL TARGETS like "any video", "first result", "a thumbnail", 
+   "the video", etc. - use ui_automation with action="click_element" and target=description.
+   DO NOT use tab+enter for these - keyboard navigation won't work for visual content!
+   Examples:
+   - "click on any video" → ui_automation, action: click_element, target: "any video"
+   - "click the first video" → ui_automation, action: click_element, target: "first video"
+   - "click on a search result" → ui_automation, action: click_element, target: "first search result"
 
 ## CRITICAL: SPELLING & TYPO CORRECTION
 Users may have spelling mistakes, typos, or voice recognition errors. You MUST:

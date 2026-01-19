@@ -309,15 +309,15 @@ namespace Kernel_Agent
 
         private async Task PollAuthenticationStatusAsync()
         {
-            // Poll every 2 seconds for up to 5 minutes
-            var maxAttempts = 150; // 5 minutes * 60 seconds / 2 second intervals
+            // OPTIMIZED: Poll every 500ms for up to 2 minutes (faster response)
+            var maxAttempts = 240; // 2 minutes * 60 seconds / 0.5 second intervals
             var attempt = 0;
 
-            System.Diagnostics.Debug.WriteLine($"[AUTH] Starting polling for deviceId: {_loginDeviceId}");
+            System.Diagnostics.Debug.WriteLine($"[AUTH] Starting FAST polling for deviceId: {_loginDeviceId}");
 
             while (attempt < maxAttempts)
             {
-                await Task.Delay(2000);
+                await Task.Delay(500);  // FAST: 500ms instead of 2000ms
                 attempt++;
 
                 System.Diagnostics.Debug.WriteLine($"[AUTH] Poll attempt {attempt}/{maxAttempts}");

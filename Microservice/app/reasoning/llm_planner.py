@@ -55,9 +55,11 @@ async def plan_command(
     Pipeline:
     0. Preprocess command (fix 'type X and Y')
     1. Check for contextual commands ("do that again")
-    2. Analyze intent with LLM (Gemini → Groq)
-    3. Convert to executor steps
-    4. Update context
+    2. Check plan cache (skip LLM if cached)
+    3. Analyze intent with LLM (Gemini → Groq)
+    4. Convert to executor steps
+    5. Cache successful plan
+    6. Update context
     
     Args:
         command: User's natural language command
@@ -74,6 +76,7 @@ async def plan_command(
         resolve_contextual_command,
         update_session,
     )
+    from app.core.plan_cache import get_plan_cache
     
     logger.info(f"[PLANNER] ========== PROCESSING COMMAND ==========")
     logger.info(f"[PLANNER] Command: '{command}'")
@@ -91,11 +94,19 @@ async def plan_command(
             update_session(session_id, command, resolved)
             return [resolved]
     
-    # ===== Step 2: Get Context for LLM =====
+    # ===== Step 2: Check Plan Cache =====
+    cache = get_plan_cache()
+    cached_plan = cache.get(command)
+    if cached_plan:
+        logger.info(f"[PLANNER] CACHE HIT! Skipping LLM call")
+        logger.info(f"[PLANNER] Returning {len(cached_plan)} cached steps")
+        return cached_plan
+    
+    # ===== Step 3: Get Context for LLM =====
     context = get_context_for_llm(session_id)
     
-    # ===== Step 3: Analyze Intent with LLM =====
-    logger.info(f"[PLANNER] Calling LLM to analyze intent...")
+    # ===== Step 4: Analyze Intent with LLM =====
+    logger.info(f"[PLANNER] Cache miss - calling LLM to analyze intent...")
     plan = await analyze_command(command, context)
     
     
@@ -116,14 +127,18 @@ async def plan_command(
         logger.warning(f"[PLANNER] LLM returned no actions, returning empty plan")
         return []
     
-    # ===== Step 4: Convert to Executor Steps =====
+    # ===== Step 5: Convert to Executor Steps =====
     executor_steps = convert_plan_to_executor_steps(plan)
     
     logger.info(f"[PLANNER] Generated {len(executor_steps)} executor steps:")
     for i, step in enumerate(executor_steps):
         logger.info(f"[PLANNER]   Step {i+1}: {step.get('action')} | {step}")
     
-    # ===== Step 5: Update Context =====
+    # ===== Step 6: Cache Successful Plan =====
+    if executor_steps and len(executor_steps) > 0:
+        cache.put(command, executor_steps)
+    
+    # ===== Step 7: Update Context =====
     if executor_steps:
         # Update with first action for context tracking
         update_session(session_id, command, executor_steps[0])
@@ -132,23 +147,70 @@ async def plan_command(
     return executor_steps
 
 
+def mark_ambiguous_targets(steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Mark steps that have ambiguous targets requiring vision-based resolution.
+    
+    Examples of ambiguous: "any video", "first result", "a button"  
+    Examples of specific: "Save", "File > Open", "Submit"
+    
+    Args:
+        steps: List of executor steps
+        
+    Returns:
+        Same steps with 'requires_vision_targeting' flag added where needed
+    """
+    from app.agent.verification_strategy import is_ambiguous_target
+    
+    # Actions that ALWAYS need vision (inherently ambiguous)
+    ALWAYS_VISION_ACTIONS = ["click_element", "find_and_click", "vision_guided"]
+    
+    # Actions that MAY need vision if target is ambiguous or no coords
+    VISION_CANDIDATE_ACTIONS = ["click", "double_click", "right_click"]
+    
+    for step in steps:
+        # Check target and content fields for ambiguity
+        target = step.get("target", "") or ""
+        content = step.get("content", "") or ""
+        action = step.get("action", "")
+        
+        # click_element and find_and_click ALWAYS need vision
+        # They are inherently meant for "find something and click it"
+        if action in ALWAYS_VISION_ACTIONS:
+            step["requires_vision_targeting"] = True
+            logger.info(f"[PLANNER] Vision required (always): {action} → '{target}'")
+            continue
+        
+        # For standard clicks, check if target is ambiguous
+        if action in VISION_CANDIDATE_ACTIONS:
+            if is_ambiguous_target(target) or is_ambiguous_target(content):
+                step["requires_vision_targeting"] = True
+                logger.info(f"[PLANNER] Vision required (ambiguous target): {action} → '{target or content}'")
+                continue
+            
+            # If a click has no coordinates, it needs vision
+            has_coords = step.get("x") is not None and step.get("y") is not None
+            if not has_coords and target:
+                step["requires_vision_targeting"] = True
+                logger.info(f"[PLANNER] Vision required (no coords): {action} → '{target}'")
+    
+    return steps
+
+
 async def plan_command_with_fallback(
     command: str,
     session_id: str,
 ) -> List[Dict[str, Any]]:
     """
-    Plan command with fallback to deterministic parser.
+    Plan command with LLM. Returns vision-guided plan if LLM fails.
     
-    This is the safe version that never returns empty if deterministic can handle it.
+    NO DETERMINISTIC FALLBACK - removed to prevent bad multi-step parsing.
+    Instead, returns a vision-guided plan that will use screen analysis.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    from app.api.agent_plan import parse_command, ActionStep
-    
     logger.info(f"[PLANNER] plan_command_with_fallback called for: {command}")
     logger.info(f"[PLANNER] USE_LLM_FIRST={USE_LLM_FIRST}")
     
-    # Try LLM-first planning
+    # Try LLM-first planning (Gemini → Groq)
     if USE_LLM_FIRST:
         try:
             logger.info("[PLANNER] Calling plan_command...")
@@ -156,8 +218,11 @@ async def plan_command_with_fallback(
             logger.info(f"[PLANNER] plan_command returned {len(steps)} steps")
             
             if steps:
+                # Mark any steps with ambiguous targets for vision resolution
+                steps = mark_ambiguous_targets(steps)
                 return steps
-            logger.warning(f"[PLANNER] LLM returned empty, falling back to deterministic")
+                
+            logger.warning(f"[PLANNER] LLM returned empty plan")
         except Exception as e:
             logger.error(f"[PLANNER] LLM planning error: {e}")
             import traceback
@@ -165,21 +230,15 @@ async def plan_command_with_fallback(
     else:
         logger.warning("[PLANNER] USE_LLM_FIRST is False!")
     
-    # Fallback to deterministic
-    logger.warning(f"[PLANNER] Using deterministic parser - THIS IS THE BUG")
-    deterministic_steps = parse_command(command)
+    # ============================================================
+    # NO DETERMINISTIC FALLBACK - Return vision-guided plan instead
+    # ============================================================
+    logger.warning(f"[PLANNER] LLM failed, returning vision-guided plan")
     
-    # Convert ActionStep objects to dicts
-    return [
-        {
-            "action": s.action,
-            "target": s.target,
-            "url": s.url,
-            "query": s.query,
-            "content": s.content,
-            "amount": s.amount,
-            "x": s.x,
-            "y": s.y,
-        }
-        for s in deterministic_steps
-    ]
+    # Return a special step that tells executor to use vision
+    return [{
+        "action": "vision_guided",
+        "goal": command,
+        "requires_vision_targeting": True,
+        "reason": "LLM planning failed, using vision-guided execution"
+    }]

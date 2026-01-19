@@ -101,6 +101,9 @@ class ActionStep(BaseModel):
     y: Optional[int] = None
     label: Optional[str] = None
     amount: Optional[int] = None  # For volume control
+    # Vision targeting flag - tells C# this step needs vision to find coordinates
+    requires_vision_targeting: Optional[bool] = None
+    goal: Optional[str] = None  # For vision_guided steps
 
 
 class PlanResponse(BaseModel):
@@ -802,6 +805,8 @@ async def get_action_plan_v2(request: PlanRequest):
                 amount=s.get("amount"),
                 x=s.get("x"),
                 y=s.get("y"),
+                requires_vision_targeting=s.get("requires_vision_targeting"),
+                goal=s.get("goal"),
             )
             for s in step_dicts
         ]

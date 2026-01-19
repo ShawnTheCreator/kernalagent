@@ -109,11 +109,107 @@ app.include_router(protected_router)  # Protected user APIs (/me/*)
 app.include_router(agent_plan_router)  # Desktop Agent HTTP API (/api/agent/plan)
 app.include_router(executor_ws_router)  # Hybrid WebSocket executor (/ws/executor)
 
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring."""
     return {"status": "alive", "model": settings.MODEL_ID}
+
+
+# ===== LOCAL AUTH SYNC (FAST - BYPASSES RENDER) =====
+# These endpoints enable near-instant desktop login by syncing auth locally
+
+_pending_logins = {}  # deviceId -> token (temporary storage)
+
+
+@app.post("/api/auth/sync")
+async def sync_auth_token(request: Request):
+    """
+    Called by web frontend after user logs in to sync token with local desktop app.
+    This bypasses the slow Render server for polling.
+    """
+    try:
+        body = await request.json()
+        device_id = body.get("deviceId")
+        token = body.get("token")
+        
+        if not device_id or not token:
+            return {"success": False, "error": "Missing deviceId or token"}
+        
+        _pending_logins[device_id] = token
+        logger.info(f"[AUTH-SYNC] Token synced for device: {device_id[:8]}...")
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"[AUTH-SYNC] Error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/auth/poll")
+async def poll_auth_local(deviceId: str):
+    """
+    Fast local polling for desktop login.
+    Returns token if web login completed, 404 if still pending.
+    """
+    if deviceId in _pending_logins:
+        token = _pending_logins.pop(deviceId)  # One-time use
+        logger.info(f"[AUTH-POLL] Token retrieved for device: {deviceId[:8]}...")
+        return {"token": token}
+    
+    return {"error": "Login pending", "status": "waiting"}
+
+
+@app.post("/api/vision/find-target")
+async def find_click_target(request: Request):
+    """
+    Find a clickable target using vision analysis.
+    
+    Called by C# SmartExecutor when a step has requires_vision_targeting=True.
+    This enables commands like "click on any video" to find actual coordinates.
+    
+    Request body:
+        screenshot: base64 encoded screenshot
+        target: description of what to find (e.g., "any video", "first result")
+        goal: optional context about user's overall goal
+    
+    Returns:
+        success: bool
+        x: pixel x coordinate (center of element)
+        y: pixel y coordinate (center of element)
+        element: description of what was found
+        confidence: 0.0-1.0
+    """
+    from app.vision.vision_targeting import find_click_target
+    
+    try:
+        body = await request.json()
+        screenshot = body.get("screenshot")
+        target = body.get("target", "element")
+        goal = body.get("goal", "")
+        
+        if not screenshot:
+            return {"success": False, "error": "No screenshot provided"}
+        
+        result = await find_click_target(screenshot, target, goal)
+        
+        if result and result.get("found") and result.get("x") and result.get("y"):
+            logger.info(f"[VISION-TARGET] Found '{target}' at ({result['x']}, {result['y']})")
+            return {
+                "success": True,
+                "x": result["x"],
+                "y": result["y"],
+                "element": result.get("element", "unknown"),
+                "confidence": result.get("confidence", 0.5)
+            }
+        
+        logger.warning(f"[VISION-TARGET] Could not find: {target}")
+        return {
+            "success": False, 
+            "error": f"Target not found: {target}",
+            "reason": result.get("reason") if result else "Vision analysis failed"
+        }
+        
+    except Exception as e:
+        logger.error(f"[VISION-TARGET] Error: {e}")
+        return {"success": False, "error": str(e)}
 
 
 @app.on_event("startup")
@@ -122,9 +218,12 @@ async def startup_event():
     logger.info("🚀 KERNAL AGENT BRAIN STARTING UP")
     logger.info("=" * 60)
     logger.info(f"📡 Available endpoints:")
-    logger.info(f"   POST /api/agent/plan     - v1 planning (Gemini)")
-    logger.info(f"   POST /api/agent/plan/v2  - v2 LLM-first planning")
-    logger.info(f"   GET  /health             - health check")
+    logger.info(f"   POST /api/agent/plan        - v1 planning (Gemini)")
+    logger.info(f"   POST /api/agent/plan/v2     - v2 LLM-first planning")
+    logger.info(f"   POST /api/vision/find-target - vision targeting")
+    logger.info(f"   POST /api/auth/sync         - fast auth sync (local)")
+    logger.info(f"   GET  /api/auth/poll         - fast auth poll (local)")
+    logger.info(f"   GET  /health                - health check")
     logger.info("=" * 60)
 
 

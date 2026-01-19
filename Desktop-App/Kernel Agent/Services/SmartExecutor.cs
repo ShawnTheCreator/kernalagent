@@ -583,6 +583,76 @@ namespace Kernel_Agent.Services
                     result.Success = true;
                     break;
 
+                // ===== WAIT / TIMING =====
+                case "wait":
+                    // Smart wait: check for specific duration or use intelligent default
+                    int waitMs = 3000; // Default 3 seconds
+                    if (step.TryGetProperty("duration", out var durEl))
+                    {
+                        waitMs = durEl.GetInt32() * 1000; // Convert seconds to ms
+                    }
+                    else if (step.TryGetProperty("ms", out var msEl))
+                    {
+                        waitMs = msEl.GetInt32();
+                    }
+                    Debug.WriteLine($"[EXECUTOR] Waiting {waitMs}ms");
+                    await Task.Delay(waitMs);
+                    result.Success = true;
+                    break;
+
+                case "smart_wait":
+                case "wait_for_ready":
+                    // Intelligent wait: check for window stability/ready state
+                    string targetTitle = step.TryGetProperty("target", out var waitTarget) 
+                        ? waitTarget.GetString() ?? "" : "";
+                    int maxWaitMs = step.TryGetProperty("timeout", out var timeoutEl) 
+                        ? timeoutEl.GetInt32() * 1000 : 10000; // Default 10s timeout
+                    
+                    Debug.WriteLine($"[EXECUTOR] Smart wait for '{targetTitle}' (max {maxWaitMs}ms)");
+                    
+                    // Poll for window stability
+                    bool windowReady = false;
+                    var startTime = DateTime.Now;
+                    string lastTitle = "";
+                    int stableCount = 0;
+                    
+                    while ((DateTime.Now - startTime).TotalMilliseconds < maxWaitMs)
+                    {
+                        var currentTitle = _visionRecovery.GetForegroundWindowTitle();
+                        
+                        // Check if title matches target (if specified)
+                        if (!string.IsNullOrEmpty(targetTitle) && 
+                            !currentTitle.ToLower().Contains(targetTitle.ToLower()))
+                        {
+                            stableCount = 0;
+                            await Task.Delay(200);
+                            continue;
+                        }
+                        
+                        // Check for title stability (same title for 3 consecutive checks)
+                        if (currentTitle == lastTitle)
+                        {
+                            stableCount++;
+                            if (stableCount >= 3)
+                            {
+                                windowReady = true;
+                                Debug.WriteLine($"[EXECUTOR] Window stable: '{currentTitle}'");
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            stableCount = 0;
+                            lastTitle = currentTitle;
+                        }
+                        
+                        await Task.Delay(200);
+                    }
+                    
+                    result.Success = windowReady;
+                    result.Details = windowReady ? "Window ready" : "Timeout waiting for window";
+                    break;
+
                 // ===== MEDIA =====
                 case "media_play_pause":
                     _automation.MediaPlayPause();
@@ -776,15 +846,44 @@ namespace Kernel_Agent.Services
                     if (step.TryGetProperty("target", out var elemTarget))
                     {
                         string description = elemTarget.GetString() ?? "";
-                        Debug.WriteLine($"[EXECUTOR] UI Automation: find_and_click '{description}'");
+                        
+                        // Check if vision targeting is required (ambiguous target like "any video")
+                        bool requiresVision = step.TryGetProperty("requires_vision_targeting", out var rvt) && 
+                                             rvt.ValueKind == JsonValueKind.True;
+                        
+                        Debug.WriteLine($"[EXECUTOR] click_element '{description}' (vision_required={requiresVision})");
+                        
+                        // OPTIMIZATION: Try UIElementFinder FIRST (free, fast, ~10ms)
+                        // Only fall back to vision API if accessibility search fails
                         var element = _uiFinder.FindElement(description);
                         if (element != null)
                         {
+                            Debug.WriteLine($"[EXECUTOR] UIElementFinder found '{description}' - clicking (fast path)");
                             result.Success = _uiFinder.ClickElement(element);
+                            result.Details = "UIElementFinder (accessibility-based)";
+                        }
+                        else if (requiresVision)
+                        {
+                            // UIElementFinder failed, use vision API for ambiguous targets
+                            Debug.WriteLine($"[EXECUTOR] UIElementFinder failed, using vision for: '{description}'");
+                            var visionResult = await _visionRecovery.FindClickTargetAsync(description, _currentGoal);
+                            
+                            if (visionResult != null && visionResult.Success && visionResult.X > 0 && visionResult.Y > 0)
+                            {
+                                Debug.WriteLine($"[EXECUTOR] Vision found target at ({visionResult.X}, {visionResult.Y})");
+                                _automation.Click(visionResult.X, visionResult.Y);
+                                result.Success = true;
+                                result.Details = $"Vision click at ({visionResult.X}, {visionResult.Y}): {visionResult.Element}";
+                            }
+                            else
+                            {
+                                result.Error = $"Both UIElementFinder and Vision failed to find: {description}";
+                            }
                         }
                         else
                         {
-                            result.Error = $"Element not found: {description}";
+                            // Not marked for vision, just report element not found
+                            result.Error = $"Element not found via accessibility: {description}";
                         }
                     }
                     break;
@@ -804,6 +903,51 @@ namespace Kernel_Agent.Services
                         else
                         {
                             result.Error = $"Text field not found: {fieldName}";
+                        }
+                    }
+                    break;
+                
+                // Vision-guided execution (LLM planning fallback)
+                case "vision_guided":
+                    {
+                        string goal = step.TryGetProperty("goal", out var goalEl) ? goalEl.GetString() ?? "" : _currentGoal;
+                        Debug.WriteLine($"[EXECUTOR] Vision-guided execution for goal: '{goal}'");
+                        
+                        // Use vision recovery to analyze screen and get next action
+                        var recovery = await _visionRecovery.AttemptRecoveryAsync(
+                            goal, "vision_guided", "LLM planning failed");
+                        
+                        if (recovery.Success && recovery.RecoveryAction != null)
+                        {
+                            var recoveryStep = recovery.RecoveryAction;
+                            Debug.WriteLine($"[EXECUTOR] Vision suggests: {recoveryStep.Action} at ({recoveryStep.X}, {recoveryStep.Y})");
+                            
+                            // Execute the vision-suggested action
+                            if (recoveryStep.Action == "click" && recoveryStep.X.HasValue && recoveryStep.Y.HasValue)
+                            {
+                                _automation.Click(recoveryStep.X.Value, recoveryStep.Y.Value);
+                                result.Success = true;
+                                result.Details = $"Vision clicked at ({recoveryStep.X}, {recoveryStep.Y})";
+                            }
+                            else if (recoveryStep.Action == "type_text" && !string.IsNullOrEmpty(recoveryStep.Content))
+                            {
+                                _automation.TypeIntoApp(recoveryStep.Content);
+                                result.Success = true;
+                            }
+                            else if (recoveryStep.Action == "none")
+                            {
+                                // Goal already achieved
+                                result.Success = true;
+                                result.Details = "Vision determined goal is already achieved";
+                            }
+                            else
+                            {
+                                result.Error = $"Unsupported vision action: {recoveryStep.Action}";
+                            }
+                        }
+                        else
+                        {
+                            result.Error = recovery.Message ?? "Vision-guided execution failed";
                         }
                     }
                     break;
@@ -911,6 +1055,7 @@ namespace Kernel_Agent.Services
         public bool Success { get; set; }
         public string Action { get; set; } = "";
         public string? Error { get; set; }
+        public string? Details { get; set; }  // Additional info like vision click coords
         public int ExecutionTimeMs { get; set; }
     }
 
@@ -950,6 +1095,18 @@ namespace Kernel_Agent.Services
         public string? Blocker { get; set; }
         public double? Confidence { get; set; }
         public string? Message { get; set; }
+    }
+    
+    /// <summary>
+    /// Result of vision-based click target finding.
+    /// </summary>
+    public class ClickTargetResult
+    {
+        public bool Success { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public string? Element { get; set; }
+        public double Confidence { get; set; }
     }
     
     /// <summary>
@@ -1062,6 +1219,96 @@ namespace Kernel_Agent.Services
             {
                 Debug.WriteLine($"[VISION] Recovery error: {ex.Message}");
                 return new VisionRecoveryResult { Success = false, Message = ex.Message };
+            }
+        }
+        
+        /// <summary>
+        /// Find a clickable target using vision analysis.
+        /// Called when a step has requires_vision_targeting=true.
+        /// </summary>
+        public async Task<ClickTargetResult?> FindClickTargetAsync(string targetDescription, string goal = "")
+        {
+            try
+            {
+                Debug.WriteLine($"[VISION-TARGET] Finding target: '{targetDescription}'");
+                
+                // Capture screenshot
+                var screenshot = CaptureScreenshotBase64();
+                if (string.IsNullOrEmpty(screenshot))
+                {
+                    Debug.WriteLine("[VISION-TARGET] Failed to capture screenshot");
+                    return null;
+                }
+                
+                var requestBody = new
+                {
+                    screenshot = screenshot,
+                    target = targetDescription,
+                    goal = goal
+                };
+                
+                var json = JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                
+                var response = await _client.PostAsync("http://localhost:8000/api/vision/find-target", content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    Debug.WriteLine($"[VISION-TARGET] API error: {response.StatusCode}");
+                    return null;
+                }
+                
+                var responseJson = await response.Content.ReadAsStringAsync();
+                Debug.WriteLine($"[VISION-TARGET] Response: {responseJson}");
+                
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+                
+                if (root.TryGetProperty("success", out var success) && success.GetBoolean())
+                {
+                    var result = new ClickTargetResult
+                    {
+                        Success = true,
+                        X = root.TryGetProperty("x", out var x) ? x.GetInt32() : 0,
+                        Y = root.TryGetProperty("y", out var y) ? y.GetInt32() : 0,
+                        Element = root.TryGetProperty("element", out var elem) ? elem.GetString() : "",
+                        Confidence = root.TryGetProperty("confidence", out var conf) ? conf.GetDouble() : 0
+                    };
+                    
+                    Debug.WriteLine($"[VISION-TARGET] Found at ({result.X}, {result.Y}) - {result.Element}");
+                    return result;
+                }
+                
+                Debug.WriteLine("[VISION-TARGET] Target not found");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[VISION-TARGET] Error: {ex.Message}");
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// Capture screenshot and convert to base64.
+        /// </summary>
+        private string CaptureScreenshotBase64()
+        {
+            try
+            {
+                var bounds = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                using var bitmap = new System.Drawing.Bitmap(bounds.Width, bounds.Height);
+                using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+                graphics.CopyFromScreen(System.Drawing.Point.Empty, System.Drawing.Point.Empty, bounds.Size);
+                
+                using var ms = new System.IO.MemoryStream();
+                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return Convert.ToBase64String(ms.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[VISION-TARGET] Screenshot error: {ex.Message}");
+                return "";
             }
         }
         

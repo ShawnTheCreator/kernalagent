@@ -3,11 +3,15 @@ Configuration settings for Kernal Agent AI Brain.
 Loads environment variables and initializes the Gemini client.
 """
 import os
+from pathlib import Path
 from google import genai
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (check parent dir too)
+env_path = Path(__file__).parent.parent.parent / '.env'
+if not env_path.exists():
+    env_path = Path(__file__).parent.parent.parent.parent / '.env'  # Parent of Microservice
+load_dotenv(env_path)
 
 class Settings:
     """Application settings loaded from environment."""

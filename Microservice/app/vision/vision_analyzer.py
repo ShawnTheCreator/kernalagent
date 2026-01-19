@@ -1,43 +1,57 @@
 """
-Vision Analyzer - Gemma 3 Vision for UI Understanding
+Vision Analyzer - Gemini Vision for UI Understanding
 
 Analyzes screenshots to understand UI state and suggest recovery actions.
 Uses task-aware prompting for accurate perception.
-Uses Google's Gemma 3 27B vision model.
+Uses Google's Gemini vision model via google-genai SDK.
 """
 
 import os
 import json
 import base64
 import logging
+from pathlib import Path
 from typing import Dict, Any, Optional, List
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (check parent dir too)
+env_path = Path(__file__).parent.parent.parent / '.env'
+if not env_path.exists():
+    env_path = Path(__file__).parent.parent.parent.parent / '.env'
+load_dotenv(env_path)
 
 logger = logging.getLogger(__name__)
 
-# Import Google Generative AI
+# Import Google GenAI SDK (same as intent_analyzer)
 try:
-    import google.generativeai as genai
+    from google import genai
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
-    logger.warning("Google GenAI not available - vision analysis disabled")
+    logger.warning("Google GenAI SDK not available - vision analysis disabled")
 
 
 class VisionAnalyzer:
     """
-    Analyzes screenshots using Gemma 3 Vision to understand UI state
+    Analyzes screenshots using Gemini Vision to understand UI state
     and suggest recovery actions.
     """
     
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+        self.client = None
+        
+        logger.info(f"[VISION] GENAI_AVAILABLE = {GENAI_AVAILABLE}")
+        logger.info(f"[VISION] API key present = {bool(self.api_key)}")
+        
         if self.api_key and GENAI_AVAILABLE:
-            genai.configure(api_key=self.api_key)
-            # Use Gemma 3 27B - has vision capabilities and better rate limits
-            self.model = genai.GenerativeModel("gemma-3-27b-it")
-            logger.info(f"[VISION] VisionAnalyzer initialized with Gemma 3 27B")
+            try:
+                self.client = genai.Client()
+                logger.info(f"[VISION] VisionAnalyzer initialized with Gemini")
+            except Exception as e:
+                logger.error(f"[VISION] GenAI client init failed: {e}")
+                self.client = None
         else:
-            self.model = None
             logger.warning("[VISION] VisionAnalyzer disabled - no API key or GenAI not available")
     
     def analyze_screen(
@@ -48,6 +62,7 @@ class VisionAnalyzer:
     ) -> Dict[str, Any]:
         """
         Analyze screenshot to understand current UI state.
+        Includes retry logic for 429/503 errors.
         
         Args:
             screenshot_base64: Base64 encoded screenshot
@@ -57,38 +72,71 @@ class VisionAnalyzer:
         Returns:
             Analysis result with suggested recovery action
         """
-        if not self.model:
+        if not self.client:
             return {
                 "success": False,
                 "error": "Vision analyzer not available"
             }
         
-        try:
-            # Build task-aware prompt
-            prompt = self._build_analysis_prompt(original_goal, failed_action)
-            
-            # Create image part for Google GenAI
-            image_part = {
-                "mime_type": "image/png",
-                "data": screenshot_base64
-            }
-            
-            # Call Gemma 3 Vision
-            response = self.model.generate_content([prompt, image_part])
-            
-            # Parse response
-            result = self._parse_response(response.text)
-            result["success"] = True
-            
-            logger.info(f"[VISION] Analysis: {result.get('current_state', 'unknown')}")
-            return result
-            
-        except Exception as e:
-            logger.error(f"[VISION] Analysis failed: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+        # Build task-aware prompt
+        prompt = self._build_analysis_prompt(original_goal, failed_action)
+        
+        # Retry logic for API rate limits
+        import time
+        from app.core.retry import is_retryable_error
+        
+        # Get model from environment
+        vision_model = os.getenv("VISION_MODEL", "gemma-3-27b-it")
+        
+        max_retries = 3
+        last_error = None
+        
+        for attempt in range(max_retries + 1):
+            try:
+                # Call Gemini Vision using new SDK
+                response = self.client.models.generate_content(
+                    model=vision_model,
+                    contents=[
+                        {"role": "user", "parts": [
+                            {"text": prompt},
+                            {"inline_data": {"mime_type": "image/png", "data": screenshot_base64}}
+                        ]}
+                    ],
+                    config={"temperature": 0.2, "max_output_tokens": 1024}
+                )
+                
+                # Parse response
+                result = self._parse_response(response.text)
+                result["success"] = True
+                
+                if attempt > 0:
+                    logger.info(f"[VISION] Succeeded on retry {attempt}")
+                
+                logger.info(f"[VISION] Analysis: {result.get('current_state', 'unknown')}")
+                return result
+                
+            except Exception as e:
+                last_error = e
+                is_retryable, suggested_delay = is_retryable_error(e)
+                
+                if not is_retryable or attempt >= max_retries:
+                    logger.error(f"[VISION] Analysis failed after {attempt + 1} attempts: {e}")
+                    return {
+                        "success": False,
+                        "error": str(e)
+                    }
+                
+                delay = min(2.0 * (2 ** attempt), 30.0)
+                if suggested_delay and suggested_delay > delay:
+                    delay = min(suggested_delay, 30.0)
+                
+                logger.warning(f"[VISION] Attempt {attempt + 1} failed. Retrying in {delay:.1f}s...")
+                time.sleep(delay)
+        
+        return {
+            "success": False,
+            "error": str(last_error) if last_error else "Unknown error"
+        }
     
     def _build_analysis_prompt(self, goal: str, failed_action: Optional[str], context_text: str = "") -> str:
         """Build task-aware prompt for vision analysis with execution context."""
