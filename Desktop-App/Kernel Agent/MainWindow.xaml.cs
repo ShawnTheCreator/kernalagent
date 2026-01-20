@@ -8,6 +8,7 @@ using NAudio.Wave;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using Kernel_Agent.Services;
 using Microsoft.UI.Xaml.Input;
 
@@ -66,9 +67,6 @@ namespace Kernel_Agent
 
                 // Initialize Speech Client Once (Preventing the MoveNext error source)
                 InitializeSpeechClient();
-                
-                // Initialize Continuous Voice Recognition (WebSocket)
-                InitializeContinuousVoiceAsync();
             }
             catch (Exception ex)
             {
@@ -571,135 +569,166 @@ namespace Kernel_Agent
 
         #endregion
 
-        #region Voice Intelligence (Continuous Mode)
+        #region Voice Intelligence (Batch Mode with Wake/Stop Words)
+
+        // Wake words with typo variations
+        private static readonly string[] WakeWords = new[] {
+            "hey kernel", "hey colonel", "hey kernal", "hey karnal",
+            "hey canal", "hey coronel", "a kernel", "a colonel",
+            "kernel", "colonel", "kernal", "karnal", "canal", "coronel",
+            "hey girl", "hey carl", "hey current", "heyernal"
+        };
+
+        // Stop words with typo variations
+        private static readonly string[] StopWords = new[] {
+            "stop bud", "stop but", "stop bad", "stop bot",
+            "stop blood", "stop bird", "stop bed", "stop board",
+            "stop", "cancel", "never mind", "nevermind", "forget it",
+            "stop that", "stop it", "quit", "abort", "exit"
+        };
 
         private void VoiceInputButton_Click(object sender, RoutedEventArgs e)
         {
-            // Use new continuous voice mode with WebSocket streaming
-            ToggleContinuousVoice();
-        }
-
-        /// <summary>
-        /// Toggle continuous voice recognition on/off.
-        /// </summary>
-        private async void ToggleContinuousVoice()
-        {
-            if (_continuousSpeechService == null)
+            // Batch mode: click to start, click to stop
+            if (!_isRecording)
             {
-                AddToThoughtLog("[Voice] ⚠️ Continuous voice not initialized, initializing now...");
-                InitializeContinuousVoiceAsync();
-                await Task.Delay(500); // Give it time to initialize
-            }
-            
-            if (_continuousSpeechService == null)
-            {
-                AddToThoughtLog("[Voice] ❌ Could not initialize continuous voice");
-                return;
-            }
-            
-            if (_continuousVoiceEnabled)
-            {
-                // Stop continuous listening
-                await _continuousSpeechService.StopListeningAsync();
-                _continuousVoiceEnabled = false;
-                AddToThoughtLog("[Voice] 🔇 Continuous listening stopped");
-                InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                    Windows.UI.Color.FromArgb(0, 0, 0, 0));
-                CommandInput.PlaceholderText = "Command Agent...";
+                StartVoiceRecording();
             }
             else
             {
-                // Start continuous listening
-                await _continuousSpeechService.StartListeningAsync(alwaysListening: true);
-                _continuousVoiceEnabled = true;
-                AddToThoughtLog("[Voice] 🎤 Listening... say 'stop bud' to cancel");
-                InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                    Windows.UI.Color.FromArgb(255, 0, 150, 255)); // Blue for listening
-                CommandInput.PlaceholderText = "🎤 Listening... speak your command";
+                StopVoiceRecording();
             }
         }
 
-        /// <summary>
-        /// Initialize continuous voice recognition with WebSocket streaming.
-        /// </summary>
-        private async void InitializeContinuousVoiceAsync()
+        private void StartVoiceRecording()
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[VOICE] Initializing continuous voice recognition...");
+                if (_isRecording) return;
                 
-                _continuousSpeechService = new ContinuousSpeechService();
-                
-                // Wire up events
-                _continuousSpeechService.OnTranscription += (text, isFinal) =>
+                if (_speechService == null)
                 {
-                    this.DispatcherQueue.TryEnqueue(() =>
+                    AddToThoughtLog("[Voice] ⚠️ Speech not initialized, reinitializing...");
+                    InitializeSpeechClient();
+                    
+                    if (_speechService == null)
                     {
-                        // Show real-time transcription in command input
-                        CommandInput.Text = text;
-                        
-                        if (isFinal)
-                        {
-                            AddToThoughtLog($"[Voice] 🎤 \"{text}\"");
-                        }
-                    });
-                };
+                        AddToThoughtLog("[Voice] ❌ Could not initialize speech recognition");
+                        return;
+                    }
+                }
+
+                _speechService.StartRecording();
+                _isRecording = true;
                 
-                _continuousSpeechService.OnCommand += (command) =>
-                {
-                    this.DispatcherQueue.TryEnqueue(async () =>
-                    {
-                        AddToThoughtLog($"[Agent] Executing: {command}");
-                        await ExecuteAgentCommand(command);
-                    });
-                };
+                // Visual feedback - turn button blue when recording
+                InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                    Windows.UI.Color.FromArgb(255, 0, 150, 255)); // Blue
+                CommandInput.PlaceholderText = "🎤 Recording... click mic to stop";
+                AddToThoughtLog("[Voice] 🎤 Recording - click mic when done");
                 
-                _continuousSpeechService.OnWakeWord += () =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLog("[Voice] 👋 Wake word detected!");
-                        InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                            Windows.UI.Color.FromArgb(255, 0, 200, 100)); // Green
-                    });
-                };
-                
-                _continuousSpeechService.OnStopWord += () =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLog("[Voice] 🛑 Stop word detected");
-                        CommandInput.Text = "";
-                        CommandInput.PlaceholderText = "Command Agent...";
-                        InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                            Windows.UI.Color.FromArgb(0, 0, 0, 0));
-                        _continuousVoiceEnabled = false;
-                    });
-                };
-                
-                _continuousSpeechService.OnError += (error) =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLog($"[Voice] ⚠️ {error}");
-                    });
-                };
-                
-                _continuousSpeechService.OnConnected += () =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLog("[Voice] ✓ WebSocket connected");
-                    });
-                };
-                
-                System.Diagnostics.Debug.WriteLine("[VOICE] ✓ Continuous voice recognition initialized");
+                System.Diagnostics.Debug.WriteLine("[VOICE] Recording started");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[VOICE] Init failed: {ex.Message}");
-                AddToThoughtLog($"[Voice] ❌ Init error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[VOICE] Error starting: {ex.Message}");
+                AddToThoughtLog($"[Voice] ❌ Error: {ex.Message}");
+                _isRecording = false;
             }
+        }
+
+        private async void StopVoiceRecording()
+        {
+            if (!_isRecording || _speechService == null) return;
+            
+            _isRecording = false;
+            
+            // Update UI immediately
+            InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                Windows.UI.Color.FromArgb(0, 0, 0, 0));
+            CommandInput.PlaceholderText = "Transcribing...";
+            AddToThoughtLog("[Voice] 📤 Sending audio for transcription...");
+            
+            try
+            {
+                var transcription = await _speechService.StopAndTranscribeAsync();
+                
+                if (!string.IsNullOrWhiteSpace(transcription))
+                {
+                    string lowerText = transcription.ToLower().Trim();
+                    
+                    // Check for stop word
+                    if (ContainsStopWord(lowerText))
+                    {
+                        AddToThoughtLog("[Voice] 🛑 Stop word detected - cancelled");
+                        CommandInput.Text = "";
+                        CommandInput.PlaceholderText = "Command Agent...";
+                        return;
+                    }
+                    
+                    // Check for wake word and remove it
+                    string command = RemoveWakeWord(transcription);
+                    
+                    if (command != transcription)
+                    {
+                        AddToThoughtLog("[Voice] 👋 Wake word detected!");
+                    }
+                    
+                    if (!string.IsNullOrWhiteSpace(command))
+                    {
+                        CommandInput.Text = command;
+                        AddToThoughtLog($"[Voice] 🎤 \"{command}\"");
+                        
+                        // Execute the command
+                        await ExecuteAgentCommand(command);
+                    }
+                    else
+                    {
+                        AddToThoughtLog("[Voice] ⚠️ Only wake word detected, no command");
+                    }
+                }
+                else
+                {
+                    AddToThoughtLog("[Voice] ⚠️ Could not transcribe audio");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[VOICE] Transcription error: {ex.Message}");
+                AddToThoughtLog($"[Voice] ⚠️ {ex.Message}");
+            }
+            
+            CommandInput.PlaceholderText = "Command Agent...";
+            System.Diagnostics.Debug.WriteLine("[VOICE] Recording stopped");
+        }
+
+        private bool ContainsStopWord(string text)
+        {
+            foreach (var stopWord in StopWords)
+            {
+                if (text.Contains(stopWord, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        private string RemoveWakeWord(string text)
+        {
+            string lowerText = text.ToLower().Trim();
+            
+            // Sort by length (longest first) to match "hey kernel" before "kernel"
+            var sortedWakeWords = WakeWords.OrderByDescending(w => w.Length);
+            
+            foreach (var wakeWord in sortedWakeWords)
+            {
+                if (lowerText.StartsWith(wakeWord))
+                {
+                    // Remove the wake word from the original text (preserve case)
+                    return text.Substring(wakeWord.Length).Trim();
+                }
+            }
+            
+            return text; // No wake word found
         }
 
         #endregion
