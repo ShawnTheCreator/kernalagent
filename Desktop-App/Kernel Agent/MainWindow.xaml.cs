@@ -668,16 +668,104 @@ namespace Kernel_Agent
                     
                     // Check for wake word and remove it
                     string command = RemoveWakeWord(transcription);
+                    string lowerCommand = command.ToLower().Trim();
                     
                     if (command != transcription)
                     {
                         AddToThoughtLog("[Voice] 👋 Wake word detected!");
                     }
                     
+                    // ==== SKILL COMMAND DETECTION ====
+                    
+                    // "Learn this" / "Watch me" / "Remember this" → Start recording
+                    if (IsLearnCommand(lowerCommand))
+                    {
+                        string skillName = ExtractSkillName(lowerCommand, "learn");
+                        if (string.IsNullOrEmpty(skillName))
+                            skillName = "New Skill " + DateTime.Now.ToString("HHmm");
+                        
+                        SkillRecorder.Instance.StartRecording(skillName);
+                        AddToThoughtLog($"[Skill] 🔴 Recording started: '{skillName}'");
+                        AddToThoughtLog("[Skill] Say 'stop learning' when done");
+                        CommandInput.PlaceholderText = "🔴 Recording skill...";
+                        return;
+                    }
+                    
+                    // "Stop learning" / "Save that" / "Done recording" → Stop and save
+                    if (IsStopLearningCommand(lowerCommand))
+                    {
+                        if (SkillRecorder.Instance.IsRecording)
+                        {
+                            var skill = SkillRecorder.Instance.StopRecording(save: true);
+                            if (skill != null)
+                            {
+                                AddToThoughtLog($"[Skill] ⏹ Saved: '{skill.Name}' ({skill.Actions.Count} actions)");
+                            }
+                            else
+                            {
+                                AddToThoughtLog("[Skill] ⚠️ No actions recorded");
+                            }
+                        }
+                        else
+                        {
+                            AddToThoughtLog("[Skill] ⚠️ Not currently recording");
+                        }
+                        CommandInput.PlaceholderText = "Command Agent...";
+                        return;
+                    }
+                    
+                    // "Do the [skill] thing" / "Run [skill]" / "Play [skill]" → Execute skill
+                    if (IsPlaySkillCommand(lowerCommand))
+                    {
+                        string skillQuery = ExtractSkillName(lowerCommand, "play");
+                        var foundSkill = SkillRecorder.Instance.FindSkill(skillQuery);
+                        
+                        if (foundSkill != null)
+                        {
+                            AddToThoughtLog($"[Skill] ▶ Playing: '{foundSkill.Name}'");
+                            await SkillRecorder.Instance.PlaySkillAsync(foundSkill.Name);
+                            AddToThoughtLog($"[Skill] ✓ Completed: '{foundSkill.Name}'");
+                        }
+                        else
+                        {
+                            AddToThoughtLog($"[Skill] ⚠️ Skill not found: '{skillQuery}'");
+                            // Fall through to regular command
+                        }
+                        CommandInput.PlaceholderText = "Command Agent...";
+                        return;
+                    }
+                    
+                    // "Forget [skill]" / "Delete [skill]" → Delete skill
+                    if (IsForgetCommand(lowerCommand))
+                    {
+                        string skillQuery = ExtractSkillName(lowerCommand, "forget");
+                        if (SkillRecorder.Instance.DeleteSkill(skillQuery))
+                        {
+                            AddToThoughtLog($"[Skill] 🗑 Deleted: '{skillQuery}'");
+                        }
+                        else
+                        {
+                            AddToThoughtLog($"[Skill] ⚠️ Skill not found: '{skillQuery}'");
+                        }
+                        CommandInput.PlaceholderText = "Command Agent...";
+                        return;
+                    }
+                    
+                    // ==== END SKILL COMMANDS ====
+                    
                     if (!string.IsNullOrWhiteSpace(command))
                     {
                         CommandInput.Text = command;
                         AddToThoughtLog($"[Voice] 🎤 \"{command}\"");
+                        
+                        // If recording, log this as a verbal note
+                        if (SkillRecorder.Instance.IsRecording)
+                        {
+                            SkillRecorder.Instance.RecordAction("verbal_note", new Dictionary<string, object>
+                            {
+                                { "content", command }
+                            });
+                        }
                         
                         // Execute the command
                         await ExecuteAgentCommand(command);
@@ -700,6 +788,70 @@ namespace Kernel_Agent
             
             CommandInput.PlaceholderText = "Command Agent...";
             System.Diagnostics.Debug.WriteLine("[VOICE] Recording stopped");
+        }
+
+        // ==== SKILL COMMAND HELPERS ====
+        
+        private static readonly string[] LearnPhrases = new[] {
+            "learn this", "watch me", "remember this", "learn how",
+            "start learning", "start recording", "record this"
+        };
+        
+        private static readonly string[] StopLearningPhrases = new[] {
+            "stop learning", "stop recording", "save that", "done recording",
+            "done learning", "save this", "that's it", "finish recording"
+        };
+        
+        private static readonly string[] PlaySkillPhrases = new[] {
+            "do the", "do my", "run the", "run my", "play the", "play my",
+            "execute", "perform", "do that"
+        };
+        
+        private static readonly string[] ForgetPhrases = new[] {
+            "forget", "delete", "remove", "erase"
+        };
+        
+        private bool IsLearnCommand(string text)
+        {
+            return LearnPhrases.Any(p => text.Contains(p));
+        }
+        
+        private bool IsStopLearningCommand(string text)
+        {
+            return StopLearningPhrases.Any(p => text.Contains(p));
+        }
+        
+        private bool IsPlaySkillCommand(string text)
+        {
+            return PlaySkillPhrases.Any(p => text.Contains(p));
+        }
+        
+        private bool IsForgetCommand(string text)
+        {
+            return ForgetPhrases.Any(p => text.StartsWith(p));
+        }
+        
+        private string ExtractSkillName(string text, string commandType)
+        {
+            // Remove common phrases and extract skill name
+            string[] toRemove = commandType switch
+            {
+                "learn" => new[] { "learn this", "watch me", "remember this", "learn how", 
+                                   "start learning", "start recording", "record this", 
+                                   "called", "named" },
+                "play" => new[] { "do the", "do my", "run the", "run my", "play the", "play my",
+                                  "execute", "perform", "do that", "thing", "skill" },
+                "forget" => new[] { "forget", "delete", "remove", "erase", "skill", "the" },
+                _ => Array.Empty<string>()
+            };
+            
+            string result = text;
+            foreach (var phrase in toRemove)
+            {
+                result = result.Replace(phrase, "");
+            }
+            
+            return result.Trim().Replace("  ", " ");
         }
 
         private bool ContainsStopWord(string text)
