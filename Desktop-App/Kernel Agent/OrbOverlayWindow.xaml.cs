@@ -42,7 +42,7 @@ namespace Kernel_Agent
         private const uint LWA_COLORKEY = 0x1;
         private const uint LWA_ALPHA = 0x2;
 
-        private AppWindow _appWindow;
+        private AppWindow? _appWindow;
         private IntPtr _hwnd;
         private bool _isDragging = false;
         private Point _dragStartPoint;

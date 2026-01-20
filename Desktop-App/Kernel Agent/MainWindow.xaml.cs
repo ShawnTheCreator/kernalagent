@@ -5,13 +5,11 @@ using WinRT.Interop;
 using System;
 using dotenv.net;
 using NAudio.Wave;
-using Google.Cloud.Speech.V1;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Generic;
 using Kernel_Agent.Services;
 using Microsoft.UI.Xaml.Input;
-using System.Speech.Recognition;  // Windows built-in speech
 
 namespace Kernel_Agent
 {
@@ -22,8 +20,8 @@ namespace Kernel_Agent
         private string _loginDeviceId = Guid.NewGuid().ToString();
         private FirestoreRealtimeListener? _firestoreListener;
         
-        // Windows built-in speech recognition (no API key needed!)
-        private SpeechRecognitionEngine? _speechRecognizer;
+        // Python-based speech recognition service
+        private SpeechService? _speechService;
         
         // Voice recording state
         private string _currentTranscript = "";
@@ -232,7 +230,7 @@ namespace Kernel_Agent
             System.Diagnostics.Debug.WriteLine("[UI] *** Initializing Windows speech recognition...");
             InitializeSpeechClient();
             
-            if (_speechRecognizer != null)
+            if (_speechService != null)
             {
                 AddToThoughtLog("🎤 [Voice] Ready! Click the microphone button to speak.");
             }
@@ -454,69 +452,48 @@ namespace Kernel_Agent
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[SPEECH] Initializing Windows Speech Recognition...");
+                System.Diagnostics.Debug.WriteLine("[SPEECH] Initializing Python-based speech recognition...");
                 
-                // Use Windows built-in speech recognition with ENHANCED settings
-                _speechRecognizer = new SpeechRecognitionEngine(
-                    System.Globalization.CultureInfo.CurrentCulture);
+                // Create SpeechService that uses Python API for transcription
+                _speechService = new SpeechService();
                 
-                // === ACCURACY IMPROVEMENTS ===
+                // Hook up events
+                _speechService.OnTranscriptionReceived += (text) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(async () =>
+                    {
+                        CommandInput.Text = text;
+                        AddToThoughtLog($"[Voice] 🎤 \"{text}\"");
+                        
+                        // Auto-execute the command
+                        if (!string.IsNullOrWhiteSpace(text))
+                        {
+                            await ExecuteAgentCommand(text);
+                        }
+                    });
+                };
                 
-                // 1. Load dictation grammar with enhancements
-                var dictationGrammar = new DictationGrammar("grammar:dictation");
-                dictationGrammar.Name = "Dictation";
-                _speechRecognizer.LoadGrammar(dictationGrammar);
+                _speechService.OnError += (error) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog($"[Voice] ⚠️ {error}");
+                    });
+                };
                 
-                // 2. Add custom grammar for common PC commands (more accurate than dictation alone)
-                var commandChoices = new Choices(
-                    // App control
-                    "open", "close", "launch", "start", "run",
-                    "notepad", "chrome", "word", "excel", "spotify", "discord", "teams", "outlook",
-                    "browser", "file explorer", "settings", "calculator", "paint",
-                    // Actions
-                    "type", "write", "search", "google", "find",
-                    "copy", "paste", "cut", "undo", "redo", "save", "select all",
-                    // Media
-                    "play", "pause", "stop", "next", "previous", "volume up", "volume down", "mute",
-                    // Window
-                    "minimize", "maximize", "close window", "alt tab", "switch window",
-                    // Navigation
-                    "scroll up", "scroll down", "go back", "go forward", "refresh",
-                    // YouTube shortcuts
-                    "skip ad", "fullscreen", "next video",
-                    // Desktop
-                    "next desktop", "previous desktop", "new desktop", "task view",
-                    // Common words
-                    "and", "then", "the", "a", "to", "in", "on", "for", "with",
-                    "hello", "hi", "hey", "please", "thank you"
-                );
+                _speechService.OnAudioLevel += (level) =>
+                {
+                    if (level > 0.01f)
+                    {
+                        _lastSpeechTime = DateTime.Now;
+                    }
+                };
                 
-                var commandBuilder = new GrammarBuilder(commandChoices);
-                commandBuilder.Culture = System.Globalization.CultureInfo.CurrentCulture;
-                var commandGrammar = new Grammar(commandBuilder);
-                commandGrammar.Name = "Commands";
-                _speechRecognizer.LoadGrammar(commandGrammar);
-                
-                // 3. Configure audio input for better quality
-                _speechRecognizer.SetInputToDefaultAudioDevice();
-                
-                // 4. Tune recognition settings for accuracy
-                _speechRecognizer.InitialSilenceTimeout = TimeSpan.FromSeconds(5);    // Wait 5sec for user to start speaking
-                _speechRecognizer.BabbleTimeout = TimeSpan.FromSeconds(3);             // Keep listening during pauses
-                _speechRecognizer.EndSilenceTimeout = TimeSpan.FromSeconds(1.5);       // 1.5sec silence = end of speech
-                _speechRecognizer.EndSilenceTimeoutAmbiguous = TimeSpan.FromSeconds(2); // 2sec for ambiguous endings
-                
-                // 5. Event handlers
-                _speechRecognizer.SpeechRecognized += SpeechRecognizer_SpeechRecognized;
-                _speechRecognizer.SpeechHypothesized += SpeechRecognizer_SpeechHypothesized;
-                _speechRecognizer.SpeechRecognitionRejected += SpeechRecognizer_SpeechRejected;
-                _speechRecognizer.AudioLevelUpdated += SpeechRecognizer_AudioLevelUpdated;
-                
-                System.Diagnostics.Debug.WriteLine("[SPEECH] ✓ Windows Speech Recognition initialized with enhanced accuracy!");
+                System.Diagnostics.Debug.WriteLine("[SPEECH] ✓ Python speech recognition initialized!");
                 
                 this.DispatcherQueue.TryEnqueue(() =>
                 {
-                    AddToThoughtLog("[Voice] ✓ Speech recognition ready (enhanced accuracy)");
+                    AddToThoughtLog("[Voice] ✓ Speech recognition ready (Python API)");
                 });
             }
             catch (Exception ex)
@@ -526,67 +503,6 @@ namespace Kernel_Agent
                 this.DispatcherQueue.TryEnqueue(() =>
                 {
                     AddToThoughtLog($"[Voice] ⚠️ Speech init failed: {ex.Message}");
-                    AddToThoughtLog("[Voice] Try: Control Panel → Speech Recognition → Train");
-                });
-            }
-        }
-
-        private void SpeechRecognizer_AudioLevelUpdated(object? sender, AudioLevelUpdatedEventArgs e)
-        {
-            // Update visual feedback based on audio level (optional)
-            if (e.AudioLevel > 0 && _isRecording)
-            {
-                _lastSpeechTime = DateTime.Now; // Reset silence timer when hearing audio
-            }
-        }
-
-        private void SpeechRecognizer_SpeechHypothesized(object? sender, SpeechHypothesizedEventArgs e)
-        {
-            // Show interim results while user is still speaking
-            _lastSpeechTime = DateTime.Now;
-            
-            System.Diagnostics.Debug.WriteLine($"[SPEECH] Hypothesis: {e.Result.Text}");
-            
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                CommandInput.Text = e.Result.Text + "...";
-            });
-        }
-
-        private void SpeechRecognizer_SpeechRecognized(object? sender, SpeechRecognizedEventArgs e)
-        {
-            // Accept with lower confidence threshold since we have custom grammar
-            if (e.Result.Confidence > 0.1 || e.Result.Grammar?.Name == "Commands")
-            {
-                _currentTranscript = e.Result.Text;
-                _lastSpeechTime = DateTime.Now;
-                
-                System.Diagnostics.Debug.WriteLine($"[SPEECH] ✓ Recognized: \"{e.Result.Text}\" (Confidence: {e.Result.Confidence:P0}, Grammar: {e.Result.Grammar?.Name})");
-                
-                this.DispatcherQueue.TryEnqueue(() =>
-                {
-                    CommandInput.Text = e.Result.Text;
-                });
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"[SPEECH] Rejected low confidence: {e.Result.Confidence:P0}");
-            }
-        }
-
-        private void SpeechRecognizer_SpeechRejected(object? sender, SpeechRecognitionRejectedEventArgs e)
-        {
-            System.Diagnostics.Debug.WriteLine($"[SPEECH] Not understood. Best guess: \"{e.Result.Text}\" (Confidence: {e.Result.Confidence:P0})");
-            
-            // If the rejected result has some confidence, still use it
-            if (e.Result.Confidence > 0.05 && !string.IsNullOrWhiteSpace(e.Result.Text))
-            {
-                _currentTranscript = e.Result.Text;
-                _lastSpeechTime = DateTime.Now;
-                
-                this.DispatcherQueue.TryEnqueue(() =>
-                {
-                    CommandInput.Text = e.Result.Text + " (?)";
                 });
             }
         }
@@ -662,12 +578,12 @@ namespace Kernel_Agent
             {
                 if (_isRecording) return;
                 
-                if (_speechRecognizer == null)
+                if (_speechService == null)
                 {
                     AddToThoughtLog("[Voice] ⚠️ Speech not initialized. Trying to reinitialize...");
                     InitializeSpeechClient();
                     
-                    if (_speechRecognizer == null)
+                    if (_speechService == null)
                     {
                         AddToThoughtLog("[Voice] ❌ Could not initialize speech recognition.");
                         return;
@@ -678,22 +594,16 @@ namespace Kernel_Agent
                 _currentTranscript = "";
                 _lastSpeechTime = DateTime.Now;
                 
-                // Start recognition asynchronously in CONTINUOUS mode
-                _speechRecognizer.RecognizeAsync(RecognizeMode.Multiple);
+                // Start recording with new SpeechService
+                _speechService.StartRecording();
                 _isRecording = true;
                 
                 // Visual feedback - turn button red when recording
                 InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 220, 53, 69)); // Red
-                CommandInput.PlaceholderText = "🎤 Continuous mode - Click mic to stop";
-                AddToThoughtLog("[Voice] 🎤 CONTINUOUS MODE - Say commands, pause to execute, click mic to stop");
+                CommandInput.PlaceholderText = "🎤 Recording... Click mic to stop and transcribe";
+                AddToThoughtLog("[Voice] 🎤 Recording - Speak your command, then click mic to stop");
                 
-                // Start silence detection timer for auto-execute (but NOT auto-stop)
-                _silenceTimer?.Stop();
-                _silenceTimer = new System.Timers.Timer(500); // Check every 500ms
-                _silenceTimer.Elapsed += CheckForSilenceAndExecute;
-                _silenceTimer.Start();
-                
-                System.Diagnostics.Debug.WriteLine("[VOICE] Continuous mode started");
+                System.Diagnostics.Debug.WriteLine("[VOICE] Recording started");
             }
             catch (Exception ex)
             {
@@ -703,75 +613,47 @@ namespace Kernel_Agent
             }
         }
 
-        private void CheckForSilenceAndExecute(object? sender, System.Timers.ElapsedEventArgs e)
-        {
-            if (!_isRecording) return;
-            
-            var silenceDuration = (DateTime.Now - _lastSpeechTime).TotalMilliseconds;
-            
-            // If we have text and silence exceeded threshold, execute but KEEP LISTENING
-            if (!string.IsNullOrWhiteSpace(_currentTranscript) && silenceDuration >= SILENCE_THRESHOLD_MS)
-            {
-                string commandToExecute = _currentTranscript;
-                _currentTranscript = ""; // Clear so we don't execute again
-                
-                System.Diagnostics.Debug.WriteLine($"[VOICE] Pause detected - executing: {commandToExecute}");
-                
-                this.DispatcherQueue.TryEnqueue(async () =>
-                {
-                    // Execute the command
-                    AddToThoughtLog($"[Voice] 📤 Executing: \"{commandToExecute}\"");
-                    CommandInput.Text = "";
-                    await ApiService.Instance.SendCommandAsync(commandToExecute);
-                    
-                    // Show that we're still listening
-                    CommandInput.PlaceholderText = "🎤 Listening for next command...";
-                    AddToThoughtLog("[Voice] ✓ Done. Say another command or click mic to stop");
-                });
-                
-                // Reset speech time to prevent re-execution
-                _lastSpeechTime = DateTime.Now;
-            }
-        }
-
         /// <summary>
-        /// Stops listening completely (only called when user clicks the button)
+        /// Stops listening and sends audio to Python for transcription.
         /// </summary>
-        private void StopVoiceListening()
+        private async void StopVoiceListening()
         {
-            _silenceTimer?.Stop();
-            _silenceTimer?.Dispose();
-            _silenceTimer = null;
-            
-            // Stop recognition
-            try
-            {
-                _speechRecognizer?.RecognizeAsyncStop();
-            }
-            catch { }
+            if (!_isRecording || _speechService == null) return;
             
             _isRecording = false;
             
-            // Reset button color
+            // Update UI immediately
             InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
-            CommandInput.PlaceholderText = "Command Agent...";
+            CommandInput.PlaceholderText = "Transcribing...";
             
-            // If there's pending text, execute it
-            if (!string.IsNullOrWhiteSpace(_currentTranscript))
+            try
             {
-                string finalCommand = _currentTranscript;
-                _currentTranscript = "";
+                // Stop recording and send to Python for transcription
+                AddToThoughtLog("[Voice] 📤 Sending audio to Python for transcription...");
+                var transcription = await _speechService.StopAndTranscribeAsync();
                 
-                this.DispatcherQueue.TryEnqueue(async () =>
+                if (!string.IsNullOrWhiteSpace(transcription))
                 {
-                    AddToThoughtLog($"[Voice] 📤 Final command: \"{finalCommand}\"");
-                    CommandInput.Text = "";
-                    await ApiService.Instance.SendCommandAsync(finalCommand);
-                });
+                    CommandInput.Text = transcription;
+                    AddToThoughtLog($"[Voice] 🎤 \"{transcription}\"");
+                    
+                    // Execute the command
+                    await ExecuteAgentCommand(transcription);
+                }
+                else
+                {
+                    AddToThoughtLog("[Voice] ⚠️ Could not transcribe audio");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[VOICE] Transcription error: {ex.Message}");
+                AddToThoughtLog($"[Voice] Error: {ex.Message}");
             }
             
-            AddToThoughtLog("[Voice] 🛑 Continuous mode stopped");
-            System.Diagnostics.Debug.WriteLine("[VOICE] Continuous mode stopped");
+            CommandInput.PlaceholderText = "Command Agent...";
+            AddToThoughtLog("[Voice] 🛑 Recording stopped");
+            System.Diagnostics.Debug.WriteLine("[VOICE] Recording stopped");
         }
 
         #endregion
@@ -835,5 +717,126 @@ namespace Kernel_Agent
                 }
             }
         }
+
+        #region Step Progress UI
+
+        /// <summary>
+        /// Show the step progress panel and initialize for a new execution.
+        /// </summary>
+        public void ShowStepProgress(int totalSteps, string initialStep = "Starting...")
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (StepProgressPanel != null)
+                {
+                    StepProgressPanel.Visibility = Visibility.Visible;
+                    StepCountText.Text = $"1/{totalSteps}";
+                    CurrentStepText.Text = initialStep;
+                    StepProgressBar.Width = 0;
+                    StepProgressTitle.Text = "EXECUTING PLAN";
+                }
+            });
+        }
+
+        /// <summary>
+        /// Update the step progress display.
+        /// </summary>
+        public void UpdateStepProgress(int currentStep, int totalSteps, string action, string status = "running")
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (StepProgressPanel != null)
+                {
+                    StepCountText.Text = $"{currentStep}/{totalSteps}";
+                    
+                    // Format action name for display
+                    string displayAction = FormatActionName(action);
+                    CurrentStepText.Text = status == "success" 
+                        ? $"✓ {displayAction}" 
+                        : $"{displayAction}...";
+                    
+                    // Update progress bar (assuming StepProgressBar parent width ~240)
+                    double progress = (double)currentStep / totalSteps;
+                    StepProgressBar.Width = progress * 240;
+                    
+                    // Update title based on status
+                    if (status == "success" && currentStep == totalSteps)
+                    {
+                        StepProgressTitle.Text = "✓ COMPLETE";
+                        StepProgressTitle.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                            Microsoft.UI.Colors.LimeGreen);
+                    }
+                    else if (status == "failed")
+                    {
+                        StepProgressTitle.Text = "✗ FAILED";
+                        StepProgressTitle.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                            Microsoft.UI.Colors.Tomato);
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Hide the step progress panel after execution.
+        /// </summary>
+        public void HideStepProgress(int delayMs = 2000)
+        {
+            Task.Run(async () =>
+            {
+                await Task.Delay(delayMs);
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (StepProgressPanel != null)
+                    {
+                        StepProgressPanel.Visibility = Visibility.Collapsed;
+                        // Reset title color
+                        StepProgressTitle.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                            Windows.UI.Color.FromArgb(255, 142, 117, 255)); // #8E75FF
+                        StepProgressTitle.Text = "EXECUTING PLAN";
+                    }
+                });
+            });
+        }
+
+        /// <summary>
+        /// Execute a voice or text command through the agent API.
+        /// </summary>
+        private async Task ExecuteAgentCommand(string command)
+        {
+            try
+            {
+                AddToThoughtLog($"[Agent] Executing: {command}");
+                await ApiService.Instance.SendCommandAsync(command);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AGENT] Command error: {ex.Message}");
+                AddToThoughtLog($"[Agent] Error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Format action name for user-friendly display.
+        /// </summary>
+        private string FormatActionName(string action)
+        {
+            return action switch
+            {
+                "open_app" => "Opening application",
+                "navigate" => "Navigating to page",
+                "type_text" => "Typing text",
+                "click" => "Clicking",
+                "click_element" => "Finding and clicking",
+                "wait" => "Waiting",
+                "smart_wait" => "Waiting for ready",
+                "press_key" => "Pressing key",
+                "hotkey" => "Sending hotkey",
+                "scroll" => "Scrolling",
+                "search" => "Searching",
+                _ => action.Replace("_", " ")
+            };
+        }
+
+        #endregion
     }
 }

@@ -19,17 +19,17 @@ namespace Kernel_Agent
             // Build credential JSON from environment variables
             var credDict = new Dictionary<string, string>
             {
-                {"type", Environment.GetEnvironmentVariable("FIREBASE_TYPE")},
-                {"project_id", Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID")},
-                {"private_key_id", Environment.GetEnvironmentVariable("FIREBASE_PRIVATE_KEY_ID")},
-                {"private_key", Environment.GetEnvironmentVariable("FIREBASE_PRIVATE_KEY")?.Replace("\\n", "\n")},
-                {"client_email", Environment.GetEnvironmentVariable("FIREBASE_CLIENT_EMAIL")},
-                {"client_id", Environment.GetEnvironmentVariable("FIREBASE_CLIENT_ID")},
-                {"auth_uri", Environment.GetEnvironmentVariable("FIREBASE_AUTH_URI")},
-                {"token_uri", Environment.GetEnvironmentVariable("FIREBASE_TOKEN_URI")},
-                {"auth_provider_x509_cert_url", Environment.GetEnvironmentVariable("FIREBASE_AUTH_PROVIDER_X509_CERT_URL")},
-                {"client_x509_cert_url", Environment.GetEnvironmentVariable("FIREBASE_CLIENT_X509_CERT_URL")},
-                {"universe_domain", Environment.GetEnvironmentVariable("FIREBASE_UNIVERSE_DOMAIN")}
+                {"type", Environment.GetEnvironmentVariable("FIREBASE_TYPE") ?? ""},
+                {"project_id", Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID") ?? ""},
+                {"private_key_id", Environment.GetEnvironmentVariable("FIREBASE_PRIVATE_KEY_ID") ?? ""},
+                {"private_key", Environment.GetEnvironmentVariable("FIREBASE_PRIVATE_KEY")?.Replace("\\n", "\n") ?? ""},
+                {"client_email", Environment.GetEnvironmentVariable("FIREBASE_CLIENT_EMAIL") ?? ""},
+                {"client_id", Environment.GetEnvironmentVariable("FIREBASE_CLIENT_ID") ?? ""},
+                {"auth_uri", Environment.GetEnvironmentVariable("FIREBASE_AUTH_URI") ?? ""},
+                {"token_uri", Environment.GetEnvironmentVariable("FIREBASE_TOKEN_URI") ?? ""},
+                {"auth_provider_x509_cert_url", Environment.GetEnvironmentVariable("FIREBASE_AUTH_PROVIDER_X509_CERT_URL") ?? ""},
+                {"client_x509_cert_url", Environment.GetEnvironmentVariable("FIREBASE_CLIENT_X509_CERT_URL") ?? ""},
+                {"universe_domain", Environment.GetEnvironmentVariable("FIREBASE_UNIVERSE_DOMAIN") ?? ""}
             };
             var credJson = System.Text.Json.JsonSerializer.Serialize(credDict);
             var credPath = Path.GetTempFileName();
