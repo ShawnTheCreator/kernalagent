@@ -23,6 +23,10 @@ namespace Kernel_Agent
         // Python-based speech recognition service
         private SpeechService? _speechService;
         
+        // Continuous voice recognition (WebSocket-based)
+        private ContinuousSpeechService? _continuousSpeechService;
+        private bool _continuousVoiceEnabled = false;
+        
         // Voice recording state
         private string _currentTranscript = "";
         private DateTime _lastSpeechTime = DateTime.Now;
@@ -62,6 +66,9 @@ namespace Kernel_Agent
 
                 // Initialize Speech Client Once (Preventing the MoveNext error source)
                 InitializeSpeechClient();
+                
+                // Initialize Continuous Voice Recognition (WebSocket)
+                InitializeContinuousVoiceAsync();
             }
             catch (Exception ex)
             {
@@ -568,92 +575,131 @@ namespace Kernel_Agent
 
         private void VoiceInputButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isRecording) StartVoiceInput();
-            else StopVoiceListening();  // Only button click stops listening
+            // Use new continuous voice mode with WebSocket streaming
+            ToggleContinuousVoice();
         }
 
-        private void StartVoiceInput()
+        /// <summary>
+        /// Toggle continuous voice recognition on/off.
+        /// </summary>
+        private async void ToggleContinuousVoice()
         {
-            try
+            if (_continuousSpeechService == null)
             {
-                if (_isRecording) return;
-                
-                if (_speechService == null)
-                {
-                    AddToThoughtLog("[Voice] ⚠️ Speech not initialized. Trying to reinitialize...");
-                    InitializeSpeechClient();
-                    
-                    if (_speechService == null)
-                    {
-                        AddToThoughtLog("[Voice] ❌ Could not initialize speech recognition.");
-                        return;
-                    }
-                }
-
-                // Reset state
-                _currentTranscript = "";
-                _lastSpeechTime = DateTime.Now;
-                
-                // Start recording with new SpeechService
-                _speechService.StartRecording();
-                _isRecording = true;
-                
-                // Visual feedback - turn button red when recording
-                InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 220, 53, 69)); // Red
-                CommandInput.PlaceholderText = "🎤 Recording... Click mic to stop and transcribe";
-                AddToThoughtLog("[Voice] 🎤 Recording - Speak your command, then click mic to stop");
-                
-                System.Diagnostics.Debug.WriteLine("[VOICE] Recording started");
+                AddToThoughtLog("[Voice] ⚠️ Continuous voice not initialized, initializing now...");
+                InitializeContinuousVoiceAsync();
+                await Task.Delay(500); // Give it time to initialize
             }
-            catch (Exception ex)
+            
+            if (_continuousSpeechService == null)
             {
-                System.Diagnostics.Debug.WriteLine($"[VOICE] Error starting: {ex.Message}");
-                AddToThoughtLog($"[Voice] Error: {ex.Message}");
-                _isRecording = false;
+                AddToThoughtLog("[Voice] ❌ Could not initialize continuous voice");
+                return;
+            }
+            
+            if (_continuousVoiceEnabled)
+            {
+                // Stop continuous listening
+                await _continuousSpeechService.StopListeningAsync();
+                _continuousVoiceEnabled = false;
+                AddToThoughtLog("[Voice] 🔇 Continuous listening stopped");
+                InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                    Windows.UI.Color.FromArgb(0, 0, 0, 0));
+                CommandInput.PlaceholderText = "Command Agent...";
+            }
+            else
+            {
+                // Start continuous listening
+                await _continuousSpeechService.StartListeningAsync(alwaysListening: true);
+                _continuousVoiceEnabled = true;
+                AddToThoughtLog("[Voice] 🎤 Listening... say 'stop bud' to cancel");
+                InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                    Windows.UI.Color.FromArgb(255, 0, 150, 255)); // Blue for listening
+                CommandInput.PlaceholderText = "🎤 Listening... speak your command";
             }
         }
 
         /// <summary>
-        /// Stops listening and sends audio to Python for transcription.
+        /// Initialize continuous voice recognition with WebSocket streaming.
         /// </summary>
-        private async void StopVoiceListening()
+        private async void InitializeContinuousVoiceAsync()
         {
-            if (!_isRecording || _speechService == null) return;
-            
-            _isRecording = false;
-            
-            // Update UI immediately
-            InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
-            CommandInput.PlaceholderText = "Transcribing...";
-            
             try
             {
-                // Stop recording and send to Python for transcription
-                AddToThoughtLog("[Voice] 📤 Sending audio to Python for transcription...");
-                var transcription = await _speechService.StopAndTranscribeAsync();
+                System.Diagnostics.Debug.WriteLine("[VOICE] Initializing continuous voice recognition...");
                 
-                if (!string.IsNullOrWhiteSpace(transcription))
+                _continuousSpeechService = new ContinuousSpeechService();
+                
+                // Wire up events
+                _continuousSpeechService.OnTranscription += (text, isFinal) =>
                 {
-                    CommandInput.Text = transcription;
-                    AddToThoughtLog($"[Voice] 🎤 \"{transcription}\"");
-                    
-                    // Execute the command
-                    await ExecuteAgentCommand(transcription);
-                }
-                else
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        // Show real-time transcription in command input
+                        CommandInput.Text = text;
+                        
+                        if (isFinal)
+                        {
+                            AddToThoughtLog($"[Voice] 🎤 \"{text}\"");
+                        }
+                    });
+                };
+                
+                _continuousSpeechService.OnCommand += (command) =>
                 {
-                    AddToThoughtLog("[Voice] ⚠️ Could not transcribe audio");
-                }
+                    this.DispatcherQueue.TryEnqueue(async () =>
+                    {
+                        AddToThoughtLog($"[Agent] Executing: {command}");
+                        await ExecuteAgentCommand(command);
+                    });
+                };
+                
+                _continuousSpeechService.OnWakeWord += () =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog("[Voice] 👋 Wake word detected!");
+                        InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                            Windows.UI.Color.FromArgb(255, 0, 200, 100)); // Green
+                    });
+                };
+                
+                _continuousSpeechService.OnStopWord += () =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog("[Voice] 🛑 Stop word detected");
+                        CommandInput.Text = "";
+                        CommandInput.PlaceholderText = "Command Agent...";
+                        InternalMonologueVoiceButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                            Windows.UI.Color.FromArgb(0, 0, 0, 0));
+                        _continuousVoiceEnabled = false;
+                    });
+                };
+                
+                _continuousSpeechService.OnError += (error) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog($"[Voice] ⚠️ {error}");
+                    });
+                };
+                
+                _continuousSpeechService.OnConnected += () =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLog("[Voice] ✓ WebSocket connected");
+                    });
+                };
+                
+                System.Diagnostics.Debug.WriteLine("[VOICE] ✓ Continuous voice recognition initialized");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[VOICE] Transcription error: {ex.Message}");
-                AddToThoughtLog($"[Voice] Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[VOICE] Init failed: {ex.Message}");
+                AddToThoughtLog($"[Voice] ❌ Init error: {ex.Message}");
             }
-            
-            CommandInput.PlaceholderText = "Command Agent...";
-            AddToThoughtLog("[Voice] 🛑 Recording stopped");
-            System.Diagnostics.Debug.WriteLine("[VOICE] Recording stopped");
         }
 
         #endregion

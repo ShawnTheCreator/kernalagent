@@ -272,28 +272,28 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
             _typeNameTable[42] = "Microsoft.UI.Xaml.Controls.NavigationViewShoulderNavigationEnabled";
             _typeNameTable[43] = "Microsoft.UI.Xaml.Controls.NavigationViewTemplateSettings";
             _typeNameTable[44] = "Microsoft.UI.Xaml.DependencyObject";
-            _typeNameTable[45] = "Microsoft.UI.Xaml.Controls.NavigationViewItem";
-            _typeNameTable[46] = "Microsoft.UI.Xaml.Controls.NavigationViewItemBase";
-            _typeNameTable[47] = "Microsoft.UI.Xaml.Controls.IconElement";
-            _typeNameTable[48] = "Microsoft.UI.Xaml.Controls.InfoBadge";
-            _typeNameTable[49] = "Microsoft.UI.Xaml.Controls.PersonPicture";
-            _typeNameTable[50] = "Microsoft.UI.Xaml.Media.ImageSource";
-            _typeNameTable[51] = "Windows.ApplicationModel.Contacts.Contact";
-            _typeNameTable[52] = "Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings";
-            _typeNameTable[53] = "Kernel_Agent.MainWindow";
-            _typeNameTable[54] = "Microsoft.UI.Xaml.Window";
-            _typeNameTable[55] = "Kernel_Agent.MarketplacePage";
-            _typeNameTable[56] = "Microsoft.UI.Xaml.Controls.ProgressRing";
-            _typeNameTable[57] = "Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings";
-            _typeNameTable[58] = "Kernel_Agent.MemoryPage";
-            _typeNameTable[59] = "Microsoft.UI.Xaml.Media.RadialGradientBrush";
-            _typeNameTable[60] = "Microsoft.UI.Xaml.Media.XamlCompositionBrushBase";
-            _typeNameTable[61] = "Windows.Foundation.Collections.IObservableVector`1<Microsoft.UI.Xaml.Media.GradientStop>";
-            _typeNameTable[62] = "Microsoft.UI.Xaml.Media.GradientStop";
-            _typeNameTable[63] = "Windows.Foundation.Point";
-            _typeNameTable[64] = "Microsoft.UI.Composition.CompositionColorSpace";
-            _typeNameTable[65] = "Microsoft.UI.Xaml.Media.BrushMappingMode";
-            _typeNameTable[66] = "Microsoft.UI.Xaml.Media.GradientSpreadMethod";
+            _typeNameTable[45] = "Microsoft.UI.Xaml.Media.RadialGradientBrush";
+            _typeNameTable[46] = "Microsoft.UI.Xaml.Media.XamlCompositionBrushBase";
+            _typeNameTable[47] = "Windows.Foundation.Collections.IObservableVector`1<Microsoft.UI.Xaml.Media.GradientStop>";
+            _typeNameTable[48] = "Microsoft.UI.Xaml.Media.GradientStop";
+            _typeNameTable[49] = "Windows.Foundation.Point";
+            _typeNameTable[50] = "Microsoft.UI.Composition.CompositionColorSpace";
+            _typeNameTable[51] = "Microsoft.UI.Xaml.Media.BrushMappingMode";
+            _typeNameTable[52] = "Microsoft.UI.Xaml.Media.GradientSpreadMethod";
+            _typeNameTable[53] = "Microsoft.UI.Xaml.Controls.NavigationViewItem";
+            _typeNameTable[54] = "Microsoft.UI.Xaml.Controls.NavigationViewItemBase";
+            _typeNameTable[55] = "Microsoft.UI.Xaml.Controls.IconElement";
+            _typeNameTable[56] = "Microsoft.UI.Xaml.Controls.InfoBadge";
+            _typeNameTable[57] = "Microsoft.UI.Xaml.Controls.PersonPicture";
+            _typeNameTable[58] = "Microsoft.UI.Xaml.Media.ImageSource";
+            _typeNameTable[59] = "Windows.ApplicationModel.Contacts.Contact";
+            _typeNameTable[60] = "Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings";
+            _typeNameTable[61] = "Kernel_Agent.MainWindow";
+            _typeNameTable[62] = "Microsoft.UI.Xaml.Window";
+            _typeNameTable[63] = "Kernel_Agent.MarketplacePage";
+            _typeNameTable[64] = "Microsoft.UI.Xaml.Controls.ProgressRing";
+            _typeNameTable[65] = "Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings";
+            _typeNameTable[66] = "Kernel_Agent.MemoryPage";
             _typeNameTable[67] = "Kernel_Agent.OrbOverlayWindow";
             _typeNameTable[68] = "Kernel_Agent.SandboxPage";
             _typeNameTable[69] = "Kernel_Agent.SecurityPage";
@@ -347,28 +347,28 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
             _typeTable[42] = typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewShoulderNavigationEnabled);
             _typeTable[43] = typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewTemplateSettings);
             _typeTable[44] = typeof(global::Microsoft.UI.Xaml.DependencyObject);
-            _typeTable[45] = typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItem);
-            _typeTable[46] = typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase);
-            _typeTable[47] = typeof(global::Microsoft.UI.Xaml.Controls.IconElement);
-            _typeTable[48] = typeof(global::Microsoft.UI.Xaml.Controls.InfoBadge);
-            _typeTable[49] = typeof(global::Microsoft.UI.Xaml.Controls.PersonPicture);
-            _typeTable[50] = typeof(global::Microsoft.UI.Xaml.Media.ImageSource);
-            _typeTable[51] = typeof(global::Windows.ApplicationModel.Contacts.Contact);
-            _typeTable[52] = typeof(global::Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings);
-            _typeTable[53] = typeof(global::Kernel_Agent.MainWindow);
-            _typeTable[54] = typeof(global::Microsoft.UI.Xaml.Window);
-            _typeTable[55] = typeof(global::Kernel_Agent.MarketplacePage);
-            _typeTable[56] = typeof(global::Microsoft.UI.Xaml.Controls.ProgressRing);
-            _typeTable[57] = typeof(global::Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings);
-            _typeTable[58] = typeof(global::Kernel_Agent.MemoryPage);
-            _typeTable[59] = typeof(global::Microsoft.UI.Xaml.Media.RadialGradientBrush);
-            _typeTable[60] = typeof(global::Microsoft.UI.Xaml.Media.XamlCompositionBrushBase);
-            _typeTable[61] = typeof(global::Windows.Foundation.Collections.IObservableVector<global::Microsoft.UI.Xaml.Media.GradientStop>);
-            _typeTable[62] = typeof(global::Microsoft.UI.Xaml.Media.GradientStop);
-            _typeTable[63] = typeof(global::Windows.Foundation.Point);
-            _typeTable[64] = typeof(global::Microsoft.UI.Composition.CompositionColorSpace);
-            _typeTable[65] = typeof(global::Microsoft.UI.Xaml.Media.BrushMappingMode);
-            _typeTable[66] = typeof(global::Microsoft.UI.Xaml.Media.GradientSpreadMethod);
+            _typeTable[45] = typeof(global::Microsoft.UI.Xaml.Media.RadialGradientBrush);
+            _typeTable[46] = typeof(global::Microsoft.UI.Xaml.Media.XamlCompositionBrushBase);
+            _typeTable[47] = typeof(global::Windows.Foundation.Collections.IObservableVector<global::Microsoft.UI.Xaml.Media.GradientStop>);
+            _typeTable[48] = typeof(global::Microsoft.UI.Xaml.Media.GradientStop);
+            _typeTable[49] = typeof(global::Windows.Foundation.Point);
+            _typeTable[50] = typeof(global::Microsoft.UI.Composition.CompositionColorSpace);
+            _typeTable[51] = typeof(global::Microsoft.UI.Xaml.Media.BrushMappingMode);
+            _typeTable[52] = typeof(global::Microsoft.UI.Xaml.Media.GradientSpreadMethod);
+            _typeTable[53] = typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItem);
+            _typeTable[54] = typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase);
+            _typeTable[55] = typeof(global::Microsoft.UI.Xaml.Controls.IconElement);
+            _typeTable[56] = typeof(global::Microsoft.UI.Xaml.Controls.InfoBadge);
+            _typeTable[57] = typeof(global::Microsoft.UI.Xaml.Controls.PersonPicture);
+            _typeTable[58] = typeof(global::Microsoft.UI.Xaml.Media.ImageSource);
+            _typeTable[59] = typeof(global::Windows.ApplicationModel.Contacts.Contact);
+            _typeTable[60] = typeof(global::Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings);
+            _typeTable[61] = typeof(global::Kernel_Agent.MainWindow);
+            _typeTable[62] = typeof(global::Microsoft.UI.Xaml.Window);
+            _typeTable[63] = typeof(global::Kernel_Agent.MarketplacePage);
+            _typeTable[64] = typeof(global::Microsoft.UI.Xaml.Controls.ProgressRing);
+            _typeTable[65] = typeof(global::Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings);
+            _typeTable[66] = typeof(global::Kernel_Agent.MemoryPage);
             _typeTable[67] = typeof(global::Kernel_Agent.OrbOverlayWindow);
             _typeTable[68] = typeof(global::Kernel_Agent.SandboxPage);
             _typeTable[69] = typeof(global::Kernel_Agent.SecurityPage);
@@ -420,15 +420,15 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
         private object Activate_26_MicaBackdrop() { return new global::Microsoft.UI.Xaml.Media.MicaBackdrop(); }
         private object Activate_29_NavigationView() { return new global::Microsoft.UI.Xaml.Controls.NavigationView(); }
         private object Activate_43_NavigationViewTemplateSettings() { return new global::Microsoft.UI.Xaml.Controls.NavigationViewTemplateSettings(); }
-        private object Activate_45_NavigationViewItem() { return new global::Microsoft.UI.Xaml.Controls.NavigationViewItem(); }
-        private object Activate_48_InfoBadge() { return new global::Microsoft.UI.Xaml.Controls.InfoBadge(); }
-        private object Activate_49_PersonPicture() { return new global::Microsoft.UI.Xaml.Controls.PersonPicture(); }
-        private object Activate_51_Contact() { return new global::Windows.ApplicationModel.Contacts.Contact(); }
-        private object Activate_53_MainWindow() { return new global::Kernel_Agent.MainWindow(); }
-        private object Activate_55_MarketplacePage() { return new global::Kernel_Agent.MarketplacePage(); }
-        private object Activate_56_ProgressRing() { return new global::Microsoft.UI.Xaml.Controls.ProgressRing(); }
-        private object Activate_58_MemoryPage() { return new global::Kernel_Agent.MemoryPage(); }
-        private object Activate_59_RadialGradientBrush() { return new global::Microsoft.UI.Xaml.Media.RadialGradientBrush(); }
+        private object Activate_45_RadialGradientBrush() { return new global::Microsoft.UI.Xaml.Media.RadialGradientBrush(); }
+        private object Activate_53_NavigationViewItem() { return new global::Microsoft.UI.Xaml.Controls.NavigationViewItem(); }
+        private object Activate_56_InfoBadge() { return new global::Microsoft.UI.Xaml.Controls.InfoBadge(); }
+        private object Activate_57_PersonPicture() { return new global::Microsoft.UI.Xaml.Controls.PersonPicture(); }
+        private object Activate_59_Contact() { return new global::Windows.ApplicationModel.Contacts.Contact(); }
+        private object Activate_61_MainWindow() { return new global::Kernel_Agent.MainWindow(); }
+        private object Activate_63_MarketplacePage() { return new global::Kernel_Agent.MarketplacePage(); }
+        private object Activate_64_ProgressRing() { return new global::Microsoft.UI.Xaml.Controls.ProgressRing(); }
+        private object Activate_66_MemoryPage() { return new global::Kernel_Agent.MemoryPage(); }
         private object Activate_67_OrbOverlayWindow() { return new global::Kernel_Agent.OrbOverlayWindow(); }
         private object Activate_68_SandboxPage() { return new global::Kernel_Agent.SandboxPage(); }
         private object Activate_69_SecurityPage() { return new global::Kernel_Agent.SecurityPage(); }
@@ -458,20 +458,20 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
         private void StaticInitializer_41_NavigationViewSelectionFollowsFocus() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewSelectionFollowsFocus).TypeHandle);
         private void StaticInitializer_42_NavigationViewShoulderNavigationEnabled() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewShoulderNavigationEnabled).TypeHandle);
         private void StaticInitializer_43_NavigationViewTemplateSettings() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewTemplateSettings).TypeHandle);
-        private void StaticInitializer_45_NavigationViewItem() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItem).TypeHandle);
-        private void StaticInitializer_46_NavigationViewItemBase() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase).TypeHandle);
-        private void StaticInitializer_48_InfoBadge() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.InfoBadge).TypeHandle);
-        private void StaticInitializer_49_PersonPicture() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.PersonPicture).TypeHandle);
-        private void StaticInitializer_51_Contact() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Windows.ApplicationModel.Contacts.Contact).TypeHandle);
-        private void StaticInitializer_52_PersonPictureTemplateSettings() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings).TypeHandle);
-        private void StaticInitializer_53_MainWindow() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.MainWindow).TypeHandle);
-        private void StaticInitializer_55_MarketplacePage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.MarketplacePage).TypeHandle);
-        private void StaticInitializer_56_ProgressRing() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.ProgressRing).TypeHandle);
-        private void StaticInitializer_57_ProgressRingTemplateSettings() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings).TypeHandle);
-        private void StaticInitializer_58_MemoryPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.MemoryPage).TypeHandle);
-        private void StaticInitializer_59_RadialGradientBrush() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Media.RadialGradientBrush).TypeHandle);
-        private void StaticInitializer_61_IObservableVector() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Windows.Foundation.Collections.IObservableVector<global::Microsoft.UI.Xaml.Media.GradientStop>).TypeHandle);
-        private void StaticInitializer_64_CompositionColorSpace() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Composition.CompositionColorSpace).TypeHandle);
+        private void StaticInitializer_45_RadialGradientBrush() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Media.RadialGradientBrush).TypeHandle);
+        private void StaticInitializer_47_IObservableVector() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Windows.Foundation.Collections.IObservableVector<global::Microsoft.UI.Xaml.Media.GradientStop>).TypeHandle);
+        private void StaticInitializer_50_CompositionColorSpace() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Composition.CompositionColorSpace).TypeHandle);
+        private void StaticInitializer_53_NavigationViewItem() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItem).TypeHandle);
+        private void StaticInitializer_54_NavigationViewItemBase() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase).TypeHandle);
+        private void StaticInitializer_56_InfoBadge() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.InfoBadge).TypeHandle);
+        private void StaticInitializer_57_PersonPicture() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.PersonPicture).TypeHandle);
+        private void StaticInitializer_59_Contact() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Windows.ApplicationModel.Contacts.Contact).TypeHandle);
+        private void StaticInitializer_60_PersonPictureTemplateSettings() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings).TypeHandle);
+        private void StaticInitializer_61_MainWindow() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.MainWindow).TypeHandle);
+        private void StaticInitializer_63_MarketplacePage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.MarketplacePage).TypeHandle);
+        private void StaticInitializer_64_ProgressRing() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.ProgressRing).TypeHandle);
+        private void StaticInitializer_65_ProgressRingTemplateSettings() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings).TypeHandle);
+        private void StaticInitializer_66_MemoryPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.MemoryPage).TypeHandle);
         private void StaticInitializer_67_OrbOverlayWindow() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.OrbOverlayWindow).TypeHandle);
         private void StaticInitializer_68_SandboxPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SandboxPage).TypeHandle);
         private void StaticInitializer_69_SecurityPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SecurityPage).TypeHandle);
@@ -503,7 +503,7 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
             var newItem = (global::System.Object)item;
             collection.Add(newItem);
         }
-        private void VectorAdd_61_IObservableVector(object instance, object item)
+        private void VectorAdd_47_IObservableVector(object instance, object item)
         {
             var collection = (global::System.Collections.Generic.ICollection<global::Microsoft.UI.Xaml.Media.GradientStop>)instance;
             var newItem = (global::Microsoft.UI.Xaml.Media.GradientStop)item;
@@ -862,10 +862,65 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
                 xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
                 break;
 
-            case 45:   //  Microsoft.UI.Xaml.Controls.NavigationViewItem
+            case 45:   //  Microsoft.UI.Xaml.Media.RadialGradientBrush
+                userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Media.XamlCompositionBrushBase"));
+                userType.Activator = Activate_45_RadialGradientBrush;
+                userType.StaticInitializer = StaticInitializer_45_RadialGradientBrush;
+                userType.SetContentPropertyName("Microsoft.UI.Xaml.Media.RadialGradientBrush.GradientStops");
+                userType.AddMemberName("GradientStops");
+                userType.AddMemberName("Center");
+                userType.AddMemberName("GradientOrigin");
+                userType.AddMemberName("InterpolationSpace");
+                userType.AddMemberName("MappingMode");
+                userType.AddMemberName("RadiusX");
+                userType.AddMemberName("RadiusY");
+                userType.AddMemberName("SpreadMethod");
+                xamlType = userType;
+                break;
+
+            case 46:   //  Microsoft.UI.Xaml.Media.XamlCompositionBrushBase
+                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
+                break;
+
+            case 47:   //  Windows.Foundation.Collections.IObservableVector`1<Microsoft.UI.Xaml.Media.GradientStop>
+                userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, null);
+                userType.StaticInitializer = StaticInitializer_47_IObservableVector;
+                userType.CollectionAdd = VectorAdd_47_IObservableVector;
+                userType.SetIsReturnTypeStub();
+                xamlType = userType;
+                break;
+
+            case 48:   //  Microsoft.UI.Xaml.Media.GradientStop
+                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
+                break;
+
+            case 49:   //  Windows.Foundation.Point
+                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
+                break;
+
+            case 50:   //  Microsoft.UI.Composition.CompositionColorSpace
+                userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("System.Enum"));
+                userType.StaticInitializer = StaticInitializer_50_CompositionColorSpace;
+                userType.AddEnumValue("Auto", global::Microsoft.UI.Composition.CompositionColorSpace.Auto);
+                userType.AddEnumValue("Hsl", global::Microsoft.UI.Composition.CompositionColorSpace.Hsl);
+                userType.AddEnumValue("Rgb", global::Microsoft.UI.Composition.CompositionColorSpace.Rgb);
+                userType.AddEnumValue("HslLinear", global::Microsoft.UI.Composition.CompositionColorSpace.HslLinear);
+                userType.AddEnumValue("RgbLinear", global::Microsoft.UI.Composition.CompositionColorSpace.RgbLinear);
+                xamlType = userType;
+                break;
+
+            case 51:   //  Microsoft.UI.Xaml.Media.BrushMappingMode
+                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
+                break;
+
+            case 52:   //  Microsoft.UI.Xaml.Media.GradientSpreadMethod
+                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
+                break;
+
+            case 53:   //  Microsoft.UI.Xaml.Controls.NavigationViewItem
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItemBase"));
-                userType.Activator = Activate_45_NavigationViewItem;
-                userType.StaticInitializer = StaticInitializer_45_NavigationViewItem;
+                userType.Activator = Activate_53_NavigationViewItem;
+                userType.StaticInitializer = StaticInitializer_53_NavigationViewItem;
                 userType.AddMemberName("Icon");
                 userType.AddMemberName("CompactPaneLength");
                 userType.AddMemberName("HasUnrealizedChildren");
@@ -878,28 +933,28 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
                 xamlType = userType;
                 break;
 
-            case 46:   //  Microsoft.UI.Xaml.Controls.NavigationViewItemBase
+            case 54:   //  Microsoft.UI.Xaml.Controls.NavigationViewItemBase
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.ContentControl"));
-                userType.StaticInitializer = StaticInitializer_46_NavigationViewItemBase;
+                userType.StaticInitializer = StaticInitializer_54_NavigationViewItemBase;
                 userType.AddMemberName("IsSelected");
                 xamlType = userType;
                 break;
 
-            case 47:   //  Microsoft.UI.Xaml.Controls.IconElement
+            case 55:   //  Microsoft.UI.Xaml.Controls.IconElement
                 xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
                 break;
 
-            case 48:   //  Microsoft.UI.Xaml.Controls.InfoBadge
+            case 56:   //  Microsoft.UI.Xaml.Controls.InfoBadge
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Control"));
-                userType.StaticInitializer = StaticInitializer_48_InfoBadge;
+                userType.StaticInitializer = StaticInitializer_56_InfoBadge;
                 userType.SetIsReturnTypeStub();
                 xamlType = userType;
                 break;
 
-            case 49:   //  Microsoft.UI.Xaml.Controls.PersonPicture
+            case 57:   //  Microsoft.UI.Xaml.Controls.PersonPicture
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Control"));
-                userType.Activator = Activate_49_PersonPicture;
-                userType.StaticInitializer = StaticInitializer_49_PersonPicture;
+                userType.Activator = Activate_57_PersonPicture;
+                userType.StaticInitializer = StaticInitializer_57_PersonPicture;
                 userType.AddMemberName("BadgeGlyph");
                 userType.AddMemberName("BadgeImageSource");
                 userType.AddMemberName("BadgeNumber");
@@ -914,48 +969,48 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
                 xamlType = userType;
                 break;
 
-            case 50:   //  Microsoft.UI.Xaml.Media.ImageSource
+            case 58:   //  Microsoft.UI.Xaml.Media.ImageSource
                 xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
                 break;
 
-            case 51:   //  Windows.ApplicationModel.Contacts.Contact
+            case 59:   //  Windows.ApplicationModel.Contacts.Contact
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Object"));
-                userType.StaticInitializer = StaticInitializer_51_Contact;
+                userType.StaticInitializer = StaticInitializer_59_Contact;
                 userType.SetIsReturnTypeStub();
                 xamlType = userType;
                 break;
 
-            case 52:   //  Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings
+            case 60:   //  Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.DependencyObject"));
-                userType.StaticInitializer = StaticInitializer_52_PersonPictureTemplateSettings;
+                userType.StaticInitializer = StaticInitializer_60_PersonPictureTemplateSettings;
                 userType.SetIsReturnTypeStub();
                 xamlType = userType;
                 break;
 
-            case 53:   //  Kernel_Agent.MainWindow
+            case 61:   //  Kernel_Agent.MainWindow
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Window"));
-                userType.Activator = Activate_53_MainWindow;
-                userType.StaticInitializer = StaticInitializer_53_MainWindow;
+                userType.Activator = Activate_61_MainWindow;
+                userType.StaticInitializer = StaticInitializer_61_MainWindow;
                 userType.SetIsLocalType();
                 xamlType = userType;
                 break;
 
-            case 54:   //  Microsoft.UI.Xaml.Window
+            case 62:   //  Microsoft.UI.Xaml.Window
                 xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
                 break;
 
-            case 55:   //  Kernel_Agent.MarketplacePage
+            case 63:   //  Kernel_Agent.MarketplacePage
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Page"));
-                userType.Activator = Activate_55_MarketplacePage;
-                userType.StaticInitializer = StaticInitializer_55_MarketplacePage;
+                userType.Activator = Activate_63_MarketplacePage;
+                userType.StaticInitializer = StaticInitializer_63_MarketplacePage;
                 userType.SetIsLocalType();
                 xamlType = userType;
                 break;
 
-            case 56:   //  Microsoft.UI.Xaml.Controls.ProgressRing
+            case 64:   //  Microsoft.UI.Xaml.Controls.ProgressRing
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Control"));
-                userType.Activator = Activate_56_ProgressRing;
-                userType.StaticInitializer = StaticInitializer_56_ProgressRing;
+                userType.Activator = Activate_64_ProgressRing;
+                userType.StaticInitializer = StaticInitializer_64_ProgressRing;
                 userType.AddMemberName("IsActive");
                 userType.AddMemberName("IsIndeterminate");
                 userType.AddMemberName("Maximum");
@@ -965,74 +1020,19 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
                 xamlType = userType;
                 break;
 
-            case 57:   //  Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings
+            case 65:   //  Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.DependencyObject"));
-                userType.StaticInitializer = StaticInitializer_57_ProgressRingTemplateSettings;
+                userType.StaticInitializer = StaticInitializer_65_ProgressRingTemplateSettings;
                 userType.SetIsReturnTypeStub();
                 xamlType = userType;
                 break;
 
-            case 58:   //  Kernel_Agent.MemoryPage
+            case 66:   //  Kernel_Agent.MemoryPage
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Page"));
-                userType.Activator = Activate_58_MemoryPage;
-                userType.StaticInitializer = StaticInitializer_58_MemoryPage;
+                userType.Activator = Activate_66_MemoryPage;
+                userType.StaticInitializer = StaticInitializer_66_MemoryPage;
                 userType.SetIsLocalType();
                 xamlType = userType;
-                break;
-
-            case 59:   //  Microsoft.UI.Xaml.Media.RadialGradientBrush
-                userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Media.XamlCompositionBrushBase"));
-                userType.Activator = Activate_59_RadialGradientBrush;
-                userType.StaticInitializer = StaticInitializer_59_RadialGradientBrush;
-                userType.SetContentPropertyName("Microsoft.UI.Xaml.Media.RadialGradientBrush.GradientStops");
-                userType.AddMemberName("GradientStops");
-                userType.AddMemberName("GradientOrigin");
-                userType.AddMemberName("Center");
-                userType.AddMemberName("InterpolationSpace");
-                userType.AddMemberName("MappingMode");
-                userType.AddMemberName("RadiusX");
-                userType.AddMemberName("RadiusY");
-                userType.AddMemberName("SpreadMethod");
-                xamlType = userType;
-                break;
-
-            case 60:   //  Microsoft.UI.Xaml.Media.XamlCompositionBrushBase
-                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
-                break;
-
-            case 61:   //  Windows.Foundation.Collections.IObservableVector`1<Microsoft.UI.Xaml.Media.GradientStop>
-                userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, null);
-                userType.StaticInitializer = StaticInitializer_61_IObservableVector;
-                userType.CollectionAdd = VectorAdd_61_IObservableVector;
-                userType.SetIsReturnTypeStub();
-                xamlType = userType;
-                break;
-
-            case 62:   //  Microsoft.UI.Xaml.Media.GradientStop
-                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
-                break;
-
-            case 63:   //  Windows.Foundation.Point
-                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
-                break;
-
-            case 64:   //  Microsoft.UI.Composition.CompositionColorSpace
-                userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("System.Enum"));
-                userType.StaticInitializer = StaticInitializer_64_CompositionColorSpace;
-                userType.AddEnumValue("Auto", global::Microsoft.UI.Composition.CompositionColorSpace.Auto);
-                userType.AddEnumValue("Hsl", global::Microsoft.UI.Composition.CompositionColorSpace.Hsl);
-                userType.AddEnumValue("Rgb", global::Microsoft.UI.Composition.CompositionColorSpace.Rgb);
-                userType.AddEnumValue("HslLinear", global::Microsoft.UI.Composition.CompositionColorSpace.HslLinear);
-                userType.AddEnumValue("RgbLinear", global::Microsoft.UI.Composition.CompositionColorSpace.RgbLinear);
-                xamlType = userType;
-                break;
-
-            case 65:   //  Microsoft.UI.Xaml.Media.BrushMappingMode
-                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
-                break;
-
-            case 66:   //  Microsoft.UI.Xaml.Media.GradientSpreadMethod
-                xamlType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlSystemBaseType(typeName, type);
                 break;
 
             case 67:   //  Kernel_Agent.OrbOverlayWindow
@@ -1743,330 +1743,330 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
             var that = (global::Microsoft.UI.Xaml.Controls.NavigationView)instance;
             return that.TemplateSettings;
         }
-        private object get_62_NavigationViewItem_Icon(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.Icon;
-        }
-        private void set_62_NavigationViewItem_Icon(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            that.Icon = (global::Microsoft.UI.Xaml.Controls.IconElement)Value;
-        }
-        private object get_63_NavigationViewItem_CompactPaneLength(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.CompactPaneLength;
-        }
-        private object get_64_NavigationViewItem_HasUnrealizedChildren(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.HasUnrealizedChildren;
-        }
-        private void set_64_NavigationViewItem_HasUnrealizedChildren(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            that.HasUnrealizedChildren = (global::System.Boolean)Value;
-        }
-        private object get_65_NavigationViewItem_InfoBadge(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.InfoBadge;
-        }
-        private void set_65_NavigationViewItem_InfoBadge(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            that.InfoBadge = (global::Microsoft.UI.Xaml.Controls.InfoBadge)Value;
-        }
-        private object get_66_NavigationViewItem_IsChildSelected(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.IsChildSelected;
-        }
-        private void set_66_NavigationViewItem_IsChildSelected(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            that.IsChildSelected = (global::System.Boolean)Value;
-        }
-        private object get_67_NavigationViewItem_IsExpanded(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.IsExpanded;
-        }
-        private void set_67_NavigationViewItem_IsExpanded(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            that.IsExpanded = (global::System.Boolean)Value;
-        }
-        private object get_68_NavigationViewItem_MenuItems(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.MenuItems;
-        }
-        private object get_69_NavigationViewItem_MenuItemsSource(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.MenuItemsSource;
-        }
-        private void set_69_NavigationViewItem_MenuItemsSource(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            that.MenuItemsSource = (global::System.Object)Value;
-        }
-        private object get_70_NavigationViewItem_SelectsOnInvoked(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            return that.SelectsOnInvoked;
-        }
-        private void set_70_NavigationViewItem_SelectsOnInvoked(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
-            that.SelectsOnInvoked = (global::System.Boolean)Value;
-        }
-        private object get_71_NavigationViewItemBase_IsSelected(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase)instance;
-            return that.IsSelected;
-        }
-        private void set_71_NavigationViewItemBase_IsSelected(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase)instance;
-            that.IsSelected = (global::System.Boolean)Value;
-        }
-        private object get_72_PersonPicture_BadgeGlyph(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.BadgeGlyph;
-        }
-        private void set_72_PersonPicture_BadgeGlyph(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.BadgeGlyph = (global::System.String)Value;
-        }
-        private object get_73_PersonPicture_BadgeImageSource(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.BadgeImageSource;
-        }
-        private void set_73_PersonPicture_BadgeImageSource(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.BadgeImageSource = (global::Microsoft.UI.Xaml.Media.ImageSource)Value;
-        }
-        private object get_74_PersonPicture_BadgeNumber(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.BadgeNumber;
-        }
-        private void set_74_PersonPicture_BadgeNumber(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.BadgeNumber = (global::System.Int32)Value;
-        }
-        private object get_75_PersonPicture_BadgeText(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.BadgeText;
-        }
-        private void set_75_PersonPicture_BadgeText(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.BadgeText = (global::System.String)Value;
-        }
-        private object get_76_PersonPicture_Contact(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.Contact;
-        }
-        private void set_76_PersonPicture_Contact(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.Contact = (global::Windows.ApplicationModel.Contacts.Contact)Value;
-        }
-        private object get_77_PersonPicture_DisplayName(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.DisplayName;
-        }
-        private void set_77_PersonPicture_DisplayName(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.DisplayName = (global::System.String)Value;
-        }
-        private object get_78_PersonPicture_Initials(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.Initials;
-        }
-        private void set_78_PersonPicture_Initials(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.Initials = (global::System.String)Value;
-        }
-        private object get_79_PersonPicture_IsGroup(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.IsGroup;
-        }
-        private void set_79_PersonPicture_IsGroup(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.IsGroup = (global::System.Boolean)Value;
-        }
-        private object get_80_PersonPicture_PreferSmallImage(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.PreferSmallImage;
-        }
-        private void set_80_PersonPicture_PreferSmallImage(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.PreferSmallImage = (global::System.Boolean)Value;
-        }
-        private object get_81_PersonPicture_ProfilePicture(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.ProfilePicture;
-        }
-        private void set_81_PersonPicture_ProfilePicture(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            that.ProfilePicture = (global::Microsoft.UI.Xaml.Media.ImageSource)Value;
-        }
-        private object get_82_PersonPicture_TemplateSettings(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
-            return that.TemplateSettings;
-        }
-        private object get_83_ProgressRing_IsActive(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            return that.IsActive;
-        }
-        private void set_83_ProgressRing_IsActive(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            that.IsActive = (global::System.Boolean)Value;
-        }
-        private object get_84_ProgressRing_IsIndeterminate(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            return that.IsIndeterminate;
-        }
-        private void set_84_ProgressRing_IsIndeterminate(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            that.IsIndeterminate = (global::System.Boolean)Value;
-        }
-        private object get_85_ProgressRing_Maximum(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            return that.Maximum;
-        }
-        private void set_85_ProgressRing_Maximum(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            that.Maximum = (global::System.Double)Value;
-        }
-        private object get_86_ProgressRing_Minimum(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            return that.Minimum;
-        }
-        private void set_86_ProgressRing_Minimum(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            that.Minimum = (global::System.Double)Value;
-        }
-        private object get_87_ProgressRing_TemplateSettings(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            return that.TemplateSettings;
-        }
-        private object get_88_ProgressRing_Value(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            return that.Value;
-        }
-        private void set_88_ProgressRing_Value(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
-            that.Value = (global::System.Double)Value;
-        }
-        private object get_89_RadialGradientBrush_GradientStops(object instance)
+        private object get_62_RadialGradientBrush_GradientStops(object instance)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             return that.GradientStops;
         }
-        private object get_90_RadialGradientBrush_GradientOrigin(object instance)
-        {
-            var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
-            return that.GradientOrigin;
-        }
-        private void set_90_RadialGradientBrush_GradientOrigin(object instance, object Value)
-        {
-            var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
-            that.GradientOrigin = (global::Windows.Foundation.Point)Value;
-        }
-        private object get_91_RadialGradientBrush_Center(object instance)
+        private object get_63_RadialGradientBrush_Center(object instance)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             return that.Center;
         }
-        private void set_91_RadialGradientBrush_Center(object instance, object Value)
+        private void set_63_RadialGradientBrush_Center(object instance, object Value)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             that.Center = (global::Windows.Foundation.Point)Value;
         }
-        private object get_92_RadialGradientBrush_InterpolationSpace(object instance)
+        private object get_64_RadialGradientBrush_GradientOrigin(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
+            return that.GradientOrigin;
+        }
+        private void set_64_RadialGradientBrush_GradientOrigin(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
+            that.GradientOrigin = (global::Windows.Foundation.Point)Value;
+        }
+        private object get_65_RadialGradientBrush_InterpolationSpace(object instance)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             return that.InterpolationSpace;
         }
-        private void set_92_RadialGradientBrush_InterpolationSpace(object instance, object Value)
+        private void set_65_RadialGradientBrush_InterpolationSpace(object instance, object Value)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             that.InterpolationSpace = (global::Microsoft.UI.Composition.CompositionColorSpace)Value;
         }
-        private object get_93_RadialGradientBrush_MappingMode(object instance)
+        private object get_66_RadialGradientBrush_MappingMode(object instance)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             return that.MappingMode;
         }
-        private void set_93_RadialGradientBrush_MappingMode(object instance, object Value)
+        private void set_66_RadialGradientBrush_MappingMode(object instance, object Value)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             that.MappingMode = (global::Microsoft.UI.Xaml.Media.BrushMappingMode)Value;
         }
-        private object get_94_RadialGradientBrush_RadiusX(object instance)
+        private object get_67_RadialGradientBrush_RadiusX(object instance)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             return that.RadiusX;
         }
-        private void set_94_RadialGradientBrush_RadiusX(object instance, object Value)
+        private void set_67_RadialGradientBrush_RadiusX(object instance, object Value)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             that.RadiusX = (global::System.Double)Value;
         }
-        private object get_95_RadialGradientBrush_RadiusY(object instance)
+        private object get_68_RadialGradientBrush_RadiusY(object instance)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             return that.RadiusY;
         }
-        private void set_95_RadialGradientBrush_RadiusY(object instance, object Value)
+        private void set_68_RadialGradientBrush_RadiusY(object instance, object Value)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             that.RadiusY = (global::System.Double)Value;
         }
-        private object get_96_RadialGradientBrush_SpreadMethod(object instance)
+        private object get_69_RadialGradientBrush_SpreadMethod(object instance)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             return that.SpreadMethod;
         }
-        private void set_96_RadialGradientBrush_SpreadMethod(object instance, object Value)
+        private void set_69_RadialGradientBrush_SpreadMethod(object instance, object Value)
         {
             var that = (global::Microsoft.UI.Xaml.Media.RadialGradientBrush)instance;
             that.SpreadMethod = (global::Microsoft.UI.Xaml.Media.GradientSpreadMethod)Value;
+        }
+        private object get_70_NavigationViewItem_Icon(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.Icon;
+        }
+        private void set_70_NavigationViewItem_Icon(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            that.Icon = (global::Microsoft.UI.Xaml.Controls.IconElement)Value;
+        }
+        private object get_71_NavigationViewItem_CompactPaneLength(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.CompactPaneLength;
+        }
+        private object get_72_NavigationViewItem_HasUnrealizedChildren(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.HasUnrealizedChildren;
+        }
+        private void set_72_NavigationViewItem_HasUnrealizedChildren(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            that.HasUnrealizedChildren = (global::System.Boolean)Value;
+        }
+        private object get_73_NavigationViewItem_InfoBadge(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.InfoBadge;
+        }
+        private void set_73_NavigationViewItem_InfoBadge(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            that.InfoBadge = (global::Microsoft.UI.Xaml.Controls.InfoBadge)Value;
+        }
+        private object get_74_NavigationViewItem_IsChildSelected(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.IsChildSelected;
+        }
+        private void set_74_NavigationViewItem_IsChildSelected(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            that.IsChildSelected = (global::System.Boolean)Value;
+        }
+        private object get_75_NavigationViewItem_IsExpanded(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.IsExpanded;
+        }
+        private void set_75_NavigationViewItem_IsExpanded(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            that.IsExpanded = (global::System.Boolean)Value;
+        }
+        private object get_76_NavigationViewItem_MenuItems(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.MenuItems;
+        }
+        private object get_77_NavigationViewItem_MenuItemsSource(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.MenuItemsSource;
+        }
+        private void set_77_NavigationViewItem_MenuItemsSource(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            that.MenuItemsSource = (global::System.Object)Value;
+        }
+        private object get_78_NavigationViewItem_SelectsOnInvoked(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            return that.SelectsOnInvoked;
+        }
+        private void set_78_NavigationViewItem_SelectsOnInvoked(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItem)instance;
+            that.SelectsOnInvoked = (global::System.Boolean)Value;
+        }
+        private object get_79_NavigationViewItemBase_IsSelected(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase)instance;
+            return that.IsSelected;
+        }
+        private void set_79_NavigationViewItemBase_IsSelected(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.NavigationViewItemBase)instance;
+            that.IsSelected = (global::System.Boolean)Value;
+        }
+        private object get_80_PersonPicture_BadgeGlyph(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.BadgeGlyph;
+        }
+        private void set_80_PersonPicture_BadgeGlyph(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.BadgeGlyph = (global::System.String)Value;
+        }
+        private object get_81_PersonPicture_BadgeImageSource(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.BadgeImageSource;
+        }
+        private void set_81_PersonPicture_BadgeImageSource(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.BadgeImageSource = (global::Microsoft.UI.Xaml.Media.ImageSource)Value;
+        }
+        private object get_82_PersonPicture_BadgeNumber(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.BadgeNumber;
+        }
+        private void set_82_PersonPicture_BadgeNumber(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.BadgeNumber = (global::System.Int32)Value;
+        }
+        private object get_83_PersonPicture_BadgeText(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.BadgeText;
+        }
+        private void set_83_PersonPicture_BadgeText(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.BadgeText = (global::System.String)Value;
+        }
+        private object get_84_PersonPicture_Contact(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.Contact;
+        }
+        private void set_84_PersonPicture_Contact(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.Contact = (global::Windows.ApplicationModel.Contacts.Contact)Value;
+        }
+        private object get_85_PersonPicture_DisplayName(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.DisplayName;
+        }
+        private void set_85_PersonPicture_DisplayName(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.DisplayName = (global::System.String)Value;
+        }
+        private object get_86_PersonPicture_Initials(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.Initials;
+        }
+        private void set_86_PersonPicture_Initials(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.Initials = (global::System.String)Value;
+        }
+        private object get_87_PersonPicture_IsGroup(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.IsGroup;
+        }
+        private void set_87_PersonPicture_IsGroup(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.IsGroup = (global::System.Boolean)Value;
+        }
+        private object get_88_PersonPicture_PreferSmallImage(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.PreferSmallImage;
+        }
+        private void set_88_PersonPicture_PreferSmallImage(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.PreferSmallImage = (global::System.Boolean)Value;
+        }
+        private object get_89_PersonPicture_ProfilePicture(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.ProfilePicture;
+        }
+        private void set_89_PersonPicture_ProfilePicture(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            that.ProfilePicture = (global::Microsoft.UI.Xaml.Media.ImageSource)Value;
+        }
+        private object get_90_PersonPicture_TemplateSettings(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.PersonPicture)instance;
+            return that.TemplateSettings;
+        }
+        private object get_91_ProgressRing_IsActive(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            return that.IsActive;
+        }
+        private void set_91_ProgressRing_IsActive(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            that.IsActive = (global::System.Boolean)Value;
+        }
+        private object get_92_ProgressRing_IsIndeterminate(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            return that.IsIndeterminate;
+        }
+        private void set_92_ProgressRing_IsIndeterminate(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            that.IsIndeterminate = (global::System.Boolean)Value;
+        }
+        private object get_93_ProgressRing_Maximum(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            return that.Maximum;
+        }
+        private void set_93_ProgressRing_Maximum(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            that.Maximum = (global::System.Double)Value;
+        }
+        private object get_94_ProgressRing_Minimum(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            return that.Minimum;
+        }
+        private void set_94_ProgressRing_Minimum(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            that.Minimum = (global::System.Double)Value;
+        }
+        private object get_95_ProgressRing_TemplateSettings(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            return that.TemplateSettings;
+        }
+        private object get_96_ProgressRing_Value(object instance)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            return that.Value;
+        }
+        private void set_96_ProgressRing_Value(object instance, object Value)
+        {
+            var that = (global::Microsoft.UI.Xaml.Controls.ProgressRing)instance;
+            that.Value = (global::System.Double)Value;
         }
         private object get_97_TreeViewNode_Children(object instance)
         {
@@ -2556,247 +2556,247 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
                 xamlMember.Getter = get_61_NavigationView_TemplateSettings;
                 xamlMember.SetIsReadOnly();
                 break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.GradientStops":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "GradientStops", "Windows.Foundation.Collections.IObservableVector`1<Microsoft.UI.Xaml.Media.GradientStop>");
+                xamlMember.Getter = get_62_RadialGradientBrush_GradientStops;
+                xamlMember.SetIsReadOnly();
+                break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.Center":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Center", "Windows.Foundation.Point");
+                xamlMember.SetIsDependencyProperty();
+                xamlMember.Getter = get_63_RadialGradientBrush_Center;
+                xamlMember.Setter = set_63_RadialGradientBrush_Center;
+                break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.GradientOrigin":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "GradientOrigin", "Windows.Foundation.Point");
+                xamlMember.SetIsDependencyProperty();
+                xamlMember.Getter = get_64_RadialGradientBrush_GradientOrigin;
+                xamlMember.Setter = set_64_RadialGradientBrush_GradientOrigin;
+                break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.InterpolationSpace":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "InterpolationSpace", "Microsoft.UI.Composition.CompositionColorSpace");
+                xamlMember.SetIsDependencyProperty();
+                xamlMember.Getter = get_65_RadialGradientBrush_InterpolationSpace;
+                xamlMember.Setter = set_65_RadialGradientBrush_InterpolationSpace;
+                break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.MappingMode":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "MappingMode", "Microsoft.UI.Xaml.Media.BrushMappingMode");
+                xamlMember.SetIsDependencyProperty();
+                xamlMember.Getter = get_66_RadialGradientBrush_MappingMode;
+                xamlMember.Setter = set_66_RadialGradientBrush_MappingMode;
+                break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.RadiusX":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "RadiusX", "Double");
+                xamlMember.SetIsDependencyProperty();
+                xamlMember.Getter = get_67_RadialGradientBrush_RadiusX;
+                xamlMember.Setter = set_67_RadialGradientBrush_RadiusX;
+                break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.RadiusY":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "RadiusY", "Double");
+                xamlMember.SetIsDependencyProperty();
+                xamlMember.Getter = get_68_RadialGradientBrush_RadiusY;
+                xamlMember.Setter = set_68_RadialGradientBrush_RadiusY;
+                break;
+            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.SpreadMethod":
+                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
+                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "SpreadMethod", "Microsoft.UI.Xaml.Media.GradientSpreadMethod");
+                xamlMember.SetIsDependencyProperty();
+                xamlMember.Getter = get_69_RadialGradientBrush_SpreadMethod;
+                xamlMember.Setter = set_69_RadialGradientBrush_SpreadMethod;
+                break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.Icon":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Icon", "Microsoft.UI.Xaml.Controls.IconElement");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_62_NavigationViewItem_Icon;
-                xamlMember.Setter = set_62_NavigationViewItem_Icon;
+                xamlMember.Getter = get_70_NavigationViewItem_Icon;
+                xamlMember.Setter = set_70_NavigationViewItem_Icon;
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.CompactPaneLength":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "CompactPaneLength", "Double");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_63_NavigationViewItem_CompactPaneLength;
+                xamlMember.Getter = get_71_NavigationViewItem_CompactPaneLength;
                 xamlMember.SetIsReadOnly();
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.HasUnrealizedChildren":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "HasUnrealizedChildren", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_64_NavigationViewItem_HasUnrealizedChildren;
-                xamlMember.Setter = set_64_NavigationViewItem_HasUnrealizedChildren;
+                xamlMember.Getter = get_72_NavigationViewItem_HasUnrealizedChildren;
+                xamlMember.Setter = set_72_NavigationViewItem_HasUnrealizedChildren;
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.InfoBadge":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "InfoBadge", "Microsoft.UI.Xaml.Controls.InfoBadge");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_65_NavigationViewItem_InfoBadge;
-                xamlMember.Setter = set_65_NavigationViewItem_InfoBadge;
+                xamlMember.Getter = get_73_NavigationViewItem_InfoBadge;
+                xamlMember.Setter = set_73_NavigationViewItem_InfoBadge;
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.IsChildSelected":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "IsChildSelected", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_66_NavigationViewItem_IsChildSelected;
-                xamlMember.Setter = set_66_NavigationViewItem_IsChildSelected;
+                xamlMember.Getter = get_74_NavigationViewItem_IsChildSelected;
+                xamlMember.Setter = set_74_NavigationViewItem_IsChildSelected;
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.IsExpanded":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "IsExpanded", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_67_NavigationViewItem_IsExpanded;
-                xamlMember.Setter = set_67_NavigationViewItem_IsExpanded;
+                xamlMember.Getter = get_75_NavigationViewItem_IsExpanded;
+                xamlMember.Setter = set_75_NavigationViewItem_IsExpanded;
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.MenuItems":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "MenuItems", "System.Collections.Generic.IList`1<Object>");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_68_NavigationViewItem_MenuItems;
+                xamlMember.Getter = get_76_NavigationViewItem_MenuItems;
                 xamlMember.SetIsReadOnly();
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.MenuItemsSource":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "MenuItemsSource", "Object");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_69_NavigationViewItem_MenuItemsSource;
-                xamlMember.Setter = set_69_NavigationViewItem_MenuItemsSource;
+                xamlMember.Getter = get_77_NavigationViewItem_MenuItemsSource;
+                xamlMember.Setter = set_77_NavigationViewItem_MenuItemsSource;
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItem.SelectsOnInvoked":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItem");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "SelectsOnInvoked", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_70_NavigationViewItem_SelectsOnInvoked;
-                xamlMember.Setter = set_70_NavigationViewItem_SelectsOnInvoked;
+                xamlMember.Getter = get_78_NavigationViewItem_SelectsOnInvoked;
+                xamlMember.Setter = set_78_NavigationViewItem_SelectsOnInvoked;
                 break;
             case "Microsoft.UI.Xaml.Controls.NavigationViewItemBase.IsSelected":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.NavigationViewItemBase");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "IsSelected", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_71_NavigationViewItemBase_IsSelected;
-                xamlMember.Setter = set_71_NavigationViewItemBase_IsSelected;
+                xamlMember.Getter = get_79_NavigationViewItemBase_IsSelected;
+                xamlMember.Setter = set_79_NavigationViewItemBase_IsSelected;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.BadgeGlyph":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "BadgeGlyph", "String");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_72_PersonPicture_BadgeGlyph;
-                xamlMember.Setter = set_72_PersonPicture_BadgeGlyph;
+                xamlMember.Getter = get_80_PersonPicture_BadgeGlyph;
+                xamlMember.Setter = set_80_PersonPicture_BadgeGlyph;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.BadgeImageSource":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "BadgeImageSource", "Microsoft.UI.Xaml.Media.ImageSource");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_73_PersonPicture_BadgeImageSource;
-                xamlMember.Setter = set_73_PersonPicture_BadgeImageSource;
+                xamlMember.Getter = get_81_PersonPicture_BadgeImageSource;
+                xamlMember.Setter = set_81_PersonPicture_BadgeImageSource;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.BadgeNumber":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "BadgeNumber", "Int32");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_74_PersonPicture_BadgeNumber;
-                xamlMember.Setter = set_74_PersonPicture_BadgeNumber;
+                xamlMember.Getter = get_82_PersonPicture_BadgeNumber;
+                xamlMember.Setter = set_82_PersonPicture_BadgeNumber;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.BadgeText":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "BadgeText", "String");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_75_PersonPicture_BadgeText;
-                xamlMember.Setter = set_75_PersonPicture_BadgeText;
+                xamlMember.Getter = get_83_PersonPicture_BadgeText;
+                xamlMember.Setter = set_83_PersonPicture_BadgeText;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.Contact":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Contact", "Windows.ApplicationModel.Contacts.Contact");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_76_PersonPicture_Contact;
-                xamlMember.Setter = set_76_PersonPicture_Contact;
+                xamlMember.Getter = get_84_PersonPicture_Contact;
+                xamlMember.Setter = set_84_PersonPicture_Contact;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.DisplayName":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "DisplayName", "String");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_77_PersonPicture_DisplayName;
-                xamlMember.Setter = set_77_PersonPicture_DisplayName;
+                xamlMember.Getter = get_85_PersonPicture_DisplayName;
+                xamlMember.Setter = set_85_PersonPicture_DisplayName;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.Initials":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Initials", "String");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_78_PersonPicture_Initials;
-                xamlMember.Setter = set_78_PersonPicture_Initials;
+                xamlMember.Getter = get_86_PersonPicture_Initials;
+                xamlMember.Setter = set_86_PersonPicture_Initials;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.IsGroup":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "IsGroup", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_79_PersonPicture_IsGroup;
-                xamlMember.Setter = set_79_PersonPicture_IsGroup;
+                xamlMember.Getter = get_87_PersonPicture_IsGroup;
+                xamlMember.Setter = set_87_PersonPicture_IsGroup;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.PreferSmallImage":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "PreferSmallImage", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_80_PersonPicture_PreferSmallImage;
-                xamlMember.Setter = set_80_PersonPicture_PreferSmallImage;
+                xamlMember.Getter = get_88_PersonPicture_PreferSmallImage;
+                xamlMember.Setter = set_88_PersonPicture_PreferSmallImage;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.ProfilePicture":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "ProfilePicture", "Microsoft.UI.Xaml.Media.ImageSource");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_81_PersonPicture_ProfilePicture;
-                xamlMember.Setter = set_81_PersonPicture_ProfilePicture;
+                xamlMember.Getter = get_89_PersonPicture_ProfilePicture;
+                xamlMember.Setter = set_89_PersonPicture_ProfilePicture;
                 break;
             case "Microsoft.UI.Xaml.Controls.PersonPicture.TemplateSettings":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.PersonPicture");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "TemplateSettings", "Microsoft.UI.Xaml.Controls.PersonPictureTemplateSettings");
-                xamlMember.Getter = get_82_PersonPicture_TemplateSettings;
+                xamlMember.Getter = get_90_PersonPicture_TemplateSettings;
                 xamlMember.SetIsReadOnly();
                 break;
             case "Microsoft.UI.Xaml.Controls.ProgressRing.IsActive":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.ProgressRing");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "IsActive", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_83_ProgressRing_IsActive;
-                xamlMember.Setter = set_83_ProgressRing_IsActive;
+                xamlMember.Getter = get_91_ProgressRing_IsActive;
+                xamlMember.Setter = set_91_ProgressRing_IsActive;
                 break;
             case "Microsoft.UI.Xaml.Controls.ProgressRing.IsIndeterminate":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.ProgressRing");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "IsIndeterminate", "Boolean");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_84_ProgressRing_IsIndeterminate;
-                xamlMember.Setter = set_84_ProgressRing_IsIndeterminate;
+                xamlMember.Getter = get_92_ProgressRing_IsIndeterminate;
+                xamlMember.Setter = set_92_ProgressRing_IsIndeterminate;
                 break;
             case "Microsoft.UI.Xaml.Controls.ProgressRing.Maximum":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.ProgressRing");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Maximum", "Double");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_85_ProgressRing_Maximum;
-                xamlMember.Setter = set_85_ProgressRing_Maximum;
+                xamlMember.Getter = get_93_ProgressRing_Maximum;
+                xamlMember.Setter = set_93_ProgressRing_Maximum;
                 break;
             case "Microsoft.UI.Xaml.Controls.ProgressRing.Minimum":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.ProgressRing");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Minimum", "Double");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_86_ProgressRing_Minimum;
-                xamlMember.Setter = set_86_ProgressRing_Minimum;
+                xamlMember.Getter = get_94_ProgressRing_Minimum;
+                xamlMember.Setter = set_94_ProgressRing_Minimum;
                 break;
             case "Microsoft.UI.Xaml.Controls.ProgressRing.TemplateSettings":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.ProgressRing");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "TemplateSettings", "Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings");
-                xamlMember.Getter = get_87_ProgressRing_TemplateSettings;
+                xamlMember.Getter = get_95_ProgressRing_TemplateSettings;
                 xamlMember.SetIsReadOnly();
                 break;
             case "Microsoft.UI.Xaml.Controls.ProgressRing.Value":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.ProgressRing");
                 xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Value", "Double");
                 xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_88_ProgressRing_Value;
-                xamlMember.Setter = set_88_ProgressRing_Value;
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.GradientStops":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "GradientStops", "Windows.Foundation.Collections.IObservableVector`1<Microsoft.UI.Xaml.Media.GradientStop>");
-                xamlMember.Getter = get_89_RadialGradientBrush_GradientStops;
-                xamlMember.SetIsReadOnly();
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.GradientOrigin":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "GradientOrigin", "Windows.Foundation.Point");
-                xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_90_RadialGradientBrush_GradientOrigin;
-                xamlMember.Setter = set_90_RadialGradientBrush_GradientOrigin;
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.Center":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "Center", "Windows.Foundation.Point");
-                xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_91_RadialGradientBrush_Center;
-                xamlMember.Setter = set_91_RadialGradientBrush_Center;
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.InterpolationSpace":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "InterpolationSpace", "Microsoft.UI.Composition.CompositionColorSpace");
-                xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_92_RadialGradientBrush_InterpolationSpace;
-                xamlMember.Setter = set_92_RadialGradientBrush_InterpolationSpace;
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.MappingMode":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "MappingMode", "Microsoft.UI.Xaml.Media.BrushMappingMode");
-                xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_93_RadialGradientBrush_MappingMode;
-                xamlMember.Setter = set_93_RadialGradientBrush_MappingMode;
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.RadiusX":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "RadiusX", "Double");
-                xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_94_RadialGradientBrush_RadiusX;
-                xamlMember.Setter = set_94_RadialGradientBrush_RadiusX;
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.RadiusY":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "RadiusY", "Double");
-                xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_95_RadialGradientBrush_RadiusY;
-                xamlMember.Setter = set_95_RadialGradientBrush_RadiusY;
-                break;
-            case "Microsoft.UI.Xaml.Media.RadialGradientBrush.SpreadMethod":
-                userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Media.RadialGradientBrush");
-                xamlMember = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlMember(this, "SpreadMethod", "Microsoft.UI.Xaml.Media.GradientSpreadMethod");
-                xamlMember.SetIsDependencyProperty();
-                xamlMember.Getter = get_96_RadialGradientBrush_SpreadMethod;
-                xamlMember.Setter = set_96_RadialGradientBrush_SpreadMethod;
+                xamlMember.Getter = get_96_ProgressRing_Value;
+                xamlMember.Setter = set_96_ProgressRing_Value;
                 break;
             case "Microsoft.UI.Xaml.Controls.TreeViewNode.Children":
                 userType = (global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType)GetXamlTypeByName("Microsoft.UI.Xaml.Controls.TreeViewNode");

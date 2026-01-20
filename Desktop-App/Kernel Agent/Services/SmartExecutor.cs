@@ -771,13 +771,6 @@ namespace Kernel_Agent.Services
                     result.Success = true;
                     break;
 
-                // ===== WAIT/DELAY =====
-                case "wait":
-                    int waitMs = step.TryGetProperty("duration", out var durEl) ? durEl.GetInt32() * 1000 : 2000;
-                    await Task.Delay(waitMs);
-                    result.Success = true;
-                    break;
-
                 // ===== YOUTUBE SHORTCUTS =====
                 case "youtube_skip_ad":
                     // Skip ad: Tab to focus skip button, then Enter
@@ -1322,7 +1315,7 @@ namespace Kernel_Agent.Services
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
         
-        private string GetForegroundWindowTitle()
+        public string GetForegroundWindowTitle()
         {
             try
             {
