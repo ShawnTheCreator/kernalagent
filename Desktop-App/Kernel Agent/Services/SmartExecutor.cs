@@ -1018,6 +1018,27 @@ namespace Kernel_Agent.Services
                     break;
             }
 
+            // ==== SKILL RECORDING HOOK ====
+            // If SkillRecorder is actively recording, capture this action
+            if (result.Success && SkillRecorder.Instance.IsRecording)
+            {
+                var parameters = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "action", action }
+                };
+                
+                // Capture relevant parameters based on action type
+                if (step.TryGetProperty("target", out var t)) parameters["target"] = t.GetString() ?? "";
+                if (step.TryGetProperty("content", out var c)) parameters["content"] = c.GetString() ?? "";
+                if (step.TryGetProperty("url", out var u)) parameters["url"] = u.GetString() ?? "";
+                if (step.TryGetProperty("x", out var x)) parameters["x"] = x.GetInt32();
+                if (step.TryGetProperty("y", out var y)) parameters["y"] = y.GetInt32();
+                if (step.TryGetProperty("amount", out var a)) parameters["amount"] = a.GetInt32();
+                
+                SkillRecorder.Instance.RecordAction(action, parameters);
+                Debug.WriteLine($"[EXECUTOR] Recorded to skill: {action}");
+            }
+
             return result;
         }
 
