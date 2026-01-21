@@ -1027,13 +1027,19 @@ namespace Kernel_Agent.Services
                     { "action", action }
                 };
                 
-                // Capture relevant parameters based on action type
-                if (step.TryGetProperty("target", out var t)) parameters["target"] = t.GetString() ?? "";
-                if (step.TryGetProperty("content", out var c)) parameters["content"] = c.GetString() ?? "";
-                if (step.TryGetProperty("url", out var u)) parameters["url"] = u.GetString() ?? "";
-                if (step.TryGetProperty("x", out var x)) parameters["x"] = x.GetInt32();
-                if (step.TryGetProperty("y", out var y)) parameters["y"] = y.GetInt32();
-                if (step.TryGetProperty("amount", out var a)) parameters["amount"] = a.GetInt32();
+                // Capture relevant parameters based on action type (with null checks)
+                if (step.TryGetProperty("target", out var t) && t.ValueKind == JsonValueKind.String) 
+                    parameters["target"] = t.GetString() ?? "";
+                if (step.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String) 
+                    parameters["content"] = c.GetString() ?? "";
+                if (step.TryGetProperty("url", out var u) && u.ValueKind == JsonValueKind.String) 
+                    parameters["url"] = u.GetString() ?? "";
+                if (step.TryGetProperty("x", out var x) && x.ValueKind == JsonValueKind.Number) 
+                    parameters["x"] = x.GetInt32();
+                if (step.TryGetProperty("y", out var y) && y.ValueKind == JsonValueKind.Number) 
+                    parameters["y"] = y.GetInt32();
+                if (step.TryGetProperty("amount", out var a) && a.ValueKind == JsonValueKind.Number) 
+                    parameters["amount"] = a.GetInt32();
                 
                 SkillRecorder.Instance.RecordAction(action, parameters);
                 Debug.WriteLine($"[EXECUTOR] Recorded to skill: {action}");
