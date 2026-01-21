@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -325,11 +326,63 @@ namespace Kernel_Agent.Services
         
         // ===== PRIVATE HELPERS =====
         
+        private static readonly HttpClient _httpClient = new HttpClient();
+        private const string API_BASE_URL = "http://localhost:8000";
+        
         private void SaveSkill(Skill skill)
         {
+            // Save locally first
             var path = GetSkillPath(skill.Name);
             var json = JsonSerializer.Serialize(skill, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, json);
+            Debug.WriteLine($"[SKILL] Saved locally: {path}");
+            
+            // Sync to Firebase asynchronously (fire-and-forget)
+            Task.Run(async () => await SyncSkillToFirebaseAsync(skill));
+        }
+        
+        private async Task SyncSkillToFirebaseAsync(Skill skill)
+        {
+            try
+            {
+                // Convert actions to API format
+                var steps = skill.Actions.Select(a => new Dictionary<string, object?>
+                {
+                    { "action", a.Action },
+                    { "parameters", a.Parameters },
+                    { "timestamp", a.Timestamp.ToString("o") },
+                    { "delay", a.DelayFromPrevious }
+                }).ToList();
+                
+                var payload = new
+                {
+                    name = skill.Name,
+                    description = skill.Description,
+                    steps = steps
+                };
+                
+                var content = new StringContent(
+                    JsonSerializer.Serialize(payload),
+                    System.Text.Encoding.UTF8,
+                    "application/json"
+                );
+                
+                var response = await _httpClient.PostAsync($"{API_BASE_URL}/api/skills", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    Debug.WriteLine($"[SKILL] ☁ Synced to Firebase: {skill.Name}");
+                }
+                else
+                {
+                    Debug.WriteLine($"[SKILL] ⚠ Firebase sync failed: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SKILL] ⚠ Firebase sync error: {ex.Message}");
+                // Local save still succeeded, so don't throw
+            }
         }
         
         private Skill? LoadSkill(string skillName)
