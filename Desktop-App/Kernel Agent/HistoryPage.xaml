@@ -10,36 +10,36 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="{StaticResource CardBackgroundBrush}" 
-                CornerRadius="{StaticResource LargeRadius}" Padding="20" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+        <Border Grid.Column="0" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
+                CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="EXECUTION HISTORY" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" CharacterSpacing="100" Margin="0,0,0,16"/>
+                <TextBlock Text="EXECUTION HISTORY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource GoogleBlue}" CharacterSpacing="100" Margin="0,0,0,15"/>
 
                 <ListView Grid.Row="1" SelectionMode="Single">
                     <ListViewItem>
                         <StackPanel Padding="5">
                             <TextBlock Text="Automated Payroll Export" FontWeight="SemiBold"/>
-                            <TextBlock Text="Success • 2m ago" FontSize="12" Foreground="{StaticResource SuccessBrush}"/>
+                            <TextBlock Text="Success • 2m ago" FontSize="12" Foreground="{StaticResource GoogleGreen}"/>
                         </StackPanel>
                     </ListViewItem>
                     <ListViewItem>
                         <StackPanel Padding="5">
                             <TextBlock Text="Sort Downloads Folder" FontWeight="SemiBold"/>
-                            <TextBlock Text="Failed • 1h ago" FontSize="12" Foreground="{StaticResource ErrorBrush}"/>
+                            <TextBlock Text="Failed • 1h ago" FontSize="12" Foreground="{StaticResource GoogleRed}"/>
                         </StackPanel>
                     </ListViewItem>
                 </ListView>
             </Grid>
         </Border>
 
-        <Border Grid.Column="1" Margin="16,0,0,0" CornerRadius="{StaticResource LargeRadius}" 
-                Background="{StaticResource SurfaceBackgroundBrush}"
-                BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+        <Border Grid.Column="1" Margin="12,0,0,0" CornerRadius="12" 
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
             <Grid Padding="30">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -48,25 +48,25 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,0,0,30">
-                    <FontIcon Glyph="&#xE7BA;" FontSize="36" Foreground="{StaticResource WarningBrush}"/>
+                    <FontIcon Glyph="&#xE7BA;" FontSize="40" Foreground="{StaticResource GoogleRed}"/>
                     <StackPanel>
-                        <TextBlock Text="Task Failed: Sort Downloads" FontSize="22" FontWeight="SemiBold"/>
-                        <TextBlock Text="Error: System.UIElementNotFound - 'Sort' button not visible." Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="Task Failed: Sort Downloads" FontSize="24" FontWeight="Bold"/>
+                        <TextBlock Text="Error: System.UIElementNotFound - 'Sort' button not visible." Opacity="0.6"/>
                     </StackPanel>
                 </StackPanel>
 
-                <TextBlock Grid.Row="1" Text="AI REASONING TRACE" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,12" Foreground="{StaticResource TextMutedBrush}" CharacterSpacing="80"/>
+                <TextBlock Grid.Row="1" Text="AI REASONING TRACE" FontSize="10" FontWeight="Bold" Margin="0,0,0,10" Opacity="0.5"/>
 
                 <ScrollViewer Grid.Row="2">
                     <StackPanel Spacing="10">
-                        <Border Background="{StaticResource CardBackgroundBrush}" Padding="16" CornerRadius="{StaticResource SmallRadius}">
+                        <Border Background="#1AFFFFFF" Padding="15" CornerRadius="8">
                             <TextBlock Text="Step 1: Successfully located Downloads folder via File Explorer." FontSize="13"/>
                         </Border>
-                        <Border Background="{StaticResource CardBackgroundBrush}" Padding="16" CornerRadius="{StaticResource SmallRadius}">
+                        <Border Background="#1AFFFFFF" Padding="15" CornerRadius="8">
                             <TextBlock Text="Step 2: Attempted to find 'Sort' dropdown. Element was obscured by a Windows Update notification." FontSize="13"/>
                         </Border>
-                        <Border BorderBrush="{StaticResource ErrorBrush}" Background="#0DEF4444" BorderThickness="1" Padding="16" CornerRadius="{StaticResource SmallRadius}">
-                            <TextBlock Text="Self-Correction: Attempting to close notification... [FAIL]" FontSize="13" Foreground="{StaticResource ErrorBrush}"/>
+                        <Border BorderBrush="{StaticResource GoogleRed}" BorderThickness="1" Padding="15" CornerRadius="8">
+                            <TextBlock Text="Self-Correction: Attempting to close notification... [FAIL]" FontSize="13" Foreground="{StaticResource GoogleRed}"/>
                         </Border>
                     </StackPanel>
                 </ScrollViewer>

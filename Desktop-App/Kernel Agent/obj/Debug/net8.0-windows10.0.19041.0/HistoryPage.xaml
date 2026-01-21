@@ -20,16 +20,16 @@
 
                 <TextBlock Text="EXECUTION HISTORY" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" CharacterSpacing="100" Margin="0,0,0,16"/>
 
-                <ListView Grid.Row="1" SelectionMode="Single">
+                <ListView Grid.Row="1" SelectionMode="Single" Background="Transparent">
                     <ListViewItem>
                         <StackPanel Padding="5">
-                            <TextBlock Text="Automated Payroll Export" FontWeight="SemiBold"/>
+                            <TextBlock Text="Automated Payroll Export" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                             <TextBlock Text="Success • 2m ago" FontSize="12" Foreground="{StaticResource SuccessBrush}"/>
                         </StackPanel>
                     </ListViewItem>
                     <ListViewItem>
                         <StackPanel Padding="5">
-                            <TextBlock Text="Sort Downloads Folder" FontWeight="SemiBold"/>
+                            <TextBlock Text="Sort Downloads Folder" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                             <TextBlock Text="Failed • 1h ago" FontSize="12" Foreground="{StaticResource ErrorBrush}"/>
                         </StackPanel>
                     </ListViewItem>
@@ -50,7 +50,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,0,0,30">
                     <FontIcon Glyph="&#xE7BA;" FontSize="36" Foreground="{StaticResource WarningBrush}"/>
                     <StackPanel>
-                        <TextBlock Text="Task Failed: Sort Downloads" FontSize="22" FontWeight="SemiBold"/>
+                        <TextBlock Text="Task Failed: Sort Downloads" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                         <TextBlock Text="Error: System.UIElementNotFound - 'Sort' button not visible." Foreground="{StaticResource TextMutedBrush}"/>
                     </StackPanel>
                 </StackPanel>
@@ -60,12 +60,15 @@
                 <ScrollViewer Grid.Row="2">
                     <StackPanel Spacing="10">
                         <Border Background="{StaticResource CardBackgroundBrush}" Padding="16" CornerRadius="{StaticResource SmallRadius}">
-                            <TextBlock Text="Step 1: Successfully located Downloads folder via File Explorer." FontSize="13"/>
+                            <TextBlock Text="Step 1: Successfully located Downloads folder via File Explorer." FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
                         </Border>
                         <Border Background="{StaticResource CardBackgroundBrush}" Padding="16" CornerRadius="{StaticResource SmallRadius}">
-                            <TextBlock Text="Step 2: Attempted to find 'Sort' dropdown. Element was obscured by a Windows Update notification." FontSize="13"/>
+                            <TextBlock Text="Step 2: Attempted to find 'Sort' dropdown. Element was obscured by a Windows Update notification." FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
                         </Border>
-                        <Border BorderBrush="{StaticResource ErrorBrush}" Background="#0DEF4444" BorderThickness="1" Padding="16" CornerRadius="{StaticResource SmallRadius}">
+                        <Border BorderBrush="{StaticResource ErrorBrush}" BorderThickness="1" Padding="16" CornerRadius="{StaticResource SmallRadius}">
+                            <Border.Background>
+                                <SolidColorBrush Color="{StaticResource StatusError}" Opacity="0.1"/>
+                            </Border.Background>
                             <TextBlock Text="Self-Correction: Attempting to close notification... [FAIL]" FontSize="13" Foreground="{StaticResource ErrorBrush}"/>
                         </Border>
                     </StackPanel>

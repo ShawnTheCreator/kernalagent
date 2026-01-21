@@ -12,13 +12,13 @@
         </Grid.ColumnDefinitions>
 
         <!-- Skills List Panel -->
-        <Border Grid.Column="0" Background="{StaticResource CardBackgroundBrush}" 
-                CornerRadius="{StaticResource LargeRadius}" Padding="20" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+        <Border Grid.Column="0" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
+                CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
             <Grid RowDefinitions="Auto, *, Auto">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="LEARNED SKILLS" FontSize="11" FontWeight="SemiBold" 
-                               Foreground="{StaticResource AccentBrush}" CharacterSpacing="100"/>
-                    <TextBlock x:Name="SkillsCountText" Text="Loading..." FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="LEARNED SKILLS" FontSize="11" FontWeight="Bold" 
+                               Foreground="{StaticResource GeminiPurpleBrush}" CharacterSpacing="100"/>
+                    <TextBlock x:Name="SkillsCountText" Text="Loading..." FontSize="12" Opacity="0.6"/>
                 </StackPanel>
 
                 <!-- Skills ListView -->
@@ -27,9 +27,9 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Padding="8" ColumnDefinitions="Auto, *, Auto">
-                                <Border Width="36" Height="36" CornerRadius="{StaticResource SmallRadius}" Background="#0D6366F1">
+                                <Border Width="36" Height="36" CornerRadius="8" Background="#1A8E75FF">
                                     <FontIcon Glyph="&#xE945;" FontSize="16" 
-                                              Foreground="{StaticResource AccentBrush}"
+                                              Foreground="{StaticResource GeminiPurpleBrush}"
                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
@@ -39,8 +39,8 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                                     <TextBlock Text="{Binding SuccessCount}" FontSize="14" FontWeight="Bold" 
-                                               Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Right"/>
-                                    <TextBlock Text="uses" FontSize="10" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                               Foreground="{StaticResource GoogleGreen}" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="uses" FontSize="10" Opacity="0.5" HorizontalAlignment="Right"/>
                                 </StackPanel>
                             </Grid>
                         </DataTemplate>
@@ -58,9 +58,9 @@
         </Border>
 
         <!-- Skill Details / Neural Map Panel -->
-        <Border Grid.Column="1" Margin="16,0,0,0" CornerRadius="{StaticResource LargeRadius}" 
-                Background="{StaticResource SurfaceBackgroundBrush}"
-                BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+        <Border Grid.Column="1" Margin="12,0,0,0" CornerRadius="12" 
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
             <Grid>
                 <!-- Neural Canvas (visualization) -->
                 <Canvas x:Name="NeuralCanvas"/>
@@ -68,26 +68,26 @@
                 <!-- Selected Skill Details -->
                 <Grid x:Name="SkillDetailsPanel" Visibility="Collapsed" Padding="30">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="15">
-                        <Border Width="80" Height="80" CornerRadius="20" Background="#0D6366F1">
+                        <Border Width="80" Height="80" CornerRadius="20" Background="#1A8E75FF">
                             <FontIcon Glyph="&#xE945;" FontSize="40" 
-                                      Foreground="{StaticResource AccentBrush}"
+                                      Foreground="{StaticResource GeminiPurpleBrush}"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock x:Name="DetailSkillName" Text="" FontSize="24" FontWeight="Bold" 
                                    HorizontalAlignment="Center"/>
-                        <TextBlock x:Name="DetailSkillIntent" Text="" FontSize="14" Foreground="{StaticResource TextMutedBrush}" 
+                        <TextBlock x:Name="DetailSkillIntent" Text="" FontSize="14" Opacity="0.7" 
                                    HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="400"/>
                         
                         <Grid ColumnDefinitions="*, *, *" ColumnSpacing="30" Margin="0,20,0,0">
                             <StackPanel HorizontalAlignment="Center">
                                 <TextBlock x:Name="DetailConfidence" Text="0%" FontSize="28" FontWeight="Bold" 
-                                           Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Confidence" FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                                           Foreground="{StaticResource GoogleGreen}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Confidence" FontSize="12" Opacity="0.5" HorizontalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel HorizontalAlignment="Center">
                                 <TextBlock x:Name="DetailSuccessCount" Text="0" FontSize="28" FontWeight="Bold" 
-                                           Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Uses" FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                                           Foreground="{StaticResource GoogleBlue}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Uses" FontSize="12" Opacity="0.5" HorizontalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel HorizontalAlignment="Center">
                                 <TextBlock x:Name="DetailLastUsed" Text="-" FontSize="16" FontWeight="SemiBold" 
@@ -107,7 +107,7 @@
                 </StackPanel>
 
                 <TextBlock Text="NEURAL KNOWLEDGE GRAPH" VerticalAlignment="Top" HorizontalAlignment="Center" 
-                           Margin="0,20,0,0" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" CharacterSpacing="80"/>
+                           Margin="0,20,0,0" FontWeight="SemiBold" Opacity="0.4"/>
             </Grid>
         </Border>
     </Grid>

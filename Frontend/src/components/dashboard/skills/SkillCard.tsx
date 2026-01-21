@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Trash2, Edit2 } from 'lucide-react';
+import { Trash2, Edit2, Play } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/mockApi';
 import type { Skill } from '@/stores/dashboardStore';
 
@@ -9,9 +9,10 @@ interface SkillCardProps {
     skill: Skill;
     onDelete?: () => void;
     onEdit?: () => void;
+    onPlay?: () => void;
 }
 
-export function SkillCard({ skill, onDelete, onEdit }: SkillCardProps) {
+export function SkillCard({ skill, onDelete, onEdit, onPlay }: SkillCardProps) {
     const confidenceColors = {
         high: 'bg-emerald-400',
         medium: 'bg-amber-400',
@@ -38,8 +39,17 @@ export function SkillCard({ skill, onDelete, onEdit }: SkillCardProps) {
             className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4 hover:border-white/10 transition-colors group relative"
         >
             {/* Action buttons (visible on hover or always on mobile) */}
-            {(onDelete || onEdit) && (
+            {(onDelete || onEdit || onPlay) && (
                 <div className="absolute top-2 right-2 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    {onPlay && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onPlay(); }}
+                            className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+                            title="Run skill"
+                        >
+                            <Play size={12} />
+                        </button>
+                    )}
                     {onEdit && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onEdit(); }}

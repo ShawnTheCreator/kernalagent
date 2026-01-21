@@ -49,7 +49,8 @@
         <NavigationView x:ConnectionId='3' Grid.Row="1" x:Name="NavView" 
                         PaneDisplayMode="LeftCompact"
                                                                    
-                        Visibility="Collapsed">
+                        Visibility="Collapsed"
+                        Background="{x:Null}">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
                 <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
@@ -72,13 +73,17 @@
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border CornerRadius="{StaticResource LargeRadius}" Background="{StaticResource CardBackgroundBrush}" Margin="0,0,12,0" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+                    <Border CornerRadius="{StaticResource LargeRadius}" Background="{StaticResource SurfaceBackgroundBrush}" Margin="0,0,12,0" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
                         <Grid>
                             <Image x:ConnectionId='20' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
                             <Canvas x:ConnectionId='21' x:Name="AiOverlayCanvas"/>
                             <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
-                                <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="{StaticResource SuccessBrush}" FontWeight="SemiBold" FontSize="12" CharacterSpacing="80"/>
-                                <TextBlock Text="Target: Microsoft Excel" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <Border Background="#CC000000" CornerRadius="4" Padding="8,4">
+                                    <StackPanel>
+                                        <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="{StaticResource SuccessBrush}" FontWeight="SemiBold" FontSize="12" CharacterSpacing="80"/>
+                                        <TextBlock Text="Target: Microsoft Excel" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -94,7 +99,7 @@
 
                             <!-- Step Progress Panel -->
                             <Border x:ConnectionId='12' x:Name="StepProgressPanel" 
-                                    CornerRadius="8" 
+                                    CornerRadius="{StaticResource MediumRadius}" 
                                     Background="#1A6366F1" 
                                     Padding="12" 
                                     Margin="0,0,0,12"
@@ -185,15 +190,7 @@
         </NavigationView>
 
         <!-- Separate Login/Welcome Home Screen -->
-        <Grid x:ConnectionId='4' Grid.Row="1" x:Name="LoginOverlay" Visibility="Visible">
-            <!-- Gradient Background -->
-            <Grid.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#0A0A0A" Offset="0"/>
-                    <GradientStop Color="#151520" Offset="0.5"/>
-                    <GradientStop Color="#0A0A15" Offset="1"/>
-                </LinearGradientBrush>
-            </Grid.Background>
+        <Grid x:ConnectionId='4' Grid.Row="1" x:Name="LoginOverlay" Visibility="Visible" Background="{StaticResource PageBackground}">
             
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="400">
                 <!-- Logo with Glow Effect -->
@@ -201,7 +198,7 @@
                     <Ellipse Width="140" Height="140" Opacity="0.15">
                         <Ellipse.Fill>
                             <RadialGradientBrush>
-                                <GradientStop Color="#6366F1" Offset="0"/>
+                                <GradientStop Color="{StaticResource AccentPrimary}" Offset="0"/>
                                 <GradientStop Color="Transparent" Offset="1"/>
                             </RadialGradientBrush>
                         </Ellipse.Fill>
@@ -271,11 +268,11 @@
                     <!-- Animated Spinner -->
                     <Grid Width="80" Height="80">
                         <Ellipse Width="80" Height="80" 
-                                 Stroke="#8E75FF" StrokeThickness="4" 
+                                 Stroke="{StaticResource AccentSecondaryBrush}" StrokeThickness="4" 
                                  Opacity="0.3"/>
                         <Ellipse x:ConnectionId='7' x:Name="SpinnerRing" 
                                  Width="80" Height="80" 
-                                 Stroke="#8E75FF" 
+                                 Stroke="{StaticResource AccentBrush}" 
                                  StrokeThickness="4"
                                  StrokeDashArray="50 200"
                                  RenderTransformOrigin="0.5,0.5">
@@ -296,7 +293,7 @@
                                    Text="Waiting for login..." 
                                    FontSize="14" 
                                    HorizontalAlignment="Center"
-                                   Foreground="#AAAAAA"/>
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>

@@ -12,7 +12,7 @@
 
             <StackPanel Spacing="8" Margin="0,0,0,16">
                 <TextBlock Text="SECURITY &amp; PRIVACY VAULT" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ErrorBrush}" CharacterSpacing="50"/>
-                <TextBlock Text="Configure the ethical and operational boundaries of your agent." Foreground="{StaticResource TextMutedBrush}" FontSize="14"/>
+                <TextBlock Text="Configure the ethical and operational boundaries of your agent." Foreground="{StaticResource TextSecondaryBrush}" FontSize="14"/>
             </StackPanel>
 
             <Grid ColumnDefinitions="*, *" ColumnSpacing="20">
@@ -23,7 +23,7 @@
                         <StackPanel Spacing="16">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <FontIcon Glyph="&#xE72E;" Foreground="{StaticResource ErrorBrush}"/>
-                                <TextBlock Text="Application Blacklist" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="Application Blacklist" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                             </StackPanel>
 
                             <TextBlock Text="The agent will immediately terminate its session if these windows become active." FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
@@ -31,19 +31,19 @@
                             <ListView SelectionMode="None" Background="Transparent">
                                 <ListViewItem>
                                     <Grid ColumnDefinitions="*, Auto" Width="350">
-                                        <TextBlock Text="Banking (Chrome/Edge Tabs)" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Banking (Chrome/Edge Tabs)" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                                         <ToggleSwitch Grid.Column="1" IsOn="True" OnContent="Protected" OffContent="Open"/>
                                     </Grid>
                                 </ListViewItem>
                                 <ListViewItem>
                                     <Grid ColumnDefinitions="*, Auto" Width="350">
-                                        <TextBlock Text="Password Managers" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Password Managers" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                                         <ToggleSwitch Grid.Column="1" IsOn="True" OnContent="Protected" OffContent="Open"/>
                                     </Grid>
                                 </ListViewItem>
                                 <ListViewItem>
                                     <Grid ColumnDefinitions="*, Auto" Width="350">
-                                        <TextBlock Text="Private Messaging (Slack/Discord)" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Private Messaging (Slack/Discord)" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                                         <ToggleSwitch Grid.Column="1" IsOn="False" OnContent="Protected" OffContent="Open"/>
                                     </Grid>
                                 </ListViewItem>
@@ -51,7 +51,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Button Content="Add Restricted Application" HorizontalAlignment="Stretch" Padding="10"/>
+                    <Button Content="Add Restricted Application" HorizontalAlignment="Stretch" Padding="10" Background="{StaticResource SurfaceBackgroundBrush}"/>
                 </StackPanel>
 
                 <StackPanel Spacing="20">
@@ -60,17 +60,20 @@
                         <StackPanel Spacing="16">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <FontIcon Glyph="&#xE81D;" Foreground="{StaticResource WarningBrush}"/>
-                                <TextBlock Text="Gaze Masking &amp; PII" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="Gaze Masking &amp; PII" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                             </StackPanel>
 
-                            <ToggleSwitch Header="Auto-blur password fields in memory" IsOn="True" />
-                            <ToggleSwitch Header="Scrub Credit Card numbers from logs" IsOn="True" />
-                            <ToggleSwitch Header="Enable Human-in-the-loop for payments" IsOn="True" />
-                            <ToggleSwitch Header="Log keyboard input during active tasks" IsOn="False" />
+                            <ToggleSwitch Header="Auto-blur password fields in memory" IsOn="True" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <ToggleSwitch Header="Scrub Credit Card numbers from logs" IsOn="True" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <ToggleSwitch Header="Enable Human-in-the-loop for payments" IsOn="True" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <ToggleSwitch Header="Log keyboard input during active tasks" IsOn="False" Foreground="{StaticResource TextPrimaryBrush}"/>
                         </StackPanel>
                     </Border>
 
-                    <Border Background="#0DEF4444" CornerRadius="{StaticResource LargeRadius}" Padding="20" BorderThickness="1" BorderBrush="#33EF4444">
+                    <Border CornerRadius="{StaticResource LargeRadius}" Padding="20" BorderThickness="1" BorderBrush="{StaticResource ErrorBrush}">
+                         <Border.Background>
+                            <SolidColorBrush Color="{StaticResource StatusError}" Opacity="0.1"/>
+                        </Border.Background>
                         <StackPanel Spacing="12">
                             <TextBlock Text="Danger Zone" FontWeight="SemiBold" Foreground="{StaticResource ErrorBrush}"/>
                             <TextBlock Text="Irreversibly wipe the neural database and local skills." FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>

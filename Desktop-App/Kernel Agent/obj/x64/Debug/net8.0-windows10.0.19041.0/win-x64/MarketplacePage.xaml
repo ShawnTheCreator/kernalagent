@@ -5,42 +5,39 @@
     xmlns:local="using:Kernel_Agent">
 
     <Grid Padding="24">
-        <StackPanel Spacing="32">
-            <!-- Hero Header -->
-            <Border CornerRadius="16" Background="#8E75FF" Padding="32" Margin="0,0,0,24">
-                <StackPanel>
-                    <TextBlock Text="Neural Marketplace" FontSize="28" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="Discover, install, and manage neural skills and extensions." FontSize="16" Foreground="#F3F3F3" Margin="0,8,0,0"/>
-                </StackPanel>
-            </Border>
-            <!-- Featured Apps Grid -->
-            <TextBlock Text="Featured" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
-            <ItemsControl x:ConnectionId='2' x:Name="MarketplaceFeaturedItemsControl">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border CornerRadius="12" Background="#222" Margin="8" Padding="16" Width="200" Height="140">
-                            <StackPanel>
-                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16"/>
-                                <TextBlock Text="{Binding Description}" FontSize="12" Opacity="0.7" Margin="0,4,0,0"/>
-                                <Button Content="Install" Margin="0,10,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <!-- Call to Action -->
-            <Border CornerRadius="12" Background="#333" Padding="24" Margin="0,32,0,0">
-                <StackPanel>
-                    <TextBlock Text="Want to publish your own neural skill?" FontSize="16" FontWeight="SemiBold" Foreground="#8E75FF"/>
-                    <Button Content="Become a Publisher" HorizontalAlignment="Left" Margin="0,12,0,0"/>
-                </StackPanel>
-            </Border>
-        </StackPanel>
+        <ScrollViewer>
+            <StackPanel Spacing="32">
+                <!-- Hero Header -->
+                <Border CornerRadius="{StaticResource LargeRadius}" Background="{StaticResource GeminiGradient}" Padding="32" Margin="0,0,0,24">
+                    <StackPanel>
+                        <TextBlock Text="Neural Marketplace" FontSize="28" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="Discover, install, and manage neural skills and extensions." FontSize="16" Foreground="#F3F3F3" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+                <!-- Featured Apps Grid -->
+                <TextBlock Text="Featured" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8" Foreground="{StaticResource TextPrimaryBrush}"/>
+                <GridView x:ConnectionId='2' x:Name="MarketplaceFeaturedItemsControl" SelectionMode="None">
+                    <GridView.ItemTemplate>
+                        <DataTemplate>
+                            <Border CornerRadius="{StaticResource MediumRadius}" Background="{StaticResource CardBackgroundBrush}" Margin="0,0,16,16" Padding="20" Width="240" Height="160" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+                                    <Button Content="Install" Margin="0,16,0,0" HorizontalAlignment="Left" Background="{StaticResource SurfaceBackgroundBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </GridView.ItemTemplate>
+                </GridView>
+                <!-- Call to Action -->
+                <Border CornerRadius="{StaticResource MediumRadius}" Background="{StaticResource SurfaceBackgroundBrush}" Padding="24" Margin="0,12,0,0" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+                    <StackPanel>
+                        <TextBlock Text="Want to publish your own neural skill?" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                        <Button Content="Become a Publisher" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>
 
