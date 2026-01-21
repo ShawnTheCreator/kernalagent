@@ -1020,7 +1020,9 @@ namespace Kernel_Agent.Services
 
             // ==== SKILL RECORDING HOOK ====
             // If SkillRecorder is actively recording, capture this action
-            if (result.Success && SkillRecorder.Instance.IsRecording)
+            // Skip skill management actions - don't record start/stop/play commands
+            var skipActions = new[] { "start_recording", "stop_recording", "play_skill", "list_skills" };
+            if (result.Success && SkillRecorder.Instance.IsRecording && !skipActions.Contains(action))
             {
                 var parameters = new System.Collections.Generic.Dictionary<string, object>
                 {

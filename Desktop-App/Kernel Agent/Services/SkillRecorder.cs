@@ -156,9 +156,20 @@ namespace Kernel_Agent.Services
             Debug.WriteLine($"[SKILL] ▶ Playing skill: '{skill.Name}' ({skill.Actions.Count} actions)");
             
             var executor = new SmartExecutor();
+            int actionIndex = 0;
             
             foreach (var action in skill.Actions)
             {
+                actionIndex++;
+                
+                // Skip skill management actions during playback
+                if (action.Action == "start_recording" || action.Action == "stop_recording" ||
+                    action.Action == "play_skill" || action.Action == "list_skills")
+                {
+                    Debug.WriteLine($"[SKILL] Skipping management action: {action.Action}");
+                    continue;
+                }
+                
                 // Apply variable substitutions
                 var parameters = ApplyVariables(action.Parameters, variables);
                 
@@ -177,18 +188,33 @@ namespace Kernel_Agent.Services
                 // Execute with timing from recording
                 if (action.DelayFromPrevious > 100)
                 {
-                    await Task.Delay(Math.Min(action.DelayFromPrevious, 2000)); // Cap at 2 seconds
+                    int delay = Math.Min(action.DelayFromPrevious, 2000); // Cap at 2 seconds
+                    Debug.WriteLine($"[SKILL] Waiting {delay}ms before action...");
+                    await Task.Delay(delay);
                 }
                 
-                // Execute the action
-                Debug.WriteLine($"[SKILL] Executing: {action.Action}");
-                // Note: Individual action execution would go through SmartExecutor
+                // Execute the action via SmartExecutor
+                Debug.WriteLine($"[SKILL] Executing [{actionIndex}/{skill.Actions.Count}]: {action.Action}");
+                var result = await executor.ExecuteActionAsync(step);
+                
+                if (!result.Success)
+                {
+                    Debug.WriteLine($"[SKILL] ⚠ Action failed: {action.Action} - {result.Error}");
+                    // Continue with next action instead of stopping
+                }
+                else
+                {
+                    Debug.WriteLine($"[SKILL] ✓ Action completed: {action.Action}");
+                }
             }
             
-            // Update usage stats
+            // Update usage stats - but don't trigger another Firebase sync
             skill.LastUsed = DateTime.Now;
             skill.UseCount++;
-            SaveSkill(skill);
+            // Save locally only (skip Firebase sync for usage updates)
+            var path = GetSkillPath(skill.Name);
+            var json = JsonSerializer.Serialize(skill, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(path, json);
             
             Debug.WriteLine($"[SKILL] ✓ Skill completed: '{skill.Name}'");
             return true;
