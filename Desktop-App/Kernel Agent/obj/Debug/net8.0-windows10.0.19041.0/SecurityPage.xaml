@@ -10,23 +10,23 @@
     <ScrollViewer Padding="30">
         <StackPanel Spacing="25" MaxWidth="900" HorizontalAlignment="Left">
 
-            <StackPanel Spacing="5" Margin="0,0,0,10">
-                <TextBlock Text="SECURITY &amp; PRIVACY VAULT" FontSize="24" FontWeight="Bold" Foreground="{StaticResource GoogleRed}"/>
-                <TextBlock Text="Configure the ethical and operational boundaries of your agent." Opacity="0.6" FontSize="14"/>
+            <StackPanel Spacing="8" Margin="0,0,0,16">
+                <TextBlock Text="SECURITY &amp; PRIVACY VAULT" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource ErrorBrush}" CharacterSpacing="50"/>
+                <TextBlock Text="Configure the ethical and operational boundaries of your agent." Foreground="{StaticResource TextMutedBrush}" FontSize="14"/>
             </StackPanel>
 
             <Grid ColumnDefinitions="*, *" ColumnSpacing="20">
 
                 <StackPanel Spacing="20">
-                    <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
-                            CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                        <StackPanel Spacing="15">
+                    <Border Background="{StaticResource CardBackgroundBrush}" 
+                            CornerRadius="{StaticResource LargeRadius}" Padding="20" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+                        <StackPanel Spacing="16">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <FontIcon Glyph="&#xE72E;" Foreground="{StaticResource GoogleRed}"/>
-                                <TextBlock Text="Application Blacklist" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <FontIcon Glyph="&#xE72E;" Foreground="{StaticResource ErrorBrush}"/>
+                                <TextBlock Text="Application Blacklist" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
 
-                            <TextBlock Text="The agent will immediately terminate its session if these windows become active." FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+                            <TextBlock Text="The agent will immediately terminate its session if these windows become active." FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
 
                             <ListView SelectionMode="None" Background="Transparent">
                                 <ListViewItem>
@@ -55,12 +55,12 @@
                 </StackPanel>
 
                 <StackPanel Spacing="20">
-                    <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
-                            CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                        <StackPanel Spacing="15">
+                    <Border Background="{StaticResource CardBackgroundBrush}" 
+                            CornerRadius="{StaticResource LargeRadius}" Padding="20" BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}">
+                        <StackPanel Spacing="16">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <FontIcon Glyph="&#xE81D;" Foreground="{StaticResource GoogleYellow}"/>
-                                <TextBlock Text="Gaze Masking &amp; PII" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <FontIcon Glyph="&#xE81D;" Foreground="{StaticResource WarningBrush}"/>
+                                <TextBlock Text="Gaze Masking &amp; PII" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <ToggleSwitch Header="Auto-blur password fields in memory" IsOn="True" />
@@ -70,11 +70,11 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Background="#1AEE4335" CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{StaticResource GoogleRed}">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="Danger Zone" FontWeight="Bold" Foreground="{StaticResource GoogleRed}"/>
-                            <TextBlock Text="Irreversibly wipe the neural database and local skills." FontSize="11" Opacity="0.8"/>
-                            <Button Content="PURGE ALL NEURAL DATA" HorizontalAlignment="Stretch" Background="{StaticResource GoogleRed}" Foreground="White" Margin="0,10,0,0"/>
+                    <Border Background="#0DEF4444" CornerRadius="{StaticResource LargeRadius}" Padding="20" BorderThickness="1" BorderBrush="#33EF4444">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Danger Zone" FontWeight="SemiBold" Foreground="{StaticResource ErrorBrush}"/>
+                            <TextBlock Text="Irreversibly wipe the neural database and local skills." FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Button Content="PURGE ALL NEURAL DATA" HorizontalAlignment="Stretch" Background="{StaticResource ErrorBrush}" Foreground="White" Margin="0,8,0,0" CornerRadius="{StaticResource SmallRadius}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

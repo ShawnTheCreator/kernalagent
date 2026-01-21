@@ -9,24 +9,110 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <SolidColorBrush x:Key="GoogleBlue" Color="#4285F4" />
-            <SolidColorBrush x:Key="GoogleRed" Color="#EA4335" />
-            <SolidColorBrush x:Key="GoogleYellow" Color="#FBBC05" />
-            <SolidColorBrush x:Key="GoogleGreen" Color="#34A853" />
-
-            <SolidColorBrush x:Key="GeminiPurpleBrush" Color="#8E75FF" />
-
-            <LinearGradientBrush x:Key="GeminiGradient" StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#4285F4" Offset="0.0" />
-                <GradientStop Color="#9B72CB" Offset="0.5" />
-                <GradientStop Color="#D96570" Offset="1.0" />
+            <!-- ===== MODERN COLOR PALETTE ===== -->
+            
+            <!-- Background Colors -->
+            <Color x:Key="DeepBackground">#0A0A0B</Color>
+            <Color x:Key="CardBackground">#141416</Color>
+            <Color x:Key="CardBackgroundHover">#1A1A1D</Color>
+            <Color x:Key="SurfaceBackground">#0F0F11</Color>
+            
+            <!-- Border Colors -->
+            <Color x:Key="BorderSubtle">#252528</Color>
+            <Color x:Key="BorderMedium">#333336</Color>
+            <Color x:Key="BorderAccent">#6366F1</Color>
+            
+            <!-- Accent Colors - Modern Indigo/Purple -->
+            <Color x:Key="AccentPrimary">#6366F1</Color>
+            <Color x:Key="AccentSecondary">#8B5CF6</Color>
+            <Color x:Key="AccentGlow">#4F46E5</Color>
+            
+            <!-- Status Colors -->
+            <Color x:Key="StatusSuccess">#22C55E</Color>
+            <Color x:Key="StatusWarning">#F59E0B</Color>
+            <Color x:Key="StatusError">#EF4444</Color>
+            <Color x:Key="StatusInfo">#3B82F6</Color>
+            
+            <!-- Text Colors -->
+            <Color x:Key="TextPrimary">#FAFAFA</Color>
+            <Color x:Key="TextSecondary">#A1A1AA</Color>
+            <Color x:Key="TextMuted">#71717A</Color>
+            <Color x:Key="TextDisabled">#52525B</Color>
+            
+            <!-- ===== BRUSHES ===== -->
+            
+            <SolidColorBrush x:Key="DeepBackgroundBrush" Color="{StaticResource DeepBackground}"/>
+            <SolidColorBrush x:Key="CardBackgroundBrush" Color="{StaticResource CardBackground}"/>
+            <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{StaticResource CardBackgroundHover}"/>
+            <SolidColorBrush x:Key="SurfaceBackgroundBrush" Color="{StaticResource SurfaceBackground}"/>
+            
+            <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}"/>
+            <SolidColorBrush x:Key="BorderMediumBrush" Color="{StaticResource BorderMedium}"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentPrimary}"/>
+            <SolidColorBrush x:Key="AccentSecondaryBrush" Color="{StaticResource AccentSecondary}"/>
+            
+            <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource StatusSuccess}"/>
+            <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource StatusWarning}"/>
+            <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource StatusError}"/>
+            
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
+            <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}"/>
+            
+            <!-- Gradient Brushes -->
+            <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#6366F1" Offset="0.0"/>
+                <GradientStop Color="#8B5CF6" Offset="0.5"/>
+                <GradientStop Color="#A855F7" Offset="1.0"/>
             </LinearGradientBrush>
+            
+            <LinearGradientBrush x:Key="SubtleGradient" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#141416" Offset="0.0"/>
+                <GradientStop Color="#0F0F11" Offset="1.0"/>
+            </LinearGradientBrush>
+            
+            <LinearGradientBrush x:Key="PageBackground" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0A0A0B" Offset="0"/>
+                <GradientStop Color="#0F0F14" Offset="0.5"/>
+                <GradientStop Color="#0A0A0D" Offset="1"/>
+            </LinearGradientBrush>
+            
+            <!-- Legacy support -->
+            <SolidColorBrush x:Key="GeminiPurpleBrush" Color="#6366F1"/>
+            <SolidColorBrush x:Key="GoogleBlue" Color="#3B82F6"/>
+            <SolidColorBrush x:Key="GoogleGreen" Color="#22C55E"/>
+            <SolidColorBrush x:Key="GoogleRed" Color="#EF4444"/>
+            <SolidColorBrush x:Key="GoogleYellow" Color="#F59E0B"/>
+            
+            <LinearGradientBrush x:Key="GeminiGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#6366F1" Offset="0.0"/>
+                <GradientStop Color="#8B5CF6" Offset="0.5"/>
+                <GradientStop Color="#EC4899" Offset="1.0"/>
+            </LinearGradientBrush>
+
+            <!-- ===== ANIMATION DURATIONS ===== -->
+            <Duration x:Key="FastAnimation">0:0:0.15</Duration>
+            <Duration x:Key="NormalAnimation">0:0:0.25</Duration>
+            <Duration x:Key="SlowAnimation">0:0:0.4</Duration>
+
+            <!-- ===== CORNER RADIUS ===== -->
+            <CornerRadius x:Key="SmallRadius">6</CornerRadius>
+            <CornerRadius x:Key="MediumRadius">10</CornerRadius>
+            <CornerRadius x:Key="LargeRadius">14</CornerRadius>
+            <CornerRadius x:Key="RoundRadius">999</CornerRadius>
+
+            <!-- ===== SPACING ===== -->
+            <x:Double x:Key="SpacingXS">4</x:Double>
+            <x:Double x:Key="SpacingSM">8</x:Double>
+            <x:Double x:Key="SpacingMD">16</x:Double>
+            <x:Double x:Key="SpacingLG">24</x:Double>
+            <x:Double x:Key="SpacingXL">32</x:Double>
 
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
-                    <SolidColorBrush x:Key="LayerOnFluentOverlayFillColorDefaultBrush" Color="#111111"/>
+                    <SolidColorBrush x:Key="LayerOnFluentOverlayFillColorDefaultBrush" Color="#0A0A0B"/>
+                    <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#0A0A0B"/>
                 </ResourceDictionary>
-                <!-- Optionally specify Light/Dark entries -->
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Application.Resources>
