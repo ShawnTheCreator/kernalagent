@@ -233,29 +233,78 @@ namespace Kernel_Agent.Services
         
         /// <summary>
         /// Find a skill by fuzzy name matching.
+        /// Also searches action targets if name match fails.
         /// </summary>
         public Skill? FindSkill(string query)
         {
             var skills = GetAllSkills();
             query = query.ToLower();
             
+            Debug.WriteLine($"[SKILL] FindSkill: searching for '{query}' among {skills.Count} skills");
+            
             // Exact match first
             var exact = skills.FirstOrDefault(s => s.Name.ToLower() == query);
-            if (exact != null) return LoadSkill(exact.Name);
+            if (exact != null)
+            {
+                Debug.WriteLine($"[SKILL] Found exact match: {exact.Name}");
+                return LoadSkill(exact.Name);
+            }
             
             // Contains match
             var contains = skills.FirstOrDefault(s => s.Name.ToLower().Contains(query) || query.Contains(s.Name.ToLower()));
-            if (contains != null) return LoadSkill(contains.Name);
+            if (contains != null)
+            {
+                Debug.WriteLine($"[SKILL] Found contains match: {contains.Name}");
+                return LoadSkill(contains.Name);
+            }
             
-            // Word match
-            var queryWords = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            // Word match on skill names
+            var queryWords = query.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                  .Where(w => w.Length > 2) // Skip short words like "my", "do"
+                                  .ToArray();
             foreach (var skill in skills)
             {
                 var nameWords = skill.Name.ToLower().Split(' ', '_', '-');
                 if (queryWords.All(qw => nameWords.Any(nw => nw.Contains(qw))))
+                {
+                    Debug.WriteLine($"[SKILL] Found word match: {skill.Name}");
                     return LoadSkill(skill.Name);
+                }
             }
             
+            // NEW: Search by action targets (e.g., "notepad skill" finds skill with "notepad.exe" action)
+            foreach (var skill in skills)
+            {
+                var fullSkill = LoadSkill(skill.Name);
+                if (fullSkill == null) continue;
+                
+                foreach (var action in fullSkill.Actions)
+                {
+                    // Check action targets
+                    if (action.Parameters.TryGetValue("target", out var target))
+                    {
+                        string targetStr = target?.ToString()?.ToLower() ?? "";
+                        if (queryWords.Any(qw => targetStr.Contains(qw)))
+                        {
+                            Debug.WriteLine($"[SKILL] Found by action target '{target}': {skill.Name}");
+                            return fullSkill;
+                        }
+                    }
+                    
+                    // Check action content
+                    if (action.Parameters.TryGetValue("content", out var content))
+                    {
+                        string contentStr = content?.ToString()?.ToLower() ?? "";
+                        if (queryWords.Any(qw => contentStr.Contains(qw)))
+                        {
+                            Debug.WriteLine($"[SKILL] Found by action content: {skill.Name}");
+                            return fullSkill;
+                        }
+                    }
+                }
+            }
+            
+            Debug.WriteLine($"[SKILL] No skill found for query: '{query}'");
             return null;
         }
         
