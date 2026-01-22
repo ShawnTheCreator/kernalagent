@@ -7,7 +7,7 @@
     <Grid Padding="24">
         <StackPanel Spacing="32">
             <!-- Hero Header -->
-            <Border CornerRadius="16" Background="#8E75FF" Padding="32" Margin="0,0,0,24">
+            <Border CornerRadius="16" Background="{StaticResource GeminiPurpleBrush}" Padding="32" Margin="0,0,0,24">
                 <StackPanel>
                     <TextBlock Text="Neural Marketplace" FontSize="28" FontWeight="Bold" Foreground="White"/>
                     <TextBlock Text="Discover, install, and manage neural skills and extensions." FontSize="16" Foreground="#F3F3F3" Margin="0,8,0,0"/>

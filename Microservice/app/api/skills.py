@@ -102,17 +102,18 @@ async def get_skill(skill_id: str):
 @router.post("/run")
 async def run_skill(request: RunSkillRequest):
     """
-    Queue a skill for execution on the desktop agent.
+    Execute a skill on the desktop agent via WebSocket.
     
-    For hackathon: This immediately returns "queued" status.
-    The actual execution is handled by the WebSocket layer.
+    Sends the skill execution command to the connected C# executor.
     
     Args:
         request: Contains skill_id to run
         
     Returns:
-        Status indicating the skill was queued.
+        Status indicating if the skill was sent for execution.
     """
+    from app.api.websocket import broadcast_skill_execution
+    
     skill = get_skill_by_id(request.skill_id)
     if skill is None:
         raise HTTPException(status_code=404, detail="Skill not found")
@@ -120,14 +121,20 @@ async def run_skill(request: RunSkillRequest):
     # Increment usage count
     increment_skill_usage(request.skill_id)
     
-    # TODO: Send to desktop agent via WebSocket
-    # For hackathon, we just mark it as queued
-    # In production, this would push to a queue or broadcast via WS
+    # Send to C# executor via WebSocket
+    sent = await broadcast_skill_execution(request.skill_id, skill["name"])
     
-    print(f"[SKILLS API] Queued skill for execution: {skill['name']}")
-    
-    return RunSkillResponse(
-        status="queued",
-        skill_id=request.skill_id,
-        skill_name=skill["name"]
-    )
+    if sent:
+        print(f"[SKILLS API] Sent skill to C# executor: {skill['name']}")
+        return RunSkillResponse(
+            status="executing",
+            skill_id=request.skill_id,
+            skill_name=skill["name"]
+        )
+    else:
+        print(f"[SKILLS API] C# executor not connected, skill queued: {skill['name']}")
+        return RunSkillResponse(
+            status="queued",
+            skill_id=request.skill_id,
+            skill_name=skill["name"]
+        )

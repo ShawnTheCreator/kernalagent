@@ -6,9 +6,9 @@
 
     <Grid Padding="24">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="350" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+             <ColumnDefinition Width="350" MinWidth="300" />
+             <ColumnDefinition Width="*" />
+         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
                 CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
@@ -37,9 +37,9 @@
             </Grid>
         </Border>
 
-        <Border Grid.Column="1" Margin="12,0,0,0" CornerRadius="12" 
-                Background="{ThemeResource LayerFillColorDefaultBrush}"
-                BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+        <Border Grid.Column="1" Margin="12,0,0,0" CornerRadius="12"
+                 Background="{ThemeResource LayerFillColorDefaultBrush}"
+                 BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
             <Grid Padding="30">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -59,10 +59,10 @@
 
                 <ScrollViewer Grid.Row="2">
                     <StackPanel Spacing="10">
-                        <Border Background="#1AFFFFFF" Padding="15" CornerRadius="8">
-                            <TextBlock Text="Step 1: Successfully located Downloads folder via File Explorer." FontSize="13"/>
-                        </Border>
-                        <Border Background="#1AFFFFFF" Padding="15" CornerRadius="8">
+                         <Border Background="#1AFFFFFF" Padding="15" CornerRadius="8">
+                             <TextBlock Text="Step 1: Successfully located Downloads folder via File Explorer." FontSize="13"/>
+                         </Border>
+                         <Border Background="#1AFFFFFF" Padding="15" CornerRadius="8">
                             <TextBlock Text="Step 2: Attempted to find 'Sort' dropdown. Element was obscured by a Windows Update notification." FontSize="13"/>
                         </Border>
                         <Border BorderBrush="{StaticResource GoogleRed}" BorderThickness="1" Padding="15" CornerRadius="8">

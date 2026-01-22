@@ -13,7 +13,8 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     updateProfile,
 } from 'firebase/auth';
 import { auth, googleProvider, githubProvider } from '@/lib/firebase';
@@ -67,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen to Firebase auth state changes
     useEffect(() => {
+        // Handle OAuth redirect result (for production compatibility)
+        getRedirectResult(auth)
+            .then((result) => {
+                if (result?.user) {
+                    syncUserToFirestore(result.user);
+                }
+            })
+            .catch((err) => {
+                console.error('OAuth redirect error:', err);
+                setError(getFirebaseErrorMessage(err.code));
+            });
+
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
             setLoading(false);
@@ -144,11 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // Google OAuth login
+    // Google OAuth login (uses redirect for production compatibility)
     const loginWithGoogle = async () => {
         setError(null);
         try {
-            await signInWithPopup(auth, googleProvider);
+            await signInWithRedirect(auth, googleProvider);
         } catch (err: any) {
             const message = getFirebaseErrorMessage(err.code);
             setError(message);
@@ -156,11 +169,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // GitHub OAuth login
+    // GitHub OAuth login (uses redirect for production compatibility)
     const loginWithGithub = async () => {
         setError(null);
         try {
-            await signInWithPopup(auth, githubProvider);
+            await signInWithRedirect(auth, githubProvider);
         } catch (err: any) {
             const message = getFirebaseErrorMessage(err.code);
             setError(message);

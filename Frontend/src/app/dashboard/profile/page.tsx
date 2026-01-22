@@ -48,10 +48,22 @@ export default function ProfilePage() {
         }
     }, [authLoading, user, router]);
 
-    // Fetch Profile Data
+    // Fetch Profile Data - Firebase Auth user is primary source, backend provides extended fields
     useEffect(() => {
         const fetchProfile = async () => {
             if (!user) return;
+
+            // Initialize with Firebase Auth data immediately (primary source)
+            setDisplayName(user.displayName || '');
+            setPhotoURL(user.photoURL || '');
+
+            // Debug: Log Firebase Auth user data
+            console.log('[Profile] Firebase Auth user:', {
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                email: user.email
+            });
+
             try {
                 const token = await user.getIdToken();
                 const response = await fetch(`${API_BASE}/me`, {
@@ -59,14 +71,19 @@ export default function ProfilePage() {
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    setDisplayName(data.name || user.displayName || '');
+                    // Only override with backend data if non-empty
+                    // Backend "name" takes priority if it exists
+                    if (data.name) setDisplayName(data.name);
+                    if (data.photoURL) setPhotoURL(data.photoURL);
+                    // Extended profile fields from backend (not in Firebase Auth)
                     setBio(data.bio || '');
                     setLocation(data.location || '');
                     setWebsite(data.website || '');
-                    setPhotoURL(data.photoURL || user.photoURL || '');
+                } else {
+                    console.warn('Profile API returned non-OK status:', response.status);
                 }
             } catch (error) {
-                console.error('Failed to fetch profile:', error);
+                console.error('Failed to fetch profile from API, using Firebase Auth data:', error);
             } finally {
                 setIsLoading(false);
             }
@@ -228,11 +245,19 @@ export default function ProfilePage() {
                                     <div className="w-full h-full flex items-center justify-center bg-black/50">
                                         <Loader2 className="w-8 h-8 text-white animate-spin" />
                                     </div>
-                                ) : photoURL ? (
-                                    <img src={photoURL} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (photoURL || user?.photoURL) ? (
+                                    <img
+                                        src={photoURL || user?.photoURL || ''}
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            // If image fails to load, hide it to show initials
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                    />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-zinc-500">
-                                        {displayName?.[0] || 'U'}
+                                        {displayName?.[0] || user?.displayName?.[0] || 'U'}
                                     </div>
                                 )}
                             </div>
@@ -249,7 +274,7 @@ export default function ProfilePage() {
                         </div>
                     </div>
 
-                    <h2 className="text-xl font-bold text-white mb-1">{displayName || 'Ghost User'}</h2>
+                    <h2 className="text-xl font-bold text-white mb-1">{displayName || user?.displayName || 'User'}</h2>
                     <p className="text-zinc-500 text-sm mb-6">{user?.email}</p>
 
                     <div className="w-full grid grid-cols-2 gap-2 mb-6">

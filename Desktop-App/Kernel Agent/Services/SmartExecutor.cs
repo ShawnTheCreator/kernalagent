@@ -90,6 +90,18 @@ namespace Kernel_Agent.Services
                         stopwatch.Stop();
                         result.ExecutionTimeMs = (int)stopwatch.ElapsedMilliseconds;
                         Debug.WriteLine($"[EXECUTOR] ✓ {action} completed in {result.ExecutionTimeMs}ms");
+                        
+                        // Report to frontend via WebSocket
+                        string target = "";
+                        if (step.TryGetProperty("target", out var targetEl))
+                            target = targetEl.GetString() ?? "";
+                        if (step.TryGetProperty("content", out var contentEl))
+                            target = contentEl.GetString() ?? target;
+                        _ = Task.Run(async () => 
+                        {
+                            await BrainConnectionService.Instance.ReportActionAsync(action, target, $"Completed in {result.ExecutionTimeMs}ms");
+                        });
+                        
                         return result;
                     }
                     
@@ -449,13 +461,15 @@ namespace Kernel_Agent.Services
 
                 // ===== VOLUME =====
                 case "volume_up":
-                    int volUp = step.TryGetProperty("amount", out var amtUp) ? amtUp.GetInt32() : 10;
+                    int volUp = (step.TryGetProperty("amount", out var amtUp) && amtUp.ValueKind == JsonValueKind.Number) 
+                        ? amtUp.GetInt32() : 10;
                     _automation.VolumeUp(volUp / 2);
                     result.Success = true;
                     break;
 
                 case "volume_down":
-                    int volDown = step.TryGetProperty("amount", out var amtDown) ? amtDown.GetInt32() : 10;
+                    int volDown = (step.TryGetProperty("amount", out var amtDown) && amtDown.ValueKind == JsonValueKind.Number) 
+                        ? amtDown.GetInt32() : 10;
                     _automation.VolumeDown(volDown / 2);
                     result.Success = true;
                     break;
@@ -467,13 +481,15 @@ namespace Kernel_Agent.Services
 
                 // ===== BRIGHTNESS =====
                 case "brightness_up":
-                    int brUp = step.TryGetProperty("amount", out var brUpAmt) ? brUpAmt.GetInt32() : 10;
+                    int brUp = (step.TryGetProperty("amount", out var brUpAmt) && brUpAmt.ValueKind == JsonValueKind.Number) 
+                        ? brUpAmt.GetInt32() : 10;
                     _automation.BrightnessUp(brUp);
                     result.Success = true;
                     break;
 
                 case "brightness_down":
-                    int brDown = step.TryGetProperty("amount", out var brDownAmt) ? brDownAmt.GetInt32() : 10;
+                    int brDown = (step.TryGetProperty("amount", out var brDownAmt) && brDownAmt.ValueKind == JsonValueKind.Number) 
+                        ? brDownAmt.GetInt32() : 10;
                     _automation.BrightnessDown(brDown);
                     result.Success = true;
                     break;

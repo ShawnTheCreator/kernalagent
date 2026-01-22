@@ -49,20 +49,26 @@
                         PaneDisplayMode="LeftCompact"
                         SelectionChanged="NavView_SelectionChanged"
                         Visibility="Collapsed">
-            <NavigationView.MenuItems>
-                <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
-                <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
-                <NavigationViewItem Content="Action History" Tag="history">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE81C;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="Neural Memory" Icon="AllApps" Tag="memory"/>
-
-                <NavigationViewItem Content="Security Vault" Icon="Permissions" Tag="security"/>
-                <NavigationViewItem Content="Neural Sandbox" Icon="Play" Tag="sandbox"/>
-                <NavigationViewItem Content="Marketplace" Icon="Shop" Tag="marketplace"/>
-            </NavigationView.MenuItems>
+             <NavigationView.MenuItems>
+                 <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
+                 <NavigationViewItemHeader Content="Tools"/>
+                 <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
+                 <NavigationViewItem Content="Neural Sandbox" Icon="Play" Tag="sandbox"/>
+                 <NavigationViewItemHeader Content="Data"/>
+                 <NavigationViewItem Content="Action History" Tag="history">
+                     <NavigationViewItem.Icon>
+                         <FontIcon Glyph="&#xE81C;" />
+                     </NavigationViewItem.Icon>
+                 </NavigationViewItem>
+                 <NavigationViewItem Content="Neural Memory" Icon="AllApps" Tag="memory"/>
+                 <NavigationViewItemHeader Content="Security"/>
+                 <NavigationViewItem Content="Security Vault" Icon="Permissions" Tag="security"/>
+                 <NavigationViewItemHeader Content="Market"/>
+                 <NavigationViewItem Content="Marketplace" Icon="Shop" Tag="marketplace"/>
+             </NavigationView.MenuItems>
+             <NavigationView.FooterMenuItems>
+                 <NavigationViewItem Content="Settings" Icon="Setting" Tag="settings"/>
+             </NavigationView.FooterMenuItems>
 
             <Grid>
                 <Grid x:Name="MissionRoot" Padding="20">
@@ -71,7 +77,7 @@
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
+                     <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
                         <Grid>
                             <Image x:Name="LiveDesktopPreview" Stretch="Uniform"/>
                             <Canvas x:Name="AiOverlayCanvas"/>
@@ -82,7 +88,7 @@
                         </Grid>
                     </Border>
 
-                    <Border Grid.Column="1" CornerRadius="12" Background="{ThemeResource LayerFillColorDefaultBrush}" Padding="15">
+                     <Border Grid.Column="1" CornerRadius="12" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" Padding="15">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -92,12 +98,12 @@
                             </Grid.RowDefinitions>
 
                             <!-- Step Progress Panel -->
-                            <Border x:Name="StepProgressPanel" 
-                                    CornerRadius="8" 
-                                    Background="#1A8E75FF" 
-                                    Padding="12" 
-                                    Margin="0,0,0,12"
-                                    Visibility="Collapsed">
+                             <Border x:Name="StepProgressPanel"
+                                     CornerRadius="8"
+                                     Background="#1A8E75FF"
+                                     Padding="12"
+                                     Margin="0,0,0,12"
+                                     Visibility="Collapsed">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -138,16 +144,16 @@
                                                    TextTrimming="CharacterEllipsis"/>
                                     </Grid>
                                     
-                                    <!-- Step Progress Bar -->
-                                    <Grid Grid.Row="2">
-                                        <Border Background="#333333" CornerRadius="4" Height="6"/>
-                                        <Border x:Name="StepProgressBar" 
-                                                Background="#8E75FF" 
-                                                CornerRadius="4" 
-                                                Height="6" 
-                                                HorizontalAlignment="Left"
-                                                Width="60"/>
-                                    </Grid>
+                                     <!-- Step Progress Bar -->
+                                     <Grid Grid.Row="2">
+                                         <Border Background="#333333" CornerRadius="4" Height="6"/>
+                                         <Border x:Name="StepProgressBar"
+                                                 Background="{StaticResource GeminiPurpleBrush}"
+                                                 CornerRadius="4"
+                                                 Height="6"
+                                                 HorizontalAlignment="Left"
+                                                 Width="60"/>
+                                     </Grid>
                                 </Grid>
                             </Border>
 

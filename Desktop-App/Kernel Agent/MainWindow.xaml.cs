@@ -67,6 +67,13 @@ namespace Kernel_Agent
 
                 // Initialize Speech Client Once (Preventing the MoveNext error source)
                 InitializeSpeechClient();
+                
+                // Connect to Python brain for skill commands and action reporting
+                _ = Task.Run(async () =>
+                {
+                    await BrainConnectionService.Instance.ConnectAsync();
+                    System.Diagnostics.Debug.WriteLine("[MAIN] Brain connection initiated");
+                });
             }
             catch (Exception ex)
             {

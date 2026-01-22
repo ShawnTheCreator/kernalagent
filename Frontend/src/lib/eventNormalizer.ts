@@ -33,11 +33,22 @@ const ACTION_TO_PHASE: Record<string, AgentPhase> = {
     'WAIT': 'EXECUTING',
     'WAITING': 'EXECUTING',
 
+    // Skill execution
+    'SKILL_START': 'EXECUTING',
+    'SKILL_COMPLETE': 'EXECUTING',
+    'SKILL_FAILED': 'THINKING',
+    'SKILL_ERROR': 'THINKING',
+    'RUNNING SKILL': 'EXECUTING',
+    'ACTION': 'EXECUTING',
+
     // Observing phase
     'OBSERVING': 'OBSERVING',
     'OBSERVE': 'OBSERVING',
     'WATCHING': 'OBSERVING',
     'CAPTURING': 'OBSERVING',
+
+    // Idle
+    'IDLE': 'OBSERVING',
 
     // Error states
     'ERROR': 'THINKING',
@@ -112,15 +123,15 @@ export function mapActionToType(actionType: string): ActionType {
 /**
  * Validate that a message is an action message from the backend
  */
-export function isActionMessage(data: unknown): data is RawBackendMessage {
+export function isActionMessage(data: unknown): boolean {
     if (typeof data !== 'object' || data === null) return false;
 
-    const msg = data as RawBackendMessage;
+    const msg = data as Record<string, unknown>;
+    // Accept both 'action' (from vision) and 'action_executed' (from C# brain)
     return (
-        msg.type === 'action' &&
-        typeof msg.payload === 'object' &&
-        msg.payload !== null &&
-        typeof msg.payload.explanation === 'string'
+        (msg.type === 'action' && typeof msg.payload === 'object') ||
+        (msg.type === 'action_executed') ||
+        (msg.type === 'agent_state')
     );
 }
 
@@ -146,14 +157,56 @@ export function normalizeEvent(data: string): AgentEvent | null {
         return null;
     }
 
-    const payload = parsed.payload!;
-    const rawActionType = payload.action_type ?? 'UNKNOWN';
+    const msg = parsed as Record<string, unknown>;
+    const msgType = msg.type as string;
+
+    // Handle action_executed from C# brain connection
+    if (msgType === 'action_executed') {
+        const state = (msg.state as string) || 'EXECUTING';
+        const title = (msg.title as string) || 'Action';
+        const description = (msg.description as string) || '';
+        const action = msg.action as Record<string, unknown> | undefined;
+
+        const actionType = action?.action_type as string || title.toUpperCase();
+
+        return {
+            id: generateEventId(),
+            phase: mapActionToPhase(state),
+            actionType: mapActionToType(actionType),
+            label: title,
+            description: description,
+            timestamp: Date.now(),
+        };
+    }
+
+    // Handle agent_state updates
+    if (msgType === 'agent_state') {
+        const state = (msg.state as string) || 'OBSERVING';
+        const title = (msg.title as string) || 'Agent State';
+        const description = (msg.description as string) || '';
+
+        return {
+            id: generateEventId(),
+            phase: mapActionToPhase(state),
+            actionType: mapActionToType(state),
+            label: title,
+            description: description,
+            timestamp: Date.now(),
+        };
+    }
+
+    // Handle original 'action' messages from vision analysis
+    const payload = msg.payload as Record<string, unknown> | undefined;
+    if (!payload) return null;
+
+    const rawActionType = (payload.action_type as string) ?? 'UNKNOWN';
+    const explanation = (payload.explanation as string) ?? 'Unknown action';
 
     return {
         id: generateEventId(),
         phase: mapActionToPhase(rawActionType),
         actionType: mapActionToType(rawActionType),
-        label: payload.explanation ?? 'Unknown action',
+        label: explanation,
         description: typeof payload.action_type === 'string' ? payload.action_type : undefined,
         timestamp: Date.now(),
     };

@@ -180,6 +180,7 @@ C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\Debug\net8.0-wi
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\MultipleQualifiersPerDimensionFound.txt
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\.env
 C:\Users\shawn\Desktop\Kernel Agent\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\kernal-agent-68a0608e1242.json
+C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\Kernel Agent.csproj.AssemblyReference.cache
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\.nuget\mouse-keyboard-hook-logo.png
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\Assets\LockScreenLogo.scale-200.png
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\Assets\SplashScreen.scale-200.png
@@ -287,7 +288,6 @@ C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\bin\Debug\net8.0-window
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\Microsoft.Windows.SDK.NET.dll
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\WinRT.Runtime.dll
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\bin\Debug\net8.0-windows10.0.19041.0\Microsoft.Web.WebView2.Core.Projection.dll
-C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\Kernel Agent.csproj.AssemblyReference.cache
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\App.g.i.cs
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\App.g.cs
 C:\Users\anime\3D Objects\Ghost\Desktop-App\Kernel Agent\obj\Debug\net8.0-windows10.0.19041.0\BlankPage1.g.i.cs

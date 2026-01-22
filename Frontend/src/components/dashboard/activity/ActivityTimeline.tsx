@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, RefreshCw } from 'lucide-react';
+import { Brain, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useDashboardStore } from '@/stores/dashboardStore';
-import { dashboardApi } from '@/lib/api';
 import { ActivityEvent } from './ActivityEvent';
+import { useAgentSocket } from '@/hooks/useAgentSocket';
 import type { ActivityEvent as ActivityEventType } from '@/stores/dashboardStore';
 
 interface ActivityTimelineProps {
@@ -15,29 +15,21 @@ interface ActivityTimelineProps {
 
 export function ActivityTimeline({ limit, showHeader = true }: ActivityTimelineProps) {
     const { activities, addActivity, currentState } = useDashboardStore();
-    const [isLoading, setIsLoading] = useState(true);
+    const { events, connectionState, isLive } = useAgentSocket();
 
-    // Fetch activities from backend
+    // Sync WebSocket events to dashboard store
     useEffect(() => {
-        async function fetchActivities() {
-            try {
-                const data = await dashboardApi.getActivities();
-                // Transform backend data to match ActivityEvent interface
-                data.forEach((activity: any) => {
-                    addActivity({
-                        state: activity.state as ActivityEventType['state'],
-                        title: activity.title,
-                        description: activity.description,
-                    });
-                });
-            } catch (error) {
-                console.error('Failed to fetch activities:', error);
-            } finally {
-                setIsLoading(false);
-            }
+        if (events.length > 0) {
+            const latestEvent = events[0]; // Get newest event
+            // Transform WebSocket event to activity format
+            // Map AgentEvent fields (phase, label, actionType) to ActivityEvent fields (state, title, description)
+            addActivity({
+                state: (latestEvent.phase || 'EXECUTING') as ActivityEventType['state'],
+                title: latestEvent.label || latestEvent.actionType || 'Action',
+                description: latestEvent.description || '',
+            });
         }
-        fetchActivities();
-    }, [addActivity]);
+    }, [events, addActivity]);
 
     const displayActivities = limit ? activities.slice(0, limit) : activities;
 
@@ -51,9 +43,17 @@ export function ActivityTimeline({ limit, showHeader = true }: ActivityTimelineP
                         <h2 className="text-sm font-medium text-zinc-300">Activity Timeline</h2>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-zinc-600 uppercase">
-                            {currentState}
-                        </span>
+                        {/* Connection Status */}
+                        <div className="flex items-center gap-1.5">
+                            {isLive ? (
+                                <Wifi size={12} className="text-emerald-400" />
+                            ) : (
+                                <WifiOff size={12} className="text-zinc-500" />
+                            )}
+                            <span className={`text-[10px] font-mono ${isLive ? 'text-emerald-400' : 'text-zinc-600'}`}>
+                                {connectionState}
+                            </span>
+                        </div>
                         <motion.div
                             animate={currentState !== 'IDLE' ? { rotate: 360 } : {}}
                             transition={{ duration: 2, repeat: currentState !== 'IDLE' ? Infinity : 0, ease: 'linear' }}
@@ -72,7 +72,9 @@ export function ActivityTimeline({ limit, showHeader = true }: ActivityTimelineP
                             <Brain size={20} className="text-zinc-600" />
                         </div>
                         <p className="text-sm text-zinc-500">Awaiting activity</p>
-                        <p className="text-[10px] text-zinc-700 mt-1">Events will appear here</p>
+                        <p className="text-[10px] text-zinc-700 mt-1">
+                            {isLive ? 'Connected - Events will appear here in real-time' : 'Connecting to agent...'}
+                        </p>
                     </div>
                 ) : (
                     <AnimatePresence mode="popLayout">
@@ -91,7 +93,7 @@ export function ActivityTimeline({ limit, showHeader = true }: ActivityTimelineP
             {activities.length > 0 && (
                 <div className="px-4 py-2 border-t border-white/[0.03] bg-white/[0.01]">
                     <span className="text-[10px] font-mono text-zinc-600">
-                        {activities.length} events • Last sync: now
+                        {activities.length} events • {isLive ? 'Live' : connectionState}
                     </span>
                 </div>
             )}

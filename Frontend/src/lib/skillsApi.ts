@@ -2,19 +2,18 @@
  * Skills API Client
  * 
  * Fetches user-scoped skills from backend Firestore.
- * Uses authenticated endpoints at /me/skills.
  */
 import type { Skill } from '@/stores/dashboardStore';
 import { auth } from '@/lib/firebase';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'http://localhost:8000';
 
 export interface BackendSkill {
     id: string;
     name: string;
     intent_signature: string;
     description?: string;
-    confidence: number;
+    confidence: any; // backend sends string or number
     success_count: number;
     last_used_at: string | null;
     created_at?: string;
@@ -48,11 +47,18 @@ async function getAuthToken(): Promise<string | null> {
  * Convert backend skill to frontend Skill type.
  */
 function toFrontendSkill(backendSkill: BackendSkill): Skill {
-    // Derive confidence level from numeric confidence
+    // Derive confidence level from numeric/string confidence
+    let confidenceVal = 0.5;
+    if (typeof backendSkill.confidence === 'string') {
+        confidenceVal = parseFloat(backendSkill.confidence);
+    } else if (typeof backendSkill.confidence === 'number') {
+        confidenceVal = backendSkill.confidence;
+    }
+
     let confidenceLevel: 'low' | 'medium' | 'high' = 'low';
-    if (backendSkill.confidence >= 0.7) {
+    if (confidenceVal >= 0.9) {
         confidenceLevel = 'high';
-    } else if (backendSkill.confidence >= 0.4) {
+    } else if (confidenceVal >= 0.5) {
         confidenceLevel = 'medium';
     }
 
@@ -62,7 +68,7 @@ function toFrontendSkill(backendSkill: BackendSkill): Skill {
         description: backendSkill.description || backendSkill.intent_signature,
         confidence: confidenceLevel,
         lastExecuted: backendSkill.last_used_at ? new Date(backendSkill.last_used_at) : undefined,
-        executionCount: backendSkill.success_count,
+        executionCount: backendSkill.success_count || 0,
     };
 }
 
@@ -72,15 +78,10 @@ function toFrontendSkill(backendSkill: BackendSkill): Skill {
 export async function fetchSkills(): Promise<Skill[]> {
     try {
         const token = await getAuthToken();
-        if (!token) {
-            console.warn('[Skills API] No auth token, user not logged in');
-            return [];
-        }
+        // Allow fetch even if no token for dev/local backend
 
-        const response = await fetch(`${API_BASE}/me/skills`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
+        const response = await fetch(`${API_BASE}/api/skills`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         });
 
         if (!response.ok) {
@@ -88,8 +89,13 @@ export async function fetchSkills(): Promise<Skill[]> {
             return [];
         }
 
-        const data: BackendSkill[] = await response.json();
-        return data.map(toFrontendSkill);
+        const data = await response.json();
+        const skillsList = data.skills || data || [];
+
+        if (Array.isArray(skillsList)) {
+            return skillsList.map(toFrontendSkill);
+        }
+        return [];
     } catch (error) {
         console.error('[Skills API] Error fetching skills:', error);
         return [];
@@ -102,13 +108,12 @@ export async function fetchSkills(): Promise<Skill[]> {
 export async function createSkill(skill: CreateSkillRequest): Promise<Skill | null> {
     try {
         const token = await getAuthToken();
-        if (!token) return null;
 
-        const response = await fetch(`${API_BASE}/me/skills`, {
+        const response = await fetch(`${API_BASE}/api/skills`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             },
             body: JSON.stringify(skill),
         });
@@ -118,8 +123,17 @@ export async function createSkill(skill: CreateSkillRequest): Promise<Skill | nu
             return null;
         }
 
-        const data: BackendSkill = await response.json();
-        return toFrontendSkill(data);
+        // Backend returns { status, skill_id, skill_name }
+        // We construct a temporary frontend skill to return
+        const result = await response.json();
+
+        return {
+            id: result.skill_id,
+            name: skill.name,
+            description: skill.description || '',
+            confidence: 'high',
+            executionCount: 0
+        };
     } catch (error) {
         console.error('[Skills API] Error creating skill:', error);
         return null;
@@ -132,13 +146,12 @@ export async function createSkill(skill: CreateSkillRequest): Promise<Skill | nu
 export async function updateSkill(skillId: string, updates: UpdateSkillRequest): Promise<Skill | null> {
     try {
         const token = await getAuthToken();
-        if (!token) return null;
 
-        const response = await fetch(`${API_BASE}/me/skills/${skillId}`, {
+        const response = await fetch(`${API_BASE}/api/skills/${skillId}`, {
             method: 'PATCH',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             },
             body: JSON.stringify(updates),
         });
@@ -162,13 +175,10 @@ export async function updateSkill(skillId: string, updates: UpdateSkillRequest):
 export async function deleteSkill(skillId: string): Promise<boolean> {
     try {
         const token = await getAuthToken();
-        if (!token) return false;
 
-        const response = await fetch(`${API_BASE}/me/skills/${skillId}`, {
+        const response = await fetch(`${API_BASE}/api/skills/${skillId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         });
 
         return response.ok || response.status === 204;
@@ -179,29 +189,36 @@ export async function deleteSkill(skillId: string): Promise<boolean> {
 }
 
 /**
- * Mark a skill as used (increments success_count).
+ * Run a skill by ID.
  */
-export async function useSkill(skillId: string): Promise<Skill | null> {
+export async function runSkill(skillId: string): Promise<boolean> {
     try {
         const token = await getAuthToken();
-        if (!token) return null;
 
-        const response = await fetch(`${API_BASE}/me/skills/${skillId}/use`, {
+        const response = await fetch(`${API_BASE}/api/skills/run`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             },
+            body: JSON.stringify({ skill_id: skillId }),
         });
 
         if (!response.ok) {
-            console.error('[Skills API] Failed to use skill:', response.status);
-            return null;
+            console.error('[Skills API] Failed to run skill:', response.status);
+            return false;
         }
 
-        const data: BackendSkill = await response.json();
-        return toFrontendSkill(data);
+        return true;
     } catch (error) {
-        console.error('[Skills API] Error using skill:', error);
-        return null;
+        console.error('[Skills API] Error running skill:', error);
+        return false;
     }
+}
+
+/**
+ * Mark a skill as used (deprecated/legacy - runSkill handles usage count).
+ */
+export async function useSkill(skillId: string): Promise<Skill | null> {
+    return null;
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Sparkles, RefreshCw, Loader2, Plus } from 'lucide-react';
 import { SkillCard } from './SkillCard';
-import { fetchSkills, deleteSkill } from '@/lib/skillsApi';
+import { fetchSkills, deleteSkill, runSkill } from '@/lib/skillsApi';
 import type { Skill } from '@/stores/dashboardStore';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -38,6 +38,11 @@ export function SkillsList() {
         if (success) {
             setSkills(skills.filter(s => s.id !== skillId));
         }
+    };
+
+    const handleRunSkill = async (skillId: string) => {
+        await runSkill(skillId);
+        // Optionally show toast or update execution count
     };
 
     const filteredSkills = skills.filter(skill =>
@@ -123,6 +128,7 @@ export function SkillsList() {
                             key={skill.id}
                             skill={skill}
                             onDelete={() => handleDeleteSkill(skill.id)}
+                            onPlay={() => handleRunSkill(skill.id)}
                         />
                     ))}
                 </motion.div>
