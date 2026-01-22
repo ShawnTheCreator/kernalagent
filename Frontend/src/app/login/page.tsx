@@ -28,36 +28,51 @@ function LoginPageContent() {
     const [errors, setErrors] = useState<FormErrors>({});
     const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
 
-    // Verify Device and Redirect
+    // Verify Device and Redirect - syncs token with local Python backend for C# app
     useEffect(() => {
         const handleDeviceLogin = async () => {
             if (!loading && user && deviceId) {
                 setVerifyingDevice(true);
                 try {
                     const token = await user.getIdToken();
-                    const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com').replace(/\/+$/, '');
 
-                    const response = await fetch(`${API_BASE}/api/auth/device-verify`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            deviceId,
-                            token
-                        })
-                    });
+                    // Try LOCAL Python microservice FIRST (fast path for C# app)
+                    const localApiBase = 'http://localhost:8000';
+                    let synced = false;
 
-                    if (response.ok) {
-                        // Success! The desktop app should pick it up now.
-                        // We can still redirect the user to dashboard.
-                        router.push('/dashboard');
-                    } else {
-                        console.error('Device verification failed');
-                        setErrors(prev => ({ ...prev, general: 'Failed to verify desktop connection.' }));
+                    try {
+                        const localResponse = await fetch(`${localApiBase}/api/auth/sync`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ deviceId, token })
+                        });
+                        if (localResponse.ok) {
+                            console.log('[AUTH] Token synced to local Python backend (fast path)');
+                            synced = true;
+                        }
+                    } catch (localErr) {
+                        console.log('[AUTH] Local sync failed, trying remote...', localErr);
                     }
+
+                    // Fallback to remote Render server if local failed
+                    if (!synced) {
+                        const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'https://kernal-agent-backend.onrender.com').replace(/\/+$/, '');
+                        const response = await fetch(`${API_BASE}/api/auth/sync`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ deviceId, token })
+                        });
+                        if (response.ok) {
+                            console.log('[AUTH] Token synced to remote backend');
+                        }
+                    }
+
+                    // Redirect to dashboard regardless
+                    router.push('/dashboard');
                 } catch (err) {
-                    console.error(err);
+                    console.error('[AUTH] Device sync error:', err);
+                    // Still redirect to dashboard on error
+                    router.push('/dashboard');
                 } finally {
                     setVerifyingDevice(false);
                 }
