@@ -1172,7 +1172,7 @@ namespace Kernel_Agent.Services
             string errorReason,
             string focusedWindow = "",
             string focusedProcess = "",
-            string[] openedApps = null,
+            string[]? openedApps = null,
             int stepNumber = 0,
             int totalSteps = 0,
             string lastAction = "",

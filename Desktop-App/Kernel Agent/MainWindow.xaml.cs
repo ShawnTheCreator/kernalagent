@@ -5,6 +5,7 @@ using WinRT.Interop;
 using System;
 using dotenv.net;
 using NAudio.Wave;
+using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Generic;
