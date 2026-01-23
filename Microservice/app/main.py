@@ -119,17 +119,19 @@ async def health_check():
     return {"status": "alive", "model": settings.MODEL_ID}
 
 
-# ===== LOCAL AUTH SYNC (FAST - BYPASSES RENDER) =====
-# These endpoints enable near-instant desktop login by syncing auth locally
+# ===== LOCAL AUTH SYNC (REAL-TIME WEBSOCKET) =====
+# Instant desktop login via WebSocket broadcast
 
-_pending_logins = {}  # deviceId -> token (temporary storage)
+from app.api.ws_manager import manager as ws_manager
+
+_pending_logins = {}  # deviceId -> token (fallback for polling)
 
 
 @app.post("/api/auth/sync")
 async def sync_auth_token(request: Request):
     """
-    Called by web frontend after user logs in to sync token with local desktop app.
-    This bypasses the slow Render server for polling.
+    Called by web frontend after user logs in.
+    Broadcasts token via WebSocket to C# app for INSTANT auth (no polling delay).
     """
     try:
         body = await request.json()
@@ -139,9 +141,19 @@ async def sync_auth_token(request: Request):
         if not device_id or not token:
             return {"success": False, "error": "Missing deviceId or token"}
         
+        # Store for polling fallback
         _pending_logins[device_id] = token
-        logger.info(f"[AUTH-SYNC] Token synced for device: {device_id[:8]}...")
-        return {"success": True}
+        
+        # INSTANT: Broadcast to C# client via WebSocket
+        auth_message = {
+            "type": "auth_success",
+            "deviceId": device_id,
+            "token": token
+        }
+        await ws_manager.send_to_csharp(auth_message)
+        
+        logger.info(f"[AUTH-SYNC] Token broadcasted via WebSocket for device: {device_id[:8]}...")
+        return {"success": True, "method": "websocket"}
     except Exception as e:
         logger.error(f"[AUTH-SYNC] Error: {e}")
         return {"success": False, "error": str(e)}

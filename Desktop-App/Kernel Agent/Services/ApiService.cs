@@ -54,7 +54,7 @@ namespace Kernel_Agent.Services
             }
         }
 
-        private async Task SetAuthTokenAsync(string token)
+        public async Task SetAuthTokenAsync(string token)
         {
             try
             {

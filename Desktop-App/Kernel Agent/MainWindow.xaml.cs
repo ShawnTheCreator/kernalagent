@@ -292,19 +292,25 @@ namespace Kernel_Agent
                     LoginLoadingOverlay.Visibility = Visibility.Visible;
                 }
 
-                // Open browser for web login
-                var webAppUrl = Environment.GetEnvironmentVariable("WEB_APP_URL") ?? "https://kernalagent.vercel.app";
+                // Update status
+                if (LoadingStatusText != null)
+                {
+                    LoadingStatusText.Text = "Connecting to server...";
+                }
+
+                // REAL-TIME: Connect to WebSocket and listen for auth events
+                await ConnectAuthWebSocketAsync();
+
+                // Open browser for web login (use localhost only)
+                var webAppUrl = "http://localhost:3000"; // Local frontend
                 var loginUrl = $"{webAppUrl}/login?deviceId={_loginDeviceId}";
                 await Windows.System.Launcher.LaunchUriAsync(new Uri(loginUrl));
                 
                 // Update status
                 if (LoadingStatusText != null)
                 {
-                    LoadingStatusText.Text = "Browser opened. Please login...";
+                    LoadingStatusText.Text = "Browser opened. Waiting for login...";
                 }
-
-                // Start polling for authentication status
-                await PollAuthenticationStatusAsync();
             }
             catch (Exception ex)
             {
@@ -315,6 +321,140 @@ namespace Kernel_Agent
                     LoginLoadingOverlay.Visibility = Visibility.Collapsed;
                 }
             }
+        }
+
+        private System.Net.WebSockets.ClientWebSocket? _authWebSocket;
+        private CancellationTokenSource? _authCancellation;
+
+        private async Task ConnectAuthWebSocketAsync()
+        {
+            try
+            {
+                _authWebSocket = new System.Net.WebSockets.ClientWebSocket();
+                _authCancellation = new CancellationTokenSource();
+                
+                // Connect to local Python backend WebSocket
+                var wsUri = new Uri("ws://localhost:8000/ws/stream?client_type=csharp");
+                
+                System.Diagnostics.Debug.WriteLine("[AUTH-WS] Connecting to WebSocket...");
+                await _authWebSocket.ConnectAsync(wsUri, _authCancellation.Token);
+                System.Diagnostics.Debug.WriteLine("[AUTH-WS] Connected! Listening for auth events...");
+
+                // Start listening for auth messages in background
+                _ = Task.Run(async () => await ListenForAuthMessagesAsync());
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Connection failed: {ex.Message}");
+                // Fallback to polling if WebSocket fails
+                await PollAuthenticationStatusAsync();
+            }
+        }
+
+        private async Task ListenForAuthMessagesAsync()
+        {
+            var buffer = new byte[4096];
+            
+            try
+            {
+                while (_authWebSocket?.State == System.Net.WebSockets.WebSocketState.Open)
+                {
+                    var result = await _authWebSocket.ReceiveAsync(
+                        new ArraySegment<byte>(buffer), 
+                        _authCancellation?.Token ?? CancellationToken.None
+                    );
+                    
+                    if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Text)
+                    {
+                        var message = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
+                        System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Received: {message}");
+                        
+                        // Parse JSON message
+                        using var doc = System.Text.Json.JsonDocument.Parse(message);
+                        var root = doc.RootElement;
+                        
+                        if (root.TryGetProperty("type", out var typeEl) && 
+                            typeEl.GetString() == "auth_success")
+                        {
+                            // Check if this is for our device
+                            if (root.TryGetProperty("deviceId", out var deviceIdEl) &&
+                                deviceIdEl.GetString() == _loginDeviceId)
+                            {
+                                if (root.TryGetProperty("token", out var tokenEl))
+                                {
+                                    var token = tokenEl.GetString();
+                                    if (!string.IsNullOrEmpty(token))
+                                    {
+                                        System.Diagnostics.Debug.WriteLine("[AUTH-WS] ✓ Auth token received via WebSocket!");
+                                        await HandleAuthSuccessAsync(token);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Close)
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Listen error: {ex.Message}");
+            }
+        }
+
+        private async Task HandleAuthSuccessAsync(string token)
+        {
+            // Save token
+            await ApiService.Instance.SetAuthTokenAsync(token);
+            
+            // Update UI on dispatcher thread
+            this.DispatcherQueue.TryEnqueue(() =>
+            {
+                System.Diagnostics.Debug.WriteLine("[AUTH-WS] Switching to main interface...");
+                
+                // Hide loading overlay
+                if (LoginLoadingOverlay != null)
+                    LoginLoadingOverlay.Visibility = Visibility.Collapsed;
+                
+                // Hide login overlay, show main navigation
+                if (LoginOverlay != null) 
+                    LoginOverlay.Visibility = Visibility.Collapsed;
+                if (NavView != null) 
+                    NavView.Visibility = Visibility.Visible;
+                
+                // Set default user info
+                if (UserNameText != null) UserNameText.Text = "User";
+                if (ProfilePicture != null) ProfilePicture.Initials = "U";
+                if (LoginButton != null) LoginButton.Visibility = Visibility.Collapsed;
+                if (ProfileSection != null) ProfileSection.Visibility = Visibility.Visible;
+                
+                System.Diagnostics.Debug.WriteLine("[AUTH-WS] ✓ Main interface activated!");
+            });
+            
+            // Load user details in background
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var user = await ApiService.Instance.GetCurrentUserAsync();
+                    if (user != null)
+                    {
+                        this.DispatcherQueue.TryEnqueue(() =>
+                        {
+                            UserNameText.Text = user.Name;
+                            ProfilePicture.DisplayName = user.Name;
+                            ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AUTH-WS] User load failed: {ex.Message}");
+                }
+            });
         }
 
         private async Task PollAuthenticationStatusAsync()
