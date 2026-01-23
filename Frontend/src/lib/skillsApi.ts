@@ -6,7 +6,9 @@
 import type { Skill } from '@/stores/dashboardStore';
 import { auth } from '@/lib/firebase';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URLCSHARP || 'http://localhost:8000';
+// Skills API uses local Python microservice (has protected /me/* routes)
+// Remote Render server doesn't have these routes, so use localhost
+const API_BASE = 'http://localhost:8000';
 
 export interface BackendSkill {
     id: string;
@@ -80,7 +82,8 @@ export async function fetchSkills(): Promise<Skill[]> {
         const token = await getAuthToken();
         // Allow fetch even if no token for dev/local backend
 
-        const response = await fetch(`${API_BASE}/api/skills`, {
+        // Use /me/skills endpoint (protected routes in Python backend)
+        const response = await fetch(`${API_BASE}/me/skills`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         });
 
@@ -109,7 +112,7 @@ export async function createSkill(skill: CreateSkillRequest): Promise<Skill | nu
     try {
         const token = await getAuthToken();
 
-        const response = await fetch(`${API_BASE}/api/skills`, {
+        const response = await fetch(`${API_BASE}/me/skills`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -147,7 +150,7 @@ export async function updateSkill(skillId: string, updates: UpdateSkillRequest):
     try {
         const token = await getAuthToken();
 
-        const response = await fetch(`${API_BASE}/api/skills/${skillId}`, {
+        const response = await fetch(`${API_BASE}/me/skills/${skillId}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -176,7 +179,7 @@ export async function deleteSkill(skillId: string): Promise<boolean> {
     try {
         const token = await getAuthToken();
 
-        const response = await fetch(`${API_BASE}/api/skills/${skillId}`, {
+        const response = await fetch(`${API_BASE}/me/skills/${skillId}`, {
             method: 'DELETE',
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         });
@@ -195,13 +198,13 @@ export async function runSkill(skillId: string): Promise<boolean> {
     try {
         const token = await getAuthToken();
 
-        const response = await fetch(`${API_BASE}/api/skills/run`, {
+        // Use the correct endpoint: /me/skills/{skill_id}/use
+        const response = await fetch(`${API_BASE}/me/skills/${skillId}/use`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify({ skill_id: skillId }),
         });
 
         if (!response.ok) {

@@ -33,7 +33,17 @@
                     <FontIcon Glyph="&#xE70D;" FontSize="12"/>
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem Text="Logout" x:Name="LogoutMenuItem" Click="LogoutMenuItem_Click"/>
+                            <MenuFlyoutItem Text="View Profile" x:Name="ViewProfileMenuItem" Click="ViewProfileMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE77B;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutSeparator/>
+                            <MenuFlyoutItem Text="Logout" x:Name="LogoutMenuItem" Click="LogoutMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE7E8;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -66,11 +76,19 @@
                  <NavigationViewItemHeader Content="Market"/>
                  <NavigationViewItem Content="Marketplace" Icon="Shop" Tag="marketplace"/>
              </NavigationView.MenuItems>
+             <!-- Settings handled by NavigationView's built-in IsSettingsSelected -->
              <NavigationView.FooterMenuItems>
-                 <NavigationViewItem Content="Settings" Icon="Setting" Tag="settings"/>
+                 <NavigationViewItem Content="My Profile" Tag="profile">
+                     <NavigationViewItem.Icon>
+                         <FontIcon Glyph="&#xE77B;" />
+                     </NavigationViewItem.Icon>
+                 </NavigationViewItem>
              </NavigationView.FooterMenuItems>
 
             <Grid>
+                <!-- Frame for page navigation (Profile, Settings, etc.) -->
+                <Frame x:Name="ContentFrame" Visibility="Collapsed"/>
+                
                 <Grid x:Name="MissionRoot" Padding="20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
@@ -183,8 +201,6 @@
                         </Grid>
                     </Border>
                 </Grid>
-
-                <Frame x:Name="ContentFrame" Visibility="Collapsed"/>
             </Grid>
         </NavigationView>
 

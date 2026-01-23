@@ -6,32 +6,32 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    Background="#0A0A0E"
     Loaded="Page_Loaded">
 
-    <ScrollViewer Padding="30">
-        <StackPanel Spacing="25" MaxWidth="900" HorizontalAlignment="Left">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="24">
+        <StackPanel HorizontalAlignment="Center" MaxWidth="700" Spacing="20">
 
             <!-- Header -->
-            <StackPanel Spacing="5" Margin="0,0,0,10">
-                <TextBlock Text="SETTINGS" FontSize="24" FontWeight="Bold" Foreground="{StaticResource GeminiPurpleBrush}"/>
-                <TextBlock Text="Configure your Kernel Agent experience." Opacity="0.6" FontSize="14"/>
+            <StackPanel Spacing="4" Margin="0,0,0,16">
+                <TextBlock Text="SETTINGS" FontSize="28" FontWeight="Bold" Foreground="#8E75FF"/>
+                <TextBlock Text="Configure your Kernel Agent experience." Foreground="#888888" FontSize="14"/>
             </StackPanel>
 
             <!-- Sync Status -->
-            <Border x:Name="SyncStatusBorder" Background="#1A4285F4" CornerRadius="8" Padding="12" Visibility="Collapsed">
+            <Border x:Name="SyncStatusBorder" Background="#1A8E75FF" CornerRadius="8" Padding="12" Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <ProgressRing x:Name="SyncProgress" IsActive="True" Width="16" Height="16"/>
-                    <TextBlock x:Name="SyncStatusText" Text="Syncing settings..." VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SyncStatusText" Text="Syncing settings..." Foreground="White" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
             <!-- Appearance Settings -->
-            <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
-                    CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                <StackPanel Spacing="15">
+            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE790;" Foreground="{StaticResource GeminiPurpleBrush}"/>
-                        <TextBlock Text="Appearance" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE790;" Foreground="#8E75FF"/>
+                        <TextBlock Text="Appearance" FontWeight="Bold" FontSize="16" Foreground="White"/>
                     </StackPanel>
 
                     <ComboBox x:Name="ThemeCombo" Header="Theme" HorizontalAlignment="Stretch"
@@ -52,12 +52,11 @@
             </Border>
 
             <!-- Execution Settings -->
-            <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
-                    CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                <StackPanel Spacing="15">
+            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE768;" Foreground="{StaticResource GoogleBlue}"/>
-                        <TextBlock Text="Execution" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE768;" Foreground="#00CAFF"/>
+                        <TextBlock Text="Execution" FontWeight="Bold" FontSize="16" Foreground="White"/>
                     </StackPanel>
 
                     <ComboBox x:Name="ExecutionModeCombo" Header="Execution Mode" HorizontalAlignment="Stretch"
@@ -67,7 +66,7 @@
                     </ComboBox>
                     
                     <TextBlock Text="Mock mode previews actions without executing them. Live mode performs real actions on your computer." 
-                               FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                               FontSize="12" Foreground="#666666" TextWrapping="Wrap"/>
                     
                     <ToggleSwitch x:Name="ConfirmActionsToggle" Header="Confirm before executing actions"
                                   OnContent="On" OffContent="Off" Toggled="ConfirmActionsToggle_Toggled"/>
@@ -78,42 +77,43 @@
             </Border>
 
             <!-- Voice Recognition Settings -->
-            <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
-                    CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                <StackPanel Spacing="15">
+            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE720;" Foreground="{StaticResource GoogleGreen}"/>
-                        <TextBlock Text="Voice Recognition" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE720;" Foreground="#00FF9D"/>
+                        <TextBlock Text="Voice Recognition" FontWeight="Bold" FontSize="16" Foreground="White"/>
                     </StackPanel>
 
-                    <ToggleSwitch x:Name="VoiceEnabledToggle" Header="Enable continuous voice listening"
+                    <ToggleSwitch x:Name="VoiceEnabledToggle" Header="Enable voice commands"
                                   OnContent="On" OffContent="Off" Toggled="VoiceEnabledToggle_Toggled"/>
                     
-                     <StackPanel Spacing="5">
-                         <TextBlock Text="Silence Detection Sensitivity" FontSize="13"/>
-                         <Grid>
-                             <Grid.ColumnDefinitions>
-                                 <ColumnDefinition Width="*"/>
-                                 <ColumnDefinition Width="Auto"/>
-                             </Grid.ColumnDefinitions>
-                             <Slider x:Name="SilenceThresholdSlider" Minimum="200" Maximum="1000" StepFrequency="50"
-                                     ValueChanged="SilenceThresholdSlider_ValueChanged"/>
-                             <TextBlock x:Name="SilenceThresholdValue" Grid.Column="1" Width="50" VerticalAlignment="Center"/>
-                         </Grid>
-                     </StackPanel>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Silence Detection Sensitivity" FontSize="13" Foreground="#AAAAAA"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="SilenceThresholdSlider" Minimum="200" Maximum="1000" StepFrequency="50"
+                                    ValueChanged="SilenceThresholdSlider_ValueChanged"/>
+                            <TextBlock x:Name="SilenceThresholdValue" Grid.Column="1" VerticalAlignment="Center" 
+                                       HorizontalAlignment="Right" Foreground="#888888"/>
+                        </Grid>
+                    </StackPanel>
 
-                     <StackPanel Spacing="5">
-                         <TextBlock Text="Pause Duration to End Sentence (ms)" FontSize="13"/>
-                         <Grid>
-                             <Grid.ColumnDefinitions>
-                                 <ColumnDefinition Width="*"/>
-                                 <ColumnDefinition Width="Auto"/>
-                             </Grid.ColumnDefinitions>
-                             <Slider x:Name="SilenceDurationSlider" Minimum="500" Maximum="3000" StepFrequency="100"
-                                     ValueChanged="SilenceDurationSlider_ValueChanged"/>
-                             <TextBlock x:Name="SilenceDurationValue" Grid.Column="1" Width="60" VerticalAlignment="Center"/>
-                         </Grid>
-                     </StackPanel>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Pause Duration to End Sentence (ms)" FontSize="13" Foreground="#AAAAAA"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="SilenceDurationSlider" Minimum="500" Maximum="3000" StepFrequency="100"
+                                    ValueChanged="SilenceDurationSlider_ValueChanged"/>
+                            <TextBlock x:Name="SilenceDurationValue" Grid.Column="1" VerticalAlignment="Center" 
+                                       HorizontalAlignment="Right" Foreground="#888888"/>
+                        </Grid>
+                    </StackPanel>
                     
                     <ComboBox x:Name="VoiceLanguageCombo" Header="Recognition Language" HorizontalAlignment="Stretch"
                               SelectionChanged="VoiceLanguageCombo_SelectionChanged">
@@ -127,12 +127,11 @@
             </Border>
 
             <!-- Notifications -->
-            <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
-                    CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                <StackPanel Spacing="15">
+            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE7E7;" Foreground="{StaticResource GoogleYellow}"/>
-                        <TextBlock Text="Notifications" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE7E7;" Foreground="#FFAA00"/>
+                        <TextBlock Text="Notifications" FontWeight="Bold" FontSize="16" Foreground="White"/>
                     </StackPanel>
 
                     <ToggleSwitch x:Name="NotificationsToggle" Header="Enable desktop notifications"
@@ -141,60 +140,58 @@
             </Border>
 
             <!-- About Section -->
-            <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
-                    CornerRadius="12" Padding="20" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                <StackPanel Spacing="15">
+            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE946;" Foreground="{StaticResource GoogleBlue}"/>
-                        <TextBlock Text="About" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE946;" Foreground="#8E75FF"/>
+                        <TextBlock Text="About" FontWeight="Bold" FontSize="16" Foreground="White"/>
                     </StackPanel>
 
-                     <Grid>
-                         <Grid.ColumnDefinitions>
-                             <ColumnDefinition Width="Auto"/>
-                             <ColumnDefinition Width="*"/>
-                         </Grid.ColumnDefinitions>
-                         <Grid.RowDefinitions>
-                             <RowDefinition Height="Auto"/>
-                             <RowDefinition Height="Auto"/>
-                             <RowDefinition Height="Auto"/>
-                         </Grid.RowDefinitions>
-                         <TextBlock Text="Version:" FontWeight="SemiBold"/>
-                         <TextBlock Grid.Column="1" Text="1.0.0" Opacity="0.8"/>
-                         <TextBlock Grid.Row="1" Text="Build:" FontWeight="SemiBold"/>
-                         <TextBlock Grid.Row="1" Grid.Column="1" Text="2026.01.15" Opacity="0.8"/>
-                         <TextBlock Grid.Row="2" Text="Platform:" FontWeight="SemiBold"/>
-                         <TextBlock Grid.Row="2" Grid.Column="1" Text="Windows 10/11 (WinUI 3)" Opacity="0.8"/>
-                     </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Version:" Foreground="#888888"/>
+                        <TextBlock Grid.Column="1" Text="1.0.0" Foreground="White"/>
+                        <TextBlock Grid.Row="1" Text="Build:" Foreground="#888888"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="2026.01.23" Foreground="White"/>
+                        <TextBlock Grid.Row="2" Text="Platform:" Foreground="#888888"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Windows 10/11 (WinUI 3)" Foreground="White"/>
+                    </Grid>
                     
-                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
-                        <HyperlinkButton Content="Website" NavigateUri="https://kernalagent.vercel.app"/>
-                        <HyperlinkButton Content="Documentation" NavigateUri="https://kernalagent.vercel.app/docs"/>
+                    <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,8,0,0">
+                        <HyperlinkButton Content="Website" NavigateUri="https://kernalagent.vercel.app" Foreground="#8E75FF"/>
+                        <HyperlinkButton Content="Documentation" NavigateUri="https://kernalagent.vercel.app/docs" Foreground="#8E75FF"/>
                     </StackPanel>
                     
-                    <Button Content="Sync Settings from Cloud" Click="SyncFromCloudButton_Click" Margin="0,5,0,0"/>
+                    <Button Content="Sync Settings from Cloud" Click="SyncFromCloudButton_Click" 
+                            Background="#1A8E75FF" Foreground="#8E75FF" Padding="12,8" CornerRadius="6"/>
                 </StackPanel>
             </Border>
 
             <!-- Danger Zone -->
-            <Border Background="#1AEA4335" CornerRadius="12" Padding="20"
-                     BorderThickness="1" BorderBrush="{StaticResource GoogleRed}">
-                <StackPanel Spacing="10">
+            <Border Background="#1AFF5555" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#FF5555">
+                <StackPanel Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE7BA;" Foreground="{StaticResource GoogleRed}"/>
-                        <TextBlock Text="Danger Zone" FontWeight="Bold" FontSize="16" 
-                                   Foreground="{StaticResource GoogleRed}" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE7BA;" Foreground="#FF5555"/>
+                        <TextBlock Text="Danger Zone" FontWeight="Bold" FontSize="16" Foreground="#FF5555"/>
                     </StackPanel>
                     
-                    <TextBlock Text="Reset all settings to their default values." FontSize="12" Opacity="0.8"/>
+                    <TextBlock Text="Reset all settings to their default values." FontSize="13" Foreground="#888888"/>
                     
-                    <Button Content="RESET ALL SETTINGS" Background="{StaticResource GoogleRed}" 
-                            Foreground="White" HorizontalAlignment="Stretch"
-                            Click="ResetAllSettingsButton_Click" Margin="0,10,0,0"/>
+                    <Button Content="RESET ALL SETTINGS" Background="#FF5555" Foreground="White" 
+                            HorizontalAlignment="Stretch" Click="ResetAllSettingsButton_Click" 
+                            Padding="12,10" CornerRadius="6" Margin="0,8,0,0"/>
                 </StackPanel>
             </Border>
             
-            <Grid Height="30"/>
+            <Grid Height="32"/>
         </StackPanel>
     </ScrollViewer>
 </Page>

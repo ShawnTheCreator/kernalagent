@@ -73,14 +73,102 @@ namespace Kernel_Agent
         }
 
         /// <summary>
-        /// Saves the current skill to a local JSON file
+        /// Saves the current skill to Firebase via ApiService
         /// </summary>
-        private void OnSaveSkillClick(object sender, RoutedEventArgs e)
+        private async void OnSaveSkillClick(object sender, RoutedEventArgs e)
         {
-            string json = JsonSerializer.Serialize(Actions);
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "skill.json");
+            var btn = sender as Button;
+            if (btn == null) return;
 
-            File.WriteAllText(path, json); // Use File.WriteAllText for simple local storage
+            // Validate inputs
+            if (string.IsNullOrWhiteSpace(SkillNameTextBox.Text))
+            {
+                var dialog = new ContentDialog
+                {
+                    Title = "Validation Error",
+                    Content = "Please enter a skill name.",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.XamlRoot
+                };
+                await dialog.ShowAsync();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(IntentSignatureTextBox.Text))
+            {
+                var dialog = new ContentDialog
+                {
+                    Title = "Validation Error",
+                    Content = "Please enter an intent signature.",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.XamlRoot
+                };
+                await dialog.ShowAsync();
+                return;
+            }
+
+            // Show loading state
+            var originalContent = btn.Content;
+            btn.Content = "Saving to Firebase...";
+            btn.IsEnabled = false;
+
+            try
+            {
+                var api = Services.ApiService.Instance;
+                var skillId = await api.CreateSkillAsync(
+                    name: SkillNameTextBox.Text.Trim(),
+                    intentSignature: IntentSignatureTextBox.Text.Trim(),
+                    description: DescriptionTextBox.Text?.Trim() ?? "Manual skill",
+                    confidence: 0.9
+                );
+
+                if (!string.IsNullOrEmpty(skillId))
+                {
+                    // Success!
+                    var successDialog = new ContentDialog
+                    {
+                        Title = "Success",
+                        Content = $"Skill '{SkillNameTextBox.Text}' saved successfully!\nSkill ID: {skillId}",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await successDialog.ShowAsync();
+
+                    // Clear form
+                    SkillNameTextBox.Text = "";
+                    IntentSignatureTextBox.Text = "";
+                    DescriptionTextBox.Text = "";
+                }
+                else
+                {
+                    // Failed
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "Save Failed",
+                        Content = "Failed to save skill to Firebase. Check debug output for details.",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await errorDialog.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[FORGE] Save error: {ex.Message}");
+                var errorDialog = new ContentDialog
+                {
+                    Title = "Error",
+                    Content = $"An error occurred: {ex.Message}",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.XamlRoot
+                };
+                await errorDialog.ShowAsync();
+            }
+            finally
+            {
+                btn.Content = originalContent;
+                btn.IsEnabled = true;
+            }
         }
     }
 

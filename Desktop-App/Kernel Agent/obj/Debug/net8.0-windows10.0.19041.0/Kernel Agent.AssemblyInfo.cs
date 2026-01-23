@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Kernel Agent")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+938c1a7e9598d517fc752635da9f6dd951a0ac7b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ae07b0fed65d20b9dfa96f7903031bf138404aac")]
 [assembly: System.Reflection.AssemblyProductAttribute("Kernel Agent")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Kernel Agent")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

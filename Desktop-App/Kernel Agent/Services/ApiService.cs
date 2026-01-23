@@ -40,16 +40,47 @@ namespace Kernel_Agent.Services
             };
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
+        // Thread-safe in-memory token cache (ApplicationData throws from background threads)
+        private static string? _cachedAuthToken = null;
+        private static readonly object _tokenLock = new object();
 
         private async Task<string?> GetAuthTokenAsync()
         {
             try
             {
-                var localSettings = ApplicationData.Current.LocalSettings;
-                return localSettings.Values["AuthToken"] as string;
+                // First check in-memory cache (thread-safe)
+                lock (_tokenLock)
+                {
+                    if (!string.IsNullOrEmpty(_cachedAuthToken))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[API] GetAuthToken - From cache, Length: {_cachedAuthToken.Length}");
+                        return _cachedAuthToken;
+                    }
+                }
+                
+                // Try to load from LocalSettings (may fail from background thread)
+                try
+                {
+                    var localSettings = ApplicationData.Current.LocalSettings;
+                    var token = localSettings.Values["AuthToken"] as string;
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        lock (_tokenLock) { _cachedAuthToken = token; }
+                        System.Diagnostics.Debug.WriteLine($"[API] GetAuthToken - From LocalSettings, Length: {token.Length}");
+                        return token;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[API] GetAuthToken - LocalSettings access failed: {ex.Message}");
+                }
+                
+                System.Diagnostics.Debug.WriteLine("[API] GetAuthToken - No token found");
+                return null;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[API] GetAuthToken ERROR: {ex.Message}");
                 return null;
             }
         }
@@ -58,18 +89,45 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                var localSettings = ApplicationData.Current.LocalSettings;
-                localSettings.Values["AuthToken"] = token;
+                System.Diagnostics.Debug.WriteLine($"[API] SetAuthToken - Saving token of length: {token?.Length ?? 0}");
+                
+                // Always save to in-memory cache first (thread-safe)
+                lock (_tokenLock)
+                {
+                    _cachedAuthToken = token;
+                }
+                System.Diagnostics.Debug.WriteLine("[API] SetAuthToken - Saved to in-memory cache ✓");
+                
+                // Try to persist to LocalSettings (may fail from background thread)
+                try
+                {
+                    var localSettings = ApplicationData.Current.LocalSettings;
+                    localSettings.Values["AuthToken"] = token;
+                    System.Diagnostics.Debug.WriteLine("[API] SetAuthToken - Persisted to LocalSettings ✓");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[API] SetAuthToken - LocalSettings persist failed (will retry on UI thread): {ex.Message}");
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] SetAuthToken ERROR: {ex.Message}");
+            }
         }
 
         private async Task ClearAuthTokenAsync()
         {
             try
             {
-                var localSettings = ApplicationData.Current.LocalSettings;
-                localSettings.Values.Remove("AuthToken");
+                lock (_tokenLock) { _cachedAuthToken = null; }
+                
+                try
+                {
+                    var localSettings = ApplicationData.Current.LocalSettings;
+                    localSettings.Values.Remove("AuthToken");
+                }
+                catch { }
             }
             catch { }
         }
@@ -156,7 +214,9 @@ namespace Kernel_Agent.Services
         public async Task<bool> IsAuthenticatedAsync()
         {
             var token = await GetAuthTokenAsync();
-            return !string.IsNullOrEmpty(token);
+            var isAuth = !string.IsNullOrEmpty(token);
+            System.Diagnostics.Debug.WriteLine($"[API] IsAuthenticatedAsync - Result: {isAuth}");
+            return isAuth;
         }
 
         public async Task LogoutAsync()
@@ -166,7 +226,68 @@ namespace Kernel_Agent.Services
 
         public async Task<UserDto?> GetCurrentUserAsync()
         {
-            return await GetAsync<UserDto>("auth/me");
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                if (string.IsNullOrEmpty(token))
+                {
+                    System.Diagnostics.Debug.WriteLine("[API] GetCurrentUser - No auth token");
+                    return null;
+                }
+
+                // Call local Python microservice for user profile
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                var url = $"{MICROSERVICE_URL}/me";
+                System.Diagnostics.Debug.WriteLine($"[API] GetCurrentUser - Calling: {url}");
+                
+                var response = await client.GetAsync(url);
+                System.Diagnostics.Debug.WriteLine($"[API] GetCurrentUser - Status: {response.StatusCode}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] GetCurrentUser - Response: {json.Substring(0, Math.Min(200, json.Length))}...");
+                    
+                    // Parse the response - microservice returns UserProfileResponse
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+                    
+                    var user = new UserDto
+                    {
+                        UserId = root.TryGetProperty("id", out var idEl) ? idEl.GetString() : null,
+                        Name = root.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "User" : "User",
+                        Email = root.TryGetProperty("email", out var emailEl) ? emailEl.GetString() : null,
+                        PhotoUrl = root.TryGetProperty("photoURL", out var photoEl) ? photoEl.GetString() : null,
+                    };
+                    
+                    // Parse createdAt if present
+                    if (root.TryGetProperty("createdAt", out var createdEl))
+                    {
+                        var createdStr = createdEl.GetString();
+                        if (!string.IsNullOrEmpty(createdStr) && DateTime.TryParse(createdStr, out var createdAt))
+                        {
+                            user.CreatedAt = createdAt;
+                        }
+                    }
+                    
+                    System.Diagnostics.Debug.WriteLine($"[API] GetCurrentUser - Parsed: {user.Name}, {user.Email}");
+                    return user;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] GetCurrentUser - Error: {errorContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetCurrentUser error: {ex.Message}");
+            }
+            
+            return null;
         }
 
         public async Task<string?> AskAgentAsync(string message)
@@ -384,28 +505,111 @@ namespace Kernel_Agent.Services
             try
             {
                 var token = await GetAuthTokenAsync();
-                if (string.IsNullOrEmpty(token)) return new List<SkillDto>();
+                System.Diagnostics.Debug.WriteLine($"[API] GetMySkills - Token present: {!string.IsNullOrEmpty(token)}");
+                
+                if (string.IsNullOrEmpty(token))
+                {
+                    System.Diagnostics.Debug.WriteLine("[API] GetMySkills - No auth token, returning empty");
+                    return new List<SkillDto>();
+                }
 
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Authorization = 
                     new AuthenticationHeaderValue("Bearer", token);
 
-                var response = await client.GetAsync($"{MICROSERVICE_URL}/me/skills");
+                var url = $"{MICROSERVICE_URL}/me/skills";
+                System.Diagnostics.Debug.WriteLine($"[API] GetMySkills - Calling: {url}");
+                
+                var response = await client.GetAsync(url);
+                System.Diagnostics.Debug.WriteLine($"[API] GetMySkills - Status: {response.StatusCode}");
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] GetMySkills - Response: {json.Substring(0, Math.Min(200, json.Length))}...");
+                    
                     var skills = JsonSerializer.Deserialize<List<SkillDto>>(json, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
+                    System.Diagnostics.Debug.WriteLine($"[API] GetMySkills - Parsed {skills?.Count ?? 0} skills");
                     return skills ?? new List<SkillDto>();
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] GetMySkills - Error response: {errorContent}");
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[API] GetMySkills error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[API] GetMySkills stack: {ex.StackTrace}");
             }
             return new List<SkillDto>();
+        }
+
+        public async Task<string?> CreateSkillAsync(string name, string intentSignature, string description, double confidence = 0.9)
+        {
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                System.Diagnostics.Debug.WriteLine($"[API] CreateSkill - Token present: {!string.IsNullOrEmpty(token)}");
+                
+                if (string.IsNullOrEmpty(token))
+                {
+                    System.Diagnostics.Debug.WriteLine("[API] CreateSkill - No auth token");
+                    return null;
+                }
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                var skillData = new
+                {
+                    name,
+                    intent_signature = intentSignature,
+                    description,
+                    confidence
+                };
+
+                var json = JsonSerializer.Serialize(skillData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var url = $"{MICROSERVICE_URL}/me/skills";
+                System.Diagnostics.Debug.WriteLine($"[API] CreateSkill - Calling: {url}");
+                System.Diagnostics.Debug.WriteLine($"[API] CreateSkill - Data: {json}");
+                
+                var response = await client.PostAsync(url, content);
+                System.Diagnostics.Debug.WriteLine($"[API] CreateSkill - Status: {response.StatusCode}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] CreateSkill - Response: {responseJson}");
+                    
+                    // Parse response to get skill ID
+                    var result = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(responseJson);
+                    if (result != null && result.ContainsKey("skill_id"))
+                    {
+                        var skillId = result["skill_id"].GetString();
+                        System.Diagnostics.Debug.WriteLine($"[API] CreateSkill - Success! Skill ID: {skillId}");
+                        return skillId;
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[API] CreateSkill - Error: {errorContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] CreateSkill error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[API] CreateSkill stack: {ex.StackTrace}");
+            }
+            return null;
         }
 
         public async Task<List<SessionDto>> GetMySessionsAsync()
@@ -488,8 +692,18 @@ namespace Kernel_Agent.Services
     public class UserDto
     {
         public int Id { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("user_id")]
+        public string? UserId { get; set; }
+        
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("photo_url")]
+        public string? PhotoUrl { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("created_at")]
+        public DateTime? CreatedAt { get; set; }
     }
 
     // =====================================================
@@ -500,30 +714,55 @@ namespace Kernel_Agent.Services
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("intent_signature")]
         public string IntentSignature { get; set; } = string.Empty;
+        
         public string? Description { get; set; }
         public float Confidence { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("success_count")]
         public int SuccessCount { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("last_used_at")]
         public string? LastUsedAt { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("created_at")]
         public string? CreatedAt { get; set; }
     }
 
     public class SessionDto
     {
+        [System.Text.Json.Serialization.JsonPropertyName("session_id")]
         public string SessionId { get; set; } = string.Empty;
+        
         public string Intent { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("started_at")]
         public string StartedAt { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("ended_at")]
         public string? EndedAt { get; set; }
+        
         public string Status { get; set; } = string.Empty;
         public float Confidence { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("step_count")]
         public int StepCount { get; set; }
     }
 
     public class MemoryDto
     {
+        [System.Text.Json.Serialization.JsonPropertyName("frequent_skills")]
         public List<string> FrequentSkills { get; set; } = new();
+        
+        [System.Text.Json.Serialization.JsonPropertyName("failure_patterns")]
         public List<string> FailurePatterns { get; set; } = new();
+        
+        [System.Text.Json.Serialization.JsonPropertyName("success_patterns")]
         public List<string> SuccessPatterns { get; set; } = new();
+        
+        [System.Text.Json.Serialization.JsonPropertyName("updated_at")]
         public string? UpdatedAt { get; set; }
     }
 

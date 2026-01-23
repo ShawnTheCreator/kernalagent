@@ -47,6 +47,9 @@ namespace Kernel_Agent
             // Appearance
             SelectComboItemByTag(GetControl<ComboBox>("ThemeCombo"), _settings.Theme);
             SelectComboItemByTag(GetControl<ComboBox>("LanguageCombo"), _settings.Language);
+            
+            // Apply saved theme
+            ApplyTheme(_settings.Theme);
 
             // Execution
             SelectComboItemByTag(GetControl<ComboBox>("ExecutionModeCombo"), _settings.ExecutionMode);
@@ -121,7 +124,32 @@ namespace Kernel_Agent
             if (sender is ComboBox combo && combo.SelectedItem is ComboBoxItem item && item.Tag != null)
             {
                 _settings.Theme = item.Tag.ToString()!;
+                ApplyTheme(_settings.Theme);
                 SaveSettingAndSync();
+            }
+        }
+
+        /// <summary>
+        /// Apply theme to the app window
+        /// </summary>
+        private void ApplyTheme(string theme)
+        {
+            try
+            {
+                if (this.XamlRoot?.Content is FrameworkElement rootElement)
+                {
+                    rootElement.RequestedTheme = theme.ToLower() switch
+                    {
+                        "dark" => ElementTheme.Dark,
+                        "light" => ElementTheme.Light,
+                        _ => ElementTheme.Default
+                    };
+                    System.Diagnostics.Debug.WriteLine($"[SETTINGS] Applied theme: {theme}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SETTINGS] Theme apply error: {ex.Message}");
             }
         }
 

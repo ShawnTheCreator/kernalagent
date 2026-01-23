@@ -41,29 +41,42 @@
                 Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
                 CornerRadius="12" Padding="20"
                 BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-            <StackPanel Spacing="20">
-                <TextBlock Text="ACTION PROPERTIES" FontSize="11" FontWeight="Bold" Foreground="{StaticResource GoogleBlue}" CharacterSpacing="100"/>
+            <ScrollViewer>
+                <StackPanel Spacing="16">
+                    <TextBlock Text="SKILL EDITOR" FontSize="11" FontWeight="Bold" Foreground="{StaticResource GeminiPurpleBrush}" CharacterSpacing="100"/>
+                    
+                    <!-- Skill Information -->
+                    <TextBox x:Name="SkillNameTextBox" Header="Skill Name" PlaceholderText="e.g. Open Excel and Create Report" />
+                    <TextBox x:Name="IntentSignatureTextBox" Header="Intent Signature" PlaceholderText="e.g. create excel report" />
+                    <TextBox x:Name="DescriptionTextBox" Header="Description" PlaceholderText="Brief description of what this skill does" 
+                             TextWrapping="Wrap" AcceptsReturn="True" Height="80"/>
+                    
+                    <MenuFlyoutSeparator/>
+                    
+                    <!-- Action Properties (for selected step) -->
+                    <TextBlock Text="SELECTED STEP PROPERTIES" FontSize="10" FontWeight="Bold" Opacity="0.7" CharacterSpacing="100"/>
+                    <TextBox x:Name="ActionLabelTextBox" Header="Action Label" PlaceholderText="e.g. Click 'File' Menu" />
+                    <NumberBox x:Name="InputDelayNumberBox" Header="Input Delay (ms)" Value="500" SpinButtonPlacementMode="Compact" />
 
-                <TextBox Header="Action Label" PlaceholderText="e.g. Click 'File' Menu" />
-                <NumberBox Header="Input Delay (ms)" Value="500" SpinButtonPlacementMode="Compact" />
+                    <ToggleSwitch x:Name="WaitForStabilityToggle" Header="Wait for UI Stability" IsOn="True" />
 
-                <ToggleSwitch Header="Wait for UI Stability" IsOn="True" />
+                    <ComboBox x:Name="FailureStrategyCombo" Header="On Failure Strategy" HorizontalAlignment="Stretch">
+                        <ComboBoxItem Content="Retry 3 Times" IsSelected="True"/>
+                        <ComboBoxItem Content="Skip to Next Step"/>
+                        <ComboBoxItem Content="Abort Mission"/>
+                    </ComboBox>
 
-                <ComboBox Header="On Failure Strategy" HorizontalAlignment="Stretch">
-                    <ComboBoxItem Content="Retry 3 Times" IsSelected="True"/>
-                    <ComboBoxItem Content="Skip to Next Step"/>
-                    <ComboBoxItem Content="Abort Mission"/>
-                </ComboBox>
-
-                <Button Content="Simulate Action" Click="OnSimulateActionClick" HorizontalAlignment="Stretch" Margin="0,12,0,0"/>
-                <Button Content="Save Skill" Click="OnSaveSkillClick" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch"/>
-                <Button Content="Remove Step" HorizontalAlignment="Stretch" Foreground="{StaticResource GoogleRed}"/>
-            </StackPanel>
+                    <Button Content="Simulate Action" Click="OnSimulateActionClick" HorizontalAlignment="Stretch" Margin="0,12,0,0"/>
+                    <Button Content="Save Skill to Firebase" Click="OnSaveSkillClick" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch"/>
+                    <Button Content="Remove Step" HorizontalAlignment="Stretch" Foreground="{StaticResource GoogleRed}"/>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <Border Grid.Row="2" Grid.Column="0" 
                 Background="#111111" CornerRadius="12" 
-                Margin="0,0,12,0" Padding="16">
+                Margin="0,0,12,0" Padding="16"
+                BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -74,8 +87,8 @@
 
                 <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <StackPanel x:Name="TimelineStrip" Orientation="Horizontal" Spacing="8">
-                        <Button Background="{StaticResource GoogleBlue}" Width="140" Height="80" CornerRadius="4">
-                            <TextBlock Text="1. Launch App" FontSize="11" Foreground="White" TextWrapping="WrapWholeWords"/>
+                        <Button Background="{StaticResource GeminiPurpleBrush}" Width="140" Height="80" CornerRadius="4">
+                            <TextBlock Text="1. Launch Excel" FontSize="11" Foreground="White" TextWrapping="WrapWholeWords"/>
                         </Button>
                         <FontIcon Glyph="&#xE76C;" Opacity="0.3" VerticalAlignment="Center"/>
                         <Button Background="{StaticResource GeminiPurpleBrush}" Width="140" Height="80" CornerRadius="4">

@@ -448,6 +448,20 @@ namespace Kernel_Agent
                             UserNameText.Text = user.Name;
                             ProfilePicture.DisplayName = user.Name;
                             ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
+                            
+                            // Load profile picture from Firebase
+                            if (!string.IsNullOrEmpty(user.PhotoUrl))
+                            {
+                                try
+                                {
+                                    ProfilePicture.ProfilePicture = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(user.PhotoUrl));
+                                    System.Diagnostics.Debug.WriteLine($"[AUTH] Profile picture loaded: {user.PhotoUrl}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"[AUTH] Failed to load profile pic: {ex.Message}");
+                                }
+                            }
                         });
                     }
                 }
@@ -698,6 +712,9 @@ namespace Kernel_Agent
                     case "marketplace":
                         NavigateToPage(typeof(MarketplacePage));
                         break;
+                    case "profile":
+                        NavigateToPage(typeof(ProfilePage));
+                        break;
                 }
             }
         }
@@ -713,6 +730,12 @@ namespace Kernel_Agent
             {
                 ContentFrame.Navigate(pageType);
             }
+        }
+
+        private void ViewProfileMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            // Navigate to profile page
+            NavigateToPage(typeof(ProfilePage));
         }
 
         #endregion

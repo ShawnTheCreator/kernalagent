@@ -31,10 +31,24 @@ namespace Kernel_Agent
         private async Task LoadSkillsAsync()
         {
             ShowLoading(true);
+            System.Diagnostics.Debug.WriteLine("[MEMORY] Starting to load skills...");
             
             try
             {
+                // Check if authenticated first
+                var isAuth = await _api.IsAuthenticatedAsync();
+                System.Diagnostics.Debug.WriteLine($"[MEMORY] Is authenticated: {isAuth}");
+                
+                if (!isAuth)
+                {
+                    SkillsCountText.Text = "Not logged in";
+                    MemoryIntegrityText.Text = "Please login first";
+                    MemoryIntegrityText.Foreground = new SolidColorBrush(Color.FromArgb(255, 251, 188, 4));
+                    return;
+                }
+                
                 _skills = await _api.GetMySkillsAsync();
+                System.Diagnostics.Debug.WriteLine($"[MEMORY] Received {_skills.Count} skills from API");
                 
                 if (_skills.Count > 0)
                 {
@@ -55,6 +69,7 @@ namespace Kernel_Agent
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[MEMORY] Load error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[MEMORY] Stack trace: {ex.StackTrace}");
                 SkillsCountText.Text = "Failed to load";
                 MemoryIntegrityText.Text = "API: OFFLINE";
                 MemoryIntegrityText.Foreground = new SolidColorBrush(Color.FromArgb(255, 234, 67, 53));

@@ -226,7 +226,7 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
         
         private void InitTypeTables()
         {
-            _typeNameTable = new string[74];
+            _typeNameTable = new string[75];
             _typeNameTable[0] = "Microsoft.UI.Xaml.Controls.XamlControlsResources";
             _typeNameTable[1] = "Microsoft.UI.Xaml.ResourceDictionary";
             _typeNameTable[2] = "Object";
@@ -296,13 +296,14 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
             _typeNameTable[66] = "Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings";
             _typeNameTable[67] = "Kernel_Agent.MemoryPage";
             _typeNameTable[68] = "Kernel_Agent.OrbOverlayWindow";
-            _typeNameTable[69] = "Kernel_Agent.SandboxPage";
-            _typeNameTable[70] = "Kernel_Agent.SecurityPage";
-            _typeNameTable[71] = "Kernel_Agent.SettingsPage";
-            _typeNameTable[72] = "Microsoft.UI.Xaml.Controls.TreeViewNode";
-            _typeNameTable[73] = "System.Collections.Generic.IList`1<Microsoft.UI.Xaml.Controls.TreeViewNode>";
+            _typeNameTable[69] = "Kernel_Agent.ProfilePage";
+            _typeNameTable[70] = "Kernel_Agent.SandboxPage";
+            _typeNameTable[71] = "Kernel_Agent.SecurityPage";
+            _typeNameTable[72] = "Kernel_Agent.SettingsPage";
+            _typeNameTable[73] = "Microsoft.UI.Xaml.Controls.TreeViewNode";
+            _typeNameTable[74] = "System.Collections.Generic.IList`1<Microsoft.UI.Xaml.Controls.TreeViewNode>";
 
-            _typeTable = new global::System.Type[74];
+            _typeTable = new global::System.Type[75];
             _typeTable[0] = typeof(global::Microsoft.UI.Xaml.Controls.XamlControlsResources);
             _typeTable[1] = typeof(global::Microsoft.UI.Xaml.ResourceDictionary);
             _typeTable[2] = typeof(global::System.Object);
@@ -372,11 +373,12 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
             _typeTable[66] = typeof(global::Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings);
             _typeTable[67] = typeof(global::Kernel_Agent.MemoryPage);
             _typeTable[68] = typeof(global::Kernel_Agent.OrbOverlayWindow);
-            _typeTable[69] = typeof(global::Kernel_Agent.SandboxPage);
-            _typeTable[70] = typeof(global::Kernel_Agent.SecurityPage);
-            _typeTable[71] = typeof(global::Kernel_Agent.SettingsPage);
-            _typeTable[72] = typeof(global::Microsoft.UI.Xaml.Controls.TreeViewNode);
-            _typeTable[73] = typeof(global::System.Collections.Generic.IList<global::Microsoft.UI.Xaml.Controls.TreeViewNode>);
+            _typeTable[69] = typeof(global::Kernel_Agent.ProfilePage);
+            _typeTable[70] = typeof(global::Kernel_Agent.SandboxPage);
+            _typeTable[71] = typeof(global::Kernel_Agent.SecurityPage);
+            _typeTable[72] = typeof(global::Kernel_Agent.SettingsPage);
+            _typeTable[73] = typeof(global::Microsoft.UI.Xaml.Controls.TreeViewNode);
+            _typeTable[74] = typeof(global::System.Collections.Generic.IList<global::Microsoft.UI.Xaml.Controls.TreeViewNode>);
         }
 
         private int LookupTypeIndexByName(string typeName)
@@ -433,10 +435,11 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
         private object Activate_65_ProgressRing() { return new global::Microsoft.UI.Xaml.Controls.ProgressRing(); }
         private object Activate_67_MemoryPage() { return new global::Kernel_Agent.MemoryPage(); }
         private object Activate_68_OrbOverlayWindow() { return new global::Kernel_Agent.OrbOverlayWindow(); }
-        private object Activate_69_SandboxPage() { return new global::Kernel_Agent.SandboxPage(); }
-        private object Activate_70_SecurityPage() { return new global::Kernel_Agent.SecurityPage(); }
-        private object Activate_71_SettingsPage() { return new global::Kernel_Agent.SettingsPage(); }
-        private object Activate_72_TreeViewNode() { return new global::Microsoft.UI.Xaml.Controls.TreeViewNode(); }
+        private object Activate_69_ProfilePage() { return new global::Kernel_Agent.ProfilePage(); }
+        private object Activate_70_SandboxPage() { return new global::Kernel_Agent.SandboxPage(); }
+        private object Activate_71_SecurityPage() { return new global::Kernel_Agent.SecurityPage(); }
+        private object Activate_72_SettingsPage() { return new global::Kernel_Agent.SettingsPage(); }
+        private object Activate_73_TreeViewNode() { return new global::Microsoft.UI.Xaml.Controls.TreeViewNode(); }
         private void StaticInitializer_0_XamlControlsResources() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.XamlControlsResources).TypeHandle);
         private void StaticInitializer_4_BlankPage1() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.BlankPage1).TypeHandle);
         private void StaticInitializer_7_NumberBox() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.NumberBox).TypeHandle);
@@ -477,11 +480,12 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
         private void StaticInitializer_66_ProgressRingTemplateSettings() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.ProgressRingTemplateSettings).TypeHandle);
         private void StaticInitializer_67_MemoryPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.MemoryPage).TypeHandle);
         private void StaticInitializer_68_OrbOverlayWindow() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.OrbOverlayWindow).TypeHandle);
-        private void StaticInitializer_69_SandboxPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SandboxPage).TypeHandle);
-        private void StaticInitializer_70_SecurityPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SecurityPage).TypeHandle);
-        private void StaticInitializer_71_SettingsPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SettingsPage).TypeHandle);
-        private void StaticInitializer_72_TreeViewNode() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.TreeViewNode).TypeHandle);
-        private void StaticInitializer_73_IList() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::System.Collections.Generic.IList<global::Microsoft.UI.Xaml.Controls.TreeViewNode>).TypeHandle);
+        private void StaticInitializer_69_ProfilePage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.ProfilePage).TypeHandle);
+        private void StaticInitializer_70_SandboxPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SandboxPage).TypeHandle);
+        private void StaticInitializer_71_SecurityPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SecurityPage).TypeHandle);
+        private void StaticInitializer_72_SettingsPage() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Kernel_Agent.SettingsPage).TypeHandle);
+        private void StaticInitializer_73_TreeViewNode() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::Microsoft.UI.Xaml.Controls.TreeViewNode).TypeHandle);
+        private void StaticInitializer_74_IList() => global::System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(global::System.Collections.Generic.IList<global::Microsoft.UI.Xaml.Controls.TreeViewNode>).TypeHandle);
         private void MapAdd_0_XamlControlsResources(object instance, object key, object item)
         {
             var collection = (global::System.Collections.Generic.IDictionary<global::System.Object, global::System.Object>)instance;
@@ -513,7 +517,7 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
             var newItem = (global::Microsoft.UI.Xaml.Media.GradientStop)item;
             collection.Add(newItem);
         }
-        private void VectorAdd_73_IList(object instance, object item)
+        private void VectorAdd_74_IList(object instance, object item)
         {
             var collection = (global::System.Collections.Generic.ICollection<global::Microsoft.UI.Xaml.Controls.TreeViewNode>)instance;
             var newItem = (global::Microsoft.UI.Xaml.Controls.TreeViewNode)item;
@@ -1054,34 +1058,42 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
                 xamlType = userType;
                 break;
 
-            case 69:   //  Kernel_Agent.SandboxPage
+            case 69:   //  Kernel_Agent.ProfilePage
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Page"));
-                userType.Activator = Activate_69_SandboxPage;
-                userType.StaticInitializer = StaticInitializer_69_SandboxPage;
+                userType.Activator = Activate_69_ProfilePage;
+                userType.StaticInitializer = StaticInitializer_69_ProfilePage;
                 userType.SetIsLocalType();
                 xamlType = userType;
                 break;
 
-            case 70:   //  Kernel_Agent.SecurityPage
+            case 70:   //  Kernel_Agent.SandboxPage
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Page"));
-                userType.Activator = Activate_70_SecurityPage;
-                userType.StaticInitializer = StaticInitializer_70_SecurityPage;
+                userType.Activator = Activate_70_SandboxPage;
+                userType.StaticInitializer = StaticInitializer_70_SandboxPage;
                 userType.SetIsLocalType();
                 xamlType = userType;
                 break;
 
-            case 71:   //  Kernel_Agent.SettingsPage
+            case 71:   //  Kernel_Agent.SecurityPage
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Page"));
-                userType.Activator = Activate_71_SettingsPage;
-                userType.StaticInitializer = StaticInitializer_71_SettingsPage;
+                userType.Activator = Activate_71_SecurityPage;
+                userType.StaticInitializer = StaticInitializer_71_SecurityPage;
                 userType.SetIsLocalType();
                 xamlType = userType;
                 break;
 
-            case 72:   //  Microsoft.UI.Xaml.Controls.TreeViewNode
+            case 72:   //  Kernel_Agent.SettingsPage
+                userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.Controls.Page"));
+                userType.Activator = Activate_72_SettingsPage;
+                userType.StaticInitializer = StaticInitializer_72_SettingsPage;
+                userType.SetIsLocalType();
+                xamlType = userType;
+                break;
+
+            case 73:   //  Microsoft.UI.Xaml.Controls.TreeViewNode
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, GetXamlTypeByName("Microsoft.UI.Xaml.DependencyObject"));
-                userType.Activator = Activate_72_TreeViewNode;
-                userType.StaticInitializer = StaticInitializer_72_TreeViewNode;
+                userType.Activator = Activate_73_TreeViewNode;
+                userType.StaticInitializer = StaticInitializer_73_TreeViewNode;
                 userType.AddMemberName("Children");
                 userType.AddMemberName("Content");
                 userType.AddMemberName("Depth");
@@ -1093,10 +1105,10 @@ namespace Kernel_Agent.Kernel_Agent_XamlTypeInfo
                 xamlType = userType;
                 break;
 
-            case 73:   //  System.Collections.Generic.IList`1<Microsoft.UI.Xaml.Controls.TreeViewNode>
+            case 74:   //  System.Collections.Generic.IList`1<Microsoft.UI.Xaml.Controls.TreeViewNode>
                 userType = new global::Kernel_Agent.Kernel_Agent_XamlTypeInfo.XamlUserType(this, typeName, type, null);
-                userType.StaticInitializer = StaticInitializer_73_IList;
-                userType.CollectionAdd = VectorAdd_73_IList;
+                userType.StaticInitializer = StaticInitializer_74_IList;
+                userType.CollectionAdd = VectorAdd_74_IList;
                 userType.SetIsReturnTypeStub();
                 xamlType = userType;
                 break;
