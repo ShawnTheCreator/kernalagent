@@ -13,3 +13,9 @@ groq
 SpeechRecognition
 vosk
 pyaudio
+
+# Janitor Agent
+watchdog
+psutil
+aiofiles
+requests
