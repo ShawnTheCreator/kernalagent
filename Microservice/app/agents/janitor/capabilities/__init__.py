@@ -87,6 +87,41 @@ def get_all_capabilities() -> list[BaseCapability]:
     return list(_capabilities.values())
 
 
+# ============================================================================
+# AUTO-REGISTER BUILT-IN CAPABILITIES
+# ============================================================================
+
+def _auto_register():
+    """Auto-register all built-in capabilities on import."""
+    try:
+        from app.agents.janitor.capabilities.auto_organizer import AutoOrganizerCapability
+        register_capability(AutoOrganizerCapability())
+    except Exception as e:
+        logger.warning(f"Failed to register AutoOrganizerCapability: {e}")
+    
+    try:
+        from app.agents.janitor.capabilities.smart_renamer import SmartRenamerCapability
+        register_capability(SmartRenamerCapability())
+    except Exception as e:
+        logger.warning(f"Failed to register SmartRenamerCapability: {e}")
+    
+    try:
+        from app.agents.janitor.capabilities.duplicate_hunter import DuplicateHunterCapability
+        register_capability(DuplicateHunterCapability())
+    except Exception as e:
+        logger.debug(f"DuplicateHunterCapability not available: {e}")
+    
+    try:
+        from app.agents.janitor.capabilities.file_namer import FileNamerCapability
+        register_capability(FileNamerCapability())
+    except Exception as e:
+        logger.debug(f"FileNamerCapability not available: {e}")
+
+
+# Auto-register on import
+_auto_register()
+
+
 async def run_capabilities(file_path: str, file_info: dict) -> list[CapabilityResult]:
     """
     Run all capabilities on a file.

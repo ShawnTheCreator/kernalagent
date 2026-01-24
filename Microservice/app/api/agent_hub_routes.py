@@ -502,6 +502,178 @@ async def clear_memory_timeline(user_id: str = "default_user"):
 
 
 # =============================================================================
+# Janitor V3 - Smart Organizer Endpoints
+# =============================================================================
+
+@router.post("/janitor/clean-folder")
+async def clean_folder(request: dict):
+    """
+    Scan and organize all files in a folder.
+    
+    Request:
+        {
+            "folder_path": "C:/Users/xyz/Downloads",
+            "auto_approve": ["IMAGES", "VIDEOS", "AUDIO"],  # optional
+            "preview_only": true  # if true, return suggestions without moving
+        }
+    
+    Returns:
+        Summary of actions taken or suggested
+    """
+    try:
+        folder_path = request.get("folder_path", "")
+        auto_approve = request.get("auto_approve", ["IMAGES", "VIDEOS", "AUDIO", "SCREENSHOTS"])
+        preview_only = request.get("preview_only", False)
+        
+        if not folder_path or not os.path.isdir(folder_path):
+            return {"success": False, "error": "Invalid folder path"}
+        
+        from app.agents.janitor.capabilities.auto_organizer import AutoOrganizerCapability
+        organizer = AutoOrganizerCapability()
+        
+        if preview_only:
+            # Just scan and return suggestions
+            results = await organizer.scan_folder(folder_path)
+            suggestions = [
+                {
+                    "file": os.path.basename(r.metadata.get("source", "")),
+                    "suggestion": r.suggestion,
+                    "category": r.metadata.get("category", ""),
+                    "destination": r.metadata.get("destination", ""),
+                    "auto_approve": r.metadata.get("auto_approve", False),
+                }
+                for r in results
+            ]
+            return {
+                "success": True,
+                "preview_only": True,
+                "count": len(suggestions),
+                "suggestions": suggestions
+            }
+        else:
+            # Actually organize
+            summary = await organizer.organize_folder(folder_path, auto_approve)
+            return {"success": True, **summary}
+            
+    except Exception as e:
+        logger.error(f"[Janitor V3] Clean folder failed: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/janitor/scan-file")
+async def scan_file(request: dict):
+    """
+    Scan a single file with all Janitor capabilities.
+    
+    Request:
+        {"file_path": "C:/Users/xyz/Downloads/file.jpg"}
+    
+    Returns:
+        List of suggested actions from all capabilities
+    """
+    try:
+        file_path = request.get("file_path", "")
+        
+        if not file_path or not os.path.isfile(file_path):
+            return {"success": False, "error": "Invalid file path"}
+        
+        from app.agents.janitor.capabilities import run_capabilities
+        
+        file_info = {
+            "filename": os.path.basename(file_path),
+            "size": os.path.getsize(file_path),
+        }
+        
+        results = await run_capabilities(file_path, file_info)
+        
+        suggestions = [
+            {
+                "capability": r.capability,
+                "action_type": r.action_type,
+                "suggestion": r.suggestion,
+                "confidence": r.confidence,
+                "requires_permission": r.requires_permission,
+                "metadata": r.metadata,
+            }
+            for r in results
+        ]
+        
+        return {
+            "success": True,
+            "file": os.path.basename(file_path),
+            "suggestions": suggestions
+        }
+        
+    except Exception as e:
+        logger.error(f"[Janitor V3] Scan file failed: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/janitor/rename-file")
+async def rename_file_smart(request: dict):
+    """
+    Smart rename a file using AI analysis.
+    
+    Request:
+        {
+            "file_path": "C:/Users/xyz/Downloads/IMG_20240124_123456.jpg",
+            "custom_name": null  # optional, if provided uses this instead of AI
+        }
+    """
+    try:
+        file_path = request.get("file_path", "")
+        custom_name = request.get("custom_name")
+        
+        if not file_path or not os.path.isfile(file_path):
+            return {"success": False, "error": "Invalid file path"}
+        
+        from app.agents.janitor.capabilities.smart_renamer import SmartRenamerCapability
+        renamer = SmartRenamerCapability()
+        
+        file_info = {
+            "filename": os.path.basename(file_path),
+            "size": os.path.getsize(file_path),
+        }
+        
+        if custom_name:
+            # Use custom name directly
+            directory = os.path.dirname(file_path)
+            new_path = os.path.join(directory, custom_name)
+            os.rename(file_path, new_path)
+            return {
+                "success": True,
+                "old_name": os.path.basename(file_path),
+                "new_name": custom_name,
+                "new_path": new_path
+            }
+        
+        # Use smart renaming
+        result = await renamer.analyze(file_path, file_info)
+        
+        if not result.action_required:
+            return {
+                "success": True,
+                "renamed": False,
+                "message": "File name is already clean"
+            }
+        
+        # Execute the rename
+        success = await renamer.execute(file_path, result)
+        
+        return {
+            "success": success,
+            "renamed": success,
+            "old_name": result.metadata.get("old_name"),
+            "new_name": result.metadata.get("new_name"),
+            "issues_fixed": result.metadata.get("issues", [])
+        }
+        
+    except Exception as e:
+        logger.error(f"[Janitor V3] Rename file failed: {e}")
+        return {"success": False, "error": str(e)}
+
+
+# =============================================================================
 # Helper Functions
 # =============================================================================
 
