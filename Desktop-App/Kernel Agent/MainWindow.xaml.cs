@@ -75,6 +75,49 @@ namespace Kernel_Agent
                     await BrainConnectionService.Instance.ConnectAsync();
                     System.Diagnostics.Debug.WriteLine("[MAIN] Brain connection initiated");
                 });
+
+                // Initialize Background Video
+                try
+                {
+                    // For Unpackaged apps, use absolute path to bin directory
+                    var binDir = AppDomain.CurrentDomain.BaseDirectory;
+                    var videoPath = Path.Combine(binDir, "Assets", "background_loop.mp4");
+                    
+                    if (File.Exists(videoPath))
+                    {
+                        var uri = new Uri(videoPath);
+                        BackgroundVideo.Source = Windows.Media.Core.MediaSource.CreateFromUri(uri);
+                        
+                        BackgroundVideo.Loaded += (s, e) => 
+                        {
+                            if (BackgroundVideo.MediaPlayer != null)
+                            {
+                                BackgroundVideo.MediaPlayer.IsLoopingEnabled = true;
+                                BackgroundVideo.MediaPlayer.IsMuted = true;
+                                BackgroundVideo.MediaPlayer.Play(); // Force Play
+                            }
+                        };
+                        
+                        // Log success to UI for debugging
+                        this.DispatcherQueue.TryEnqueue(() => {
+                            AddToThoughtLog("[System] 🎬 Video background loaded");
+                        });
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[VIDEO] File not found at: {videoPath}");
+                        this.DispatcherQueue.TryEnqueue(() => {
+                            AddToThoughtLog($"[System] ⚠️ Video file missing: {videoPath}");
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[VIDEO] Failed: {ex.Message}");
+                    this.DispatcherQueue.TryEnqueue(() => {
+                        AddToThoughtLog($"[System] ❌ Video error: {ex.Message}");
+                    });
+                }
             }
             catch (Exception ex)
             {

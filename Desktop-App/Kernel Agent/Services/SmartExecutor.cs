@@ -100,6 +100,18 @@ namespace Kernel_Agent.Services
                         _ = Task.Run(async () => 
                         {
                             await BrainConnectionService.Instance.ReportActionAsync(action, target, $"Completed in {result.ExecutionTimeMs}ms");
+                            
+                            // NEW: Log to Episodic Memory Timeline
+                            await ApiService.Instance.LogTimelineEventAsync(
+                                type: "action_tool", 
+                                content: $"Executed: {action} {target}", 
+                                metadata: new System.Collections.Generic.Dictionary<string, object> 
+                                { 
+                                    { "action", action },
+                                    { "target", target },
+                                    { "duration_ms", result.ExecutionTimeMs }
+                                }
+                            );
                         });
                         
                         return result;

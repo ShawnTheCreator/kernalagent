@@ -42,6 +42,7 @@ from app.api.agent_plan import router as agent_plan_router  # Desktop Agent HTTP
 from app.api.executor_ws import router as executor_ws_router  # Hybrid WebSocket executor
 from app.api.speech_routes import router as speech_router  # Voice transcription API
 from app.api.voice_ws import router as voice_ws_router  # Continuous voice WebSocket
+from app.api.agent_hub_routes import router as agent_hub_router  # Agent Hub API
 from app.core.config import settings
 from app.db.init_db import init_database
 
@@ -112,6 +113,7 @@ app.include_router(agent_plan_router)  # Desktop Agent HTTP API (/api/agent/plan
 app.include_router(executor_ws_router)  # Hybrid WebSocket executor (/ws/executor)
 app.include_router(speech_router)  # Voice transcription API (/api/speech/*)
 app.include_router(voice_ws_router)  # Continuous voice WebSocket (/ws/voice)
+app.include_router(agent_hub_router)  # Agent Hub API (/api/agents/*)
 
 @app.get("/health")
 async def health_check():
@@ -230,6 +232,50 @@ async def find_click_target(request: Request):
 
 @app.on_event("startup")
 async def startup_event():
+    # Register agents on startup
+    from app.agents.agent_registry import get_registry
+    from app.agents.janitor.janitor_agent import JanitorAgent
+    
+    registry = get_registry()
+    if registry.get("JANITOR_AGENT") is None:
+        registry.register(JanitorAgent())
+    
+    # Start Janitor Daemon (autonomous mode)
+    try:
+        from app.agents.janitor.daemon import get_janitor_daemon
+        from app.api.ws_manager import manager as ws_manager
+        
+        daemon = get_janitor_daemon()
+        
+        # Set up WebSocket notifications for file events
+        async def on_permission_needed(action):
+            """Send permission request to frontend via WebSocket."""
+            await ws_manager.broadcast({
+                "type": "janitor_permission",
+                "action_id": action["id"],
+                "file": action["file_info"].get("filename"),
+                "suggestion": action["result"].suggestion,
+                "capability": action["result"].capability,
+            })
+        
+        async def on_action_completed(result, success):
+            """Notify frontend when action completes."""
+            await ws_manager.broadcast({
+                "type": "janitor_action",
+                "capability": result.capability,
+                "action": result.action_type,
+                "success": success,
+                "message": result.suggestion,
+            })
+        
+        daemon.on_permission_needed = on_permission_needed
+        daemon.on_action_completed = on_action_completed
+        
+        await daemon.start()
+        logger.info("🧹 Janitor Daemon started in autonomous mode")
+    except Exception as e:
+        logger.warning(f"Janitor Daemon not started: {e}")
+    
     logger.info("=" * 60)
     logger.info("🚀 KERNAL AGENT BRAIN STARTING UP")
     logger.info("=" * 60)
@@ -239,8 +285,11 @@ async def startup_event():
     logger.info(f"   POST /api/vision/find-target - vision targeting")
     logger.info(f"   POST /api/auth/sync         - fast auth sync (local)")
     logger.info(f"   GET  /api/auth/poll         - fast auth poll (local)")
+    logger.info(f"   GET  /api/agents            - list agents (NEW)")
+    logger.info(f"   GET  /api/agents/janitor/quick-scan - janitor scan (NEW)")
     logger.info(f"   GET  /health                - health check")
     logger.info("=" * 60)
+    logger.info("🧹 Janitor watching Downloads & Desktop for new files")
 
 
 if __name__ == "__main__":

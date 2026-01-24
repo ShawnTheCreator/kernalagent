@@ -135,18 +135,20 @@ def calculate_intent_similarity(user_intent: str, skill_intent: str) -> float:
 def calculate_skill_score(
     similarity: float, 
     success_count: int,
-    last_used_at: Optional[str]
+    last_used_at: Optional[str],
+    is_frequent: bool = False
 ) -> float:
     """
     Calculate overall skill score based on similarity and success history.
     
     v2 Formula: similarity * (1 + success_count * 0.15)
-    - More weight to success_count for proven skills
+    v3 Formula: +0.15 boost if skill is in frequent list (LTM)
     
     Args:
         similarity: Intent similarity score (0.0-1.0)
         success_count: Number of successful executions
         last_used_at: ISO timestamp of last use (for recency bonus)
+        is_frequent: True if skill is in user's LTM frequent list
         
     Returns:
         Weighted skill score
@@ -158,7 +160,10 @@ def calculate_skill_score(
     # Recency bonus (moderate boost if recently used)
     recency_bonus = 0.08 if last_used_at else 0.0
     
-    return similarity * success_bonus + recency_bonus
+    # Frequency bonus (Memory Integration)
+    freq_bonus = 0.15 if is_frequent else 0.0
+    
+    return similarity * success_bonus + recency_bonus + freq_bonus
 
 
 def is_vision_expected_for_intent(vision_signal: str, user_intent: str) -> bool:
@@ -188,15 +193,21 @@ def is_vision_expected_for_intent(vision_signal: str, user_intent: str) -> bool:
     return False
 
 
-def select_best_skill(user_intent: str, available_skills: list) -> Optional[dict]:
+def select_best_skill(
+    user_intent: str, 
+    available_skills: list,
+    user_context: Optional[dict] = None
+) -> Optional[dict]:
     """
     Select the best matching skill for the given intent.
     
     v2: Lower threshold, prefer skills with success history.
+    v3: Check user_context for frequent skills (LTM).
     
     Args:
         user_intent: What the user wants to do
         available_skills: List of skill dictionaries
+        user_context: User memory containing 'frequent_skills' list
         
     Returns:
         Best matching skill with scores, or None
@@ -206,7 +217,14 @@ def select_best_skill(user_intent: str, available_skills: list) -> Optional[dict
     
     candidates = []
     
+    # Extract frequent skills list from context
+    frequent_skills = []
+    if user_context and "frequent_skills" in user_context:
+        frequent_skills = user_context["frequent_skills"]
+    
     for skill in available_skills:
+        skill_name = skill.get('name', '')
+        
         # Check similarity against intent signature
         similarity = calculate_intent_similarity(
             user_intent, 
@@ -216,7 +234,7 @@ def select_best_skill(user_intent: str, available_skills: list) -> Optional[dict
         # Also check against skill name (often more descriptive)
         name_similarity = calculate_intent_similarity(
             user_intent,
-            skill.get('name', '')
+            skill_name
         )
         
         # Use best of intent or name similarity
@@ -225,9 +243,12 @@ def select_best_skill(user_intent: str, available_skills: list) -> Optional[dict
         # v2: Lower threshold AND prefer proven skills
         success_count = skill.get('success_count', 0)
         
-        # If skill has been used successfully, lower the bar
+        # Check if frequent (LTM)
+        is_frequent = skill_name in frequent_skills
+        
+        # If skill has been used successfully OR is frequent, lower the bar
         effective_threshold = SKILL_MATCH_THRESHOLD
-        if success_count > 0:
+        if success_count > 0 or is_frequent:
             effective_threshold = max(0.25, SKILL_MATCH_THRESHOLD - 0.05)
         if success_count >= 3:
             effective_threshold = max(0.20, SKILL_MATCH_THRESHOLD - 0.10)
@@ -236,12 +257,19 @@ def select_best_skill(user_intent: str, available_skills: list) -> Optional[dict
             score = calculate_skill_score(
                 best_similarity,
                 success_count,
-                skill.get('last_used_at')
+                skill.get('last_used_at'),
+                is_frequent=is_frequent
             )
+            
+            # Additional logic: if it's a frequent skill, ensure minimum score
+            if is_frequent:
+                score = max(score, 0.6) # Ensure it's considered viable
+                
             candidates.append({
                 'skill': skill,
                 'similarity': best_similarity,
-                'score': score
+                'score': score,
+                'is_frequent': is_frequent
             })
     
     if not candidates:
@@ -257,7 +285,8 @@ def decide_next_action(
     user_intent: str,
     available_skills: Optional[list] = None,
     last_action: Optional[dict] = None,
-    memory: Optional["AgentMemory"] = None
+    memory: Optional["AgentMemory"] = None,
+    user_context: Optional[dict] = None
 ) -> dict:
     """
     Main decision function. Determines strategy before Gemini is called.
@@ -267,10 +296,9 @@ def decide_next_action(
     - Lower thresholds for skill reuse
     - Use confidence to ADAPT, not BLOCK
     
-    v3 Changes (STM):
-    - Memory-aware loop detection
-    - Failure penalty from memory
-    - Success boost for skill reuse
+    v3 Changes:
+    - STM: Memory-aware loop detection and failure penalties
+    - LTM: Use user_context to boost frequent skills
     
     Args:
         vision_signal: Current vision signal (SCREEN_CHANGED, UI_STABLE, etc.)
@@ -278,6 +306,7 @@ def decide_next_action(
         available_skills: List of available skills (fetched if None)
         last_action: The previous action taken (for context)
         memory: Short-term memory instance for stateful decisions
+        user_context: Long-term memory context (frequent skills, etc.)
         
     Returns:
         Decision dictionary with strategy, confidence, and reasoning
@@ -318,8 +347,8 @@ def decide_next_action(
     if vision_signal == "LAYOUT_CHANGE" and not vision_expected:
         decision["confidence"] = 0.50  # Slight caution, but not blocking
     
-    # Try to find a matching skill
-    best_match = select_best_skill(user_intent, available_skills)
+    # Try to find a matching skill (passing user_context for LTM/Frequency boost)
+    best_match = select_best_skill(user_intent, available_skills, user_context)
     
     if best_match is None:
         return decision

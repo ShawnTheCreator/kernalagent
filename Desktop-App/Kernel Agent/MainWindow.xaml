@@ -95,8 +95,20 @@
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
-                     <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
+                     <Border CornerRadius="12" Background="Black" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
                         <Grid>
+                            <MediaPlayerElement x:Name="BackgroundVideo" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="UniformToFill" AutoPlay="True" Opacity="0.6" IsHitTestVisible="False"/>
+                            
+                            <!-- Vignette Overlay to blend video edges into black -->
+                            <Rectangle IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.8" RadiusY="0.8">
+                                        <GradientStop Color="#00000000" Offset="0"/>
+                                        <GradientStop Color="#FF000000" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
                             <Image x:Name="LiveDesktopPreview" Stretch="Uniform"/>
                             <Canvas x:Name="AiOverlayCanvas"/>
                             <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">

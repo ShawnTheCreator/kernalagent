@@ -23,3 +23,10 @@ venv/
 # Node
 node_modules/
 .next/
+
+# C# / .NET
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userprefs

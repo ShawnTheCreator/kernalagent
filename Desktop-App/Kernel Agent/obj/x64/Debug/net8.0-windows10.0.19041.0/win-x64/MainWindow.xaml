@@ -26,20 +26,20 @@
             </StackPanel>
             
             <!-- Profile Section -->
-            <StackPanel x:ConnectionId='22' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,140,0" Visibility="Collapsed">
-                <PersonPicture x:ConnectionId='24' x:Name="ProfilePicture" Width="32" Height="32" Margin="0,0,8,0"/>
-                <TextBlock x:ConnectionId='25' x:Name="UserNameText" Text="User" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <Button x:ConnectionId='26' x:Name="ProfileButton" Background="Transparent" BorderThickness="0" Padding="8,4">
+            <StackPanel x:ConnectionId='23' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,140,0" Visibility="Collapsed">
+                <PersonPicture x:ConnectionId='25' x:Name="ProfilePicture" Width="32" Height="32" Margin="0,0,8,0"/>
+                <TextBlock x:ConnectionId='26' x:Name="UserNameText" Text="User" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Button x:ConnectionId='27' x:Name="ProfileButton" Background="Transparent" BorderThickness="0" Padding="8,4">
                     <FontIcon Glyph="&#xE70D;" FontSize="12"/>
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem x:ConnectionId='27' Text="View Profile" x:Name="ViewProfileMenuItem"                                  >
+                            <MenuFlyoutItem x:ConnectionId='28' Text="View Profile" x:Name="ViewProfileMenuItem"                                  >
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE77B;"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:ConnectionId='28' Text="Logout" x:Name="LogoutMenuItem"                             >
+                            <MenuFlyoutItem x:ConnectionId='29' Text="Logout" x:Name="LogoutMenuItem"                             >
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE7E8;"/>
                                 </MenuFlyoutItem.Icon>
@@ -50,7 +50,7 @@
             </StackPanel>
             
             <!-- Login Button (Header) -->
-            <Button x:ConnectionId='23' x:Name="LoginButton" Content="Login" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" 
+            <Button x:ConnectionId='24' x:Name="LoginButton" Content="Login" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" 
                     Background="#8E75FF" Foreground="White" Padding="15,6"                           Visibility="Collapsed"/>
         </Grid>
 
@@ -95,10 +95,22 @@
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
-                     <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
+                     <Border CornerRadius="12" Background="Black" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
                         <Grid>
-                            <Image x:ConnectionId='20' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
-                            <Canvas x:ConnectionId='21' x:Name="AiOverlayCanvas"/>
+                            <MediaPlayerElement x:ConnectionId='20' x:Name="BackgroundVideo" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="UniformToFill" AutoPlay="True" Opacity="0.6" IsHitTestVisible="False"/>
+                            
+                            <!-- Vignette Overlay to blend video edges into black -->
+                            <Rectangle IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.8" RadiusY="0.8">
+                                        <GradientStop Color="#00000000" Offset="0"/>
+                                        <GradientStop Color="#FF000000" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <Image x:ConnectionId='21' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
+                            <Canvas x:ConnectionId='22' x:Name="AiOverlayCanvas"/>
                             <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
                                 <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="#34A853" FontWeight="Bold"/>
                                 <TextBlock Text="Target: Microsoft Excel" FontSize="12" Opacity="0.6"/>

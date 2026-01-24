@@ -55,6 +55,7 @@ async def plan_command(
     Pipeline:
     0. Preprocess command (fix 'type X and Y')
     1. Check for contextual commands ("do that again")
+    1.5. Check for agent match (NEW - Janitor, etc.)
     2. Check plan cache (skip LLM if cached)
     3. Analyze intent with LLM (Gemini → Groq)
     4. Convert to executor steps
@@ -93,6 +94,45 @@ async def plan_command(
             # Update context and return
             update_session(session_id, command, resolved)
             return [resolved]
+    
+    # ===== Step 1.5: Check for Agent Match (NEW) =====
+    try:
+        from app.agents.agent_planner import should_route_to_agent, get_agent_for_intent
+        
+        agent_name = await should_route_to_agent(command)
+        if agent_name:
+            logger.info(f"[PLANNER] 🤖 Agent matched: {agent_name}")
+            agent = await get_agent_for_intent(command)
+            
+            if agent:
+                logger.info(f"[PLANNER] Delegating to {agent.name}...")
+                
+                # Run agent's analyze -> plan lifecycle
+                context = {"intent": command, "session_id": session_id}
+                analysis = await agent.analyze(context)
+                plan = await agent.plan(analysis)
+                
+                # Convert agent plan to executor steps format
+                agent_steps = []
+                for action in plan.actions:
+                    # Agent actions are in dict format
+                    step = {
+                        "action": "agent_task",
+                        "agent": agent.name,
+                        "plan_id": plan.plan_id,
+                        "requires_approval": plan.requires_approval,
+                        "estimated_impact": plan.estimated_impact,
+                        "content": f"Agent {agent.name} has {len(plan.actions)} actions pending approval",
+                    }
+                    agent_steps.append(step)
+                    break  # Return single meta-step for now
+                
+                if agent_steps:
+                    logger.info(f"[PLANNER] Agent plan ready with {len(plan.actions)} actions")
+                    return agent_steps
+                    
+    except Exception as e:
+        logger.warning(f"[PLANNER] Agent routing failed: {e}, continuing with LLM...")
     
     # ===== Step 2: Check Plan Cache =====
     cache = get_plan_cache()

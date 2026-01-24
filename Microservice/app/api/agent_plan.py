@@ -620,6 +620,7 @@ async def get_action_plan(request: PlanRequest):
     Get action plan for a user command.
     
     Uses Gemini for intelligent planning with fallback to deterministic parsing.
+    NEW: Also checks for agent matches (e.g., Janitor for cleanup commands).
     
     This endpoint is called by the C# Desktop Agent's VoiceToActionService.
     It parses the user's voice/text command and returns a list of actions.
@@ -633,11 +634,49 @@ async def get_action_plan(request: PlanRequest):
     """
     session_id = request.session_id or str(uuid.uuid4())
     start_time = time.time()
-    source = "deterministic"  # Default, updated if Gemini succeeds
+    source = "deterministic"  # Default, updated if Gemini/Agent succeeds
     
     logger.info(f"📥 Command: '{request.command}'")
     
     try:
+        # ===== NEW: Check for Agent Match First =====
+        try:
+            from app.agents.agent_planner import should_route_to_agent, get_agent_for_intent
+            
+            agent_name = await should_route_to_agent(request.command)
+            if agent_name:
+                logger.info(f"🤖 Agent matched: {agent_name}")
+                agent = await get_agent_for_intent(request.command)
+                
+                if agent:
+                    # Run agent's analyze -> plan lifecycle
+                    context = {"intent": request.command, "session_id": session_id}
+                    analysis = await agent.analyze(context)
+                    plan = await agent.plan(analysis)
+                    
+                    processing_time = int((time.time() - start_time) * 1000)
+                    
+                    # Return agent task step
+                    steps = [ActionStep(
+                        action="agent_task",
+                        target=agent.name,
+                        content=f"{len(plan.actions)} cleanup actions ready ({plan.estimated_impact})",
+                        label=plan.plan_id,
+                    )]
+                    
+                    logger.info(f"📤 Result: [agent] {agent.name} plan ready ({processing_time}ms)")
+                    
+                    return PlanResponse(
+                        session_id=session_id,
+                        steps=steps,
+                        schema_version="1.0.0",
+                        source=f"agent:{agent.name}",
+                        processing_time_ms=processing_time,
+                        timestamp=datetime.now().isoformat()
+                    )
+        except Exception as e:
+            logger.warning(f"Agent routing failed: {e}, continuing with Gemini...")
+        
         # Try Gemini first, fallback to deterministic
         steps = await plan_with_gemini(request.command)
         

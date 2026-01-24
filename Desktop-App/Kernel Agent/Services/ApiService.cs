@@ -5,7 +5,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Windows.Storage;
+using Microsoft.UI.Xaml.Media;
+using Windows.UI;
 
 namespace Kernel_Agent.Services
 {
@@ -681,6 +684,68 @@ namespace Kernel_Agent.Services
             }
             return null;
         }
+        public async Task<TimelineResponse?> GetMemoryTimelineAsync(int limit = 50)
+        {
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                if (string.IsNullOrEmpty(token)) return null;
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                // FIXED: Adjusted path to match router prefix (/api/agents)
+                var response = await client.GetAsync($"{MICROSERVICE_URL}/api/agents/memory/timeline?limit={limit}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    return JsonSerializer.Deserialize<TimelineResponse>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetMemoryTimeline error: {ex.Message}");
+            }
+            return null;
+        }
+        public async Task<bool> LogTimelineEventAsync(string type, string content, Dictionary<string, object>? metadata = null)
+        {
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                
+                // Construct payload
+                var data = new
+                {
+                    type,
+                    content,
+                    metadata = metadata ?? new Dictionary<string, object>()
+                };
+
+                using var client = new HttpClient();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    client.DefaultRequestHeaders.Authorization = 
+                        new AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var json = JsonSerializer.Serialize(data);
+                var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+                System.Diagnostics.Debug.WriteLine($"[API] Logging event: {content}");
+                var response = await client.PostAsync($"{MICROSERVICE_URL}/api/agents/memory/timeline", httpContent);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] LogTimelineEvent error: {ex.Message}");
+                return false;
+            }
+        }
     }
 
     public class AuthResponse
@@ -773,6 +838,63 @@ namespace Kernel_Agent.Services
         public int AverageLatency { get; set; }
         public string Uptime { get; set; } = string.Empty;
         public int ActiveSkills { get; set; }
+    }
+
+    public class TimelineResponse
+    {
+        public List<TimelineEventDto> Events { get; set; } = new();
+        public int Count { get; set; }
+    }
+
+    public class TimelineEventDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty; // chat_user, chat_agent, action_tool, memory_thought
+        public string Content { get; set; } = string.Empty;
+        public Dictionary<string, object>? Metadata { get; set; }
+        public string Timestamp { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonIgnore]
+        public DateTime TimestampDt
+        {
+            get
+            {
+                if (DateTime.TryParse(Timestamp, out var dt)) return dt;
+                return DateTime.MinValue;
+            }
+        }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string FormattedTime => TimestampDt.ToString("HH:mm");
+        
+        [System.Text.Json.Serialization.JsonIgnore]
+        public SolidColorBrush DisplayColor
+        {
+            get
+            {
+                // Simple color mapping logic
+                byte a = 255; byte r = 255; byte g = 255; byte b = 255;
+                
+                switch (Type)
+                {
+                    case "chat_agent": // #FF34A853 (Green)
+                        r = 52; g = 168; b = 83;
+                        break;
+                    case "action_tool": // #FF4285F4 (Blue)
+                        r = 66; g = 133; b = 244;
+                        break;
+                    case "memory_thought": // #FFAAAAAA (Gray)
+                        r = 170; g = 170; b = 170;
+                        break;
+                    case "chat_user": // White
+                    default: 
+                        r = 255; g = 255; b = 255;
+                        break;
+                }
+                
+                return new SolidColorBrush(Color.FromArgb(a, r, g, b));
+            }
+        }
     }
 }
 
