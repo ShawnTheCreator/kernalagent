@@ -17,25 +17,34 @@ namespace Kernel_Agent.Services
         private static SettingsService? _instance;
         private static readonly object _lock = new();
         private ApplicationDataContainer? _localSettings;
+        private Dictionary<string, object> _fallbackSettings = new();
+        private bool _useApplicationData = true;
+        private bool _storageInitialized = false;
+        private readonly string _settingsFilePath;
 
         // Lazy initialization to avoid accessing ApplicationData too early
-        private ApplicationDataContainer LocalSettings
+        private ApplicationDataContainer? LocalSettings
         {
             get
             {
-                if (_localSettings == null)
+                if (!_storageInitialized)
                 {
+                    _storageInitialized = true;
                     try
                     {
                         _localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+                        _useApplicationData = true;
+                        System.Diagnostics.Debug.WriteLine("[SETTINGS] Using ApplicationData storage");
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Fallback: create in-memory storage if app data not available
-                        System.Diagnostics.Debug.WriteLine("[SETTINGS] ApplicationData not available, using defaults");
+                        // Fallback: use JSON file storage for unpackaged apps
+                        _useApplicationData = false;
+                        System.Diagnostics.Debug.WriteLine($"[SETTINGS] ApplicationData not available, using JSON file storage: {ex.Message}");
+                        LoadFromJsonFile();
                     }
                 }
-                return _localSettings!;
+                return _localSettings;
             }
         }
 
@@ -75,7 +84,13 @@ namespace Kernel_Agent.Services
 
         private SettingsService()
         {
-            // Defer LocalSettings initialization to first use
+            // Use AppData folder for settings file
+            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var appFolder = System.IO.Path.Combine(appDataPath, "KernelAgent");
+            System.IO.Directory.CreateDirectory(appFolder);
+            _settingsFilePath = System.IO.Path.Combine(appFolder, "settings.json");
+            
+            System.Diagnostics.Debug.WriteLine($"[SETTINGS] Settings file: {_settingsFilePath}");
         }
 
         #region Backend-Synced Settings (Python Microservice)
@@ -258,9 +273,20 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                if (LocalSettings?.Values != null && LocalSettings.Values.TryGetValue(key, out var value))
+                if (_useApplicationData)
                 {
-                    return (T)value;
+                    if (LocalSettings?.Values != null && LocalSettings.Values.TryGetValue(key, out var value))
+                    {
+                        return (T)value;
+                    }
+                }
+                else
+                {
+                    // Use fallback dictionary
+                    if (_fallbackSettings.TryGetValue(key, out var value))
+                    {
+                        return (T)value;
+                    }
                 }
             }
             catch { }
@@ -271,11 +297,72 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                if (LocalSettings?.Values != null)
-                    LocalSettings.Values[key] = value;
+                if (_useApplicationData)
+                {
+                    if (LocalSettings?.Values != null)
+                        LocalSettings.Values[key] = value;
+                }
+                else
+                {
+                    // Use fallback dictionary
+                    _fallbackSettings[key] = value!;
+                    SaveToJsonFile();
+                }
                 OnSettingChanged?.Invoke(key, value);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SETTINGS] SetSetting error: {ex.Message}");
+            }
+        }
+
+        private void LoadFromJsonFile()
+        {
+            try
+            {
+                if (System.IO.File.Exists(_settingsFilePath))
+                {
+                    var json = System.IO.File.ReadAllText(_settingsFilePath);
+                    var settings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+                    
+                    if (settings != null)
+                    {
+                        _fallbackSettings = new Dictionary<string, object>();
+                        foreach (var kvp in settings)
+                        {
+                            // Convert JsonElement to appropriate type
+                            if (kvp.Value.ValueKind == JsonValueKind.String)
+                                _fallbackSettings[kvp.Key] = kvp.Value.GetString()!;
+                            else if (kvp.Value.ValueKind == JsonValueKind.True || kvp.Value.ValueKind == JsonValueKind.False)
+                                _fallbackSettings[kvp.Key] = kvp.Value.GetBoolean();
+                            else if (kvp.Value.ValueKind == JsonValueKind.Number)
+                                _fallbackSettings[kvp.Key] = kvp.Value.GetInt32();
+                        }
+                        System.Diagnostics.Debug.WriteLine($"[SETTINGS] Loaded {_fallbackSettings.Count} settings from JSON file");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SETTINGS] LoadFromJsonFile error: {ex.Message}");
+            }
+        }
+
+        private void SaveToJsonFile()
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(_fallbackSettings, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+                System.IO.File.WriteAllText(_settingsFilePath, json);
+                System.Diagnostics.Debug.WriteLine("[SETTINGS] Saved settings to JSON file");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SETTINGS] SaveToJsonFile error: {ex.Message}");
+            }
         }
 
         public void ResetToDefaults()
