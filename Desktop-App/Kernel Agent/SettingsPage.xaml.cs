@@ -136,16 +136,8 @@ namespace Kernel_Agent
         {
             try
             {
-                if (this.XamlRoot?.Content is FrameworkElement rootElement)
-                {
-                    rootElement.RequestedTheme = theme.ToLower() switch
-                    {
-                        "dark" => ElementTheme.Dark,
-                        "light" => ElementTheme.Light,
-                        _ => ElementTheme.Default
-                    };
-                    System.Diagnostics.Debug.WriteLine($"[SETTINGS] Applied theme: {theme}");
-                }
+                // Use global ThemeManager
+                ThemeManager.Instance.ApplyTheme(theme);
             }
             catch (Exception ex)
             {

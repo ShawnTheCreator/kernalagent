@@ -68,6 +68,9 @@ namespace Kernel_Agent
 
                 // Initialize Speech Client Once (Preventing the MoveNext error source)
                 InitializeSpeechClient();
+
+                // Initialize Theme
+                InitializeTheme();
                 
                 // Connect to Python brain for skill commands and action reporting
                 _ = Task.Run(async () =>
@@ -1276,6 +1279,26 @@ namespace Kernel_Agent
                 "search" => "Searching",
                 _ => action.Replace("_", " ")
             };
+        }
+
+        #endregion
+    }
+
+        #region Theme Support
+
+        private void InitializeTheme()
+        {
+            try
+            {
+                // Init ThemeManager
+                var theme = ThemeManager.Instance.CurrentTheme;
+                ThemeManager.Instance.ApplyTheme(theme);
+                System.Diagnostics.Debug.WriteLine("[THEME] ✓ Theme initialized!");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[THEME] ❌ Init failed: {ex.Message}");
+            }
         }
 
         #endregion
