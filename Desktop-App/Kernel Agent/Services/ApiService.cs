@@ -5,7 +5,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Threading.Tasks;
 using Windows.Storage;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
