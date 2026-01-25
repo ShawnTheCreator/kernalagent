@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  kernalagent-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kernalagent-backend-prod
+    ports:
+      - "5042:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_HTTP_PORTS=8080
+      - PORT=8080
+      - JWT_KEY=${JWT_KEY}
+      - JWT_ISSUER=${JWT_ISSUER:-KernalAgentBackend}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-KernalAgentFrontend}
+      - DATABASE_CONNECTION_STRING=${DATABASE_CONNECTION_STRING}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+    restart: always
+    networks:
+      - kernalagent-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  kernalagent-network:
+    driver: bridge
+

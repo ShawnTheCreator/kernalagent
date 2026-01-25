@@ -1,0 +1,21 @@
+fastapi
+uvicorn
+websockets
+google-genai
+pillow
+python-dotenv
+torch
+open-clip-torch
+firebase-admin
+pydantic
+pytest
+groq
+SpeechRecognition
+vosk
+pyaudio
+
+# Janitor Agent
+watchdog
+psutil
+aiofiles
+requests

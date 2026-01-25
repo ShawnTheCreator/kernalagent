@@ -1,0 +1,662 @@
+@import "tailwindcss";
+
+:root {
+  --kernel-bg: #050505;
+  --kernel-card: #0A0A0A;
+  --kernel-border: #1A1A1A;
+}
+
+/* Custom Theme Colors for Tailwind */
+@theme {
+  --color-kernel-bg: #050505;
+  --color-kernel-card: #0A0A0A;
+  --color-kernel-border: #1A1A1A;
+  --color-kernel-accent: #3B82F6;
+  --color-kernel-muted: #71717A;
+}
+
+/* Base Styles */
+body {
+  background-color: var(--kernel-bg);
+  color: #F4F4F5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+::selection {
+  background-color: white;
+  color: black;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1A1A1A;
+  border-radius: 10px;
+}
+
+/* Cursor Glow Effect */
+.cursor-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  transition: opacity 0.3s ease;
+}
+
+/* Noise Overlay */
+.noise-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.4;
+}
+
+/* Blink Animation */
+@keyframes blink {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+/* Fade In Animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+/* Stagger In Animation */
+.stagger-in>* {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.stagger-in>*:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.stagger-in>*:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.stagger-in>*:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.stagger-in>*:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.stagger-in>*:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.stagger-in>*:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+/* Mobile Menu */
+.mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 40;
+}
+
+.mobile-menu-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 80%;
+  max-width: 320px;
+  height: 100vh;
+  background: #0A0A0A;
+  padding: 80px 40px;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 45;
+}
+
+.mobile-menu.open {
+  transform: translateX(0);
+}
+
+/* Bento Grid */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bento-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.bento-item:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+}
+
+.bento-large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.bento-wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+
+  .bento-large,
+  .bento-wide {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+}
+
+/* Demo Window */
+.demo-window {
+  background: #0A0A0A;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.demo-titlebar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.demo-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.demo-dot-red {
+  background: #FF5F57;
+}
+
+.demo-dot-yellow {
+  background: #FEBC2E;
+}
+
+.demo-dot-green {
+  background: #28C840;
+}
+
+.demo-content {
+  padding: 24px;
+  min-height: 300px;
+}
+
+/* Logo Wall */
+.logo-wall-track {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.logo-wall-content {
+  display: flex;
+  gap: 4rem;
+  animation: scroll 20s linear infinite;
+  width: max-content;
+}
+
+.logo-wall {
+  display: flex;
+  gap: 4rem;
+  animation: scroll 20s linear infinite;
+  width: max-content;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Magnetic Button */
+.magnetic-btn {
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.magnetic-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Floating Animation */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: 3s;
+}
+
+/* Typing Cursor */
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Page Loading Bar */
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+    width: 30%;
+  }
+
+  50% {
+    width: 60%;
+  }
+
+  100% {
+    transform: translateX(400%);
+    width: 30%;
+  }
+}
+
+.page-loading-bar {
+  width: 30%;
+  animation: loading 0.8s ease-in-out infinite;
+}
+
+/* ==================== SKELETON SHIMMER ==================== */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.03) 25%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ==================== TOUCH RIPPLE ==================== */
+@keyframes ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.5;
+  }
+
+  100% {
+    width: 500px;
+    height: 500px;
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s ease-out forwards;
+}
+
+/* ==================== MOBILE PRESS EFFECT ==================== */
+.touch-active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* ==================== SCROLL REVEAL ANIMATIONS ==================== */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.reveal-up {
+  animation: reveal-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.reveal-left {
+  animation: reveal-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.reveal-right {
+  animation: reveal-right 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.reveal-scale {
+  animation: reveal-scale 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Delayed reveals */
+.reveal-delay-1 {
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+
+.reveal-delay-2 {
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+.reveal-delay-3 {
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+.reveal-delay-4 {
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+.reveal-delay-5 {
+  animation-delay: 0.5s;
+  opacity: 0;
+}
+
+/* ==================== LENIS SMOOTH SCROLL ==================== */
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-stop] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ==================== PULL TO REFRESH ==================== */
+.ptr-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.ptr-indicator.active {
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* ==================== INTERACTIVE BUTTON STYLES ==================== */
+.btn-interactive {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.btn-interactive:active {
+  transform: scale(0.96);
+}
+
+@media (hover: hover) {
+  .btn-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ==================== MOBILE OPTIMIZATIONS ==================== */
+@media (max-width: 768px) {
+
+  /* Larger touch targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Disable hover effects on mobile */
+  .bento-item:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  /* Active state instead */
+  .bento-item:active {
+    transform: scale(0.98);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Smoother transitions for touch */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* ==================== REDUCED MOTION ACCESSIBILITY ==================== */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-float,
+  .animate-float-delayed,
+  .animate-pulse,
+  .animate-spin,
+  .animate-blink,
+  .logo-wall,
+  .logo-wall-content {
+    animation: none !important;
+  }
+
+  .skeleton-shimmer {
+    animation: none !important;
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* ==================== FOCUS VISIBLE FOR KEYBOARD NAVIGATION ==================== */
+:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.8);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip to main content link for screen readers */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1rem 2rem;
+  background: white;
+  color: black;
+  font-weight: bold;
+  z-index: 1000;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ==================== DASHBOARD STYLES ==================== */
+
+/* Thin scrollbar for activity panels */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Safe area for mobile devices */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Tabular numbers for stats */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dashboard panel hover state */
+.dashboard-panel {
+  transition: border-color 0.3s ease;
+}
+
+.dashboard-panel:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Gradient Flow Animation */
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-xy {
+  background-size: 200% 200%;
+  animation: gradient-xy 6s ease infinite;
+}
