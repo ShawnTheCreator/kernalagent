@@ -136,9 +136,8 @@ namespace Kernel_Agent
         {
             try
             {
-                // Use ThemeManager for global theme switching
+                // Use global ThemeManager
                 ThemeManager.Instance.ApplyTheme(theme);
-                System.Diagnostics.Debug.WriteLine($"[SETTINGS] Applied theme: {theme}");
             }
             catch (Exception ex)
             {

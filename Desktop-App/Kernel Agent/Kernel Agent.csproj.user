@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebuggerFlavor>ProjectDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ActiveDebugProfile>Kernel Agent (Unpackaged)</ActiveDebugProfile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="App.xaml">
+      <SubType>Designer</SubType>
+    </None>
+    <Page Update="SettingsPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="MarketplacePage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SecurityPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="HistoryPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="MemoryPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="BlankPage1.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="ForgePage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <None Update="MainWindow.xaml">
+      <SubType>Designer</SubType>
+    </None>
+    <None Update="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+</Project>

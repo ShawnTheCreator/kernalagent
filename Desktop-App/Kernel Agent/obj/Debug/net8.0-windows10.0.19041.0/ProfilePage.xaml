@@ -1,0 +1,185 @@
+﻿<Page
+    x:Class="Kernel_Agent.ProfilePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Kernel_Agent"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="#0A0A0E">
+
+    <Grid>
+        <!-- Background Glow Effects -->
+        <Canvas>
+            <Ellipse Width="600" Height="600" Canvas.Left="-200" Canvas.Top="-200" Opacity="0.12">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Color="#8E75FF" Offset="0"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+        </Canvas>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="24">
+            <StackPanel HorizontalAlignment="Center" MaxWidth="800" Spacing="24">
+                
+                <!-- Profile Hero Section -->
+                <Border Background="#111116" CornerRadius="16" Padding="32" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Avatar with Ring -->
+                        <Grid Width="100" Height="100">
+                            <Ellipse Stroke="#8E75FF" StrokeThickness="3" Opacity="0.5"/>
+                            <PersonPicture x:ConnectionId='11' x:Name="ProfilePictureControl" Width="90" Height="90" DisplayName="U"/>
+                        </Grid>
+
+                        <!-- User Info -->
+                        <StackPanel Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center" Spacing="4">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <TextBlock x:ConnectionId='10' x:Name="DisplayNameText" Text="Loading..." FontSize="28" FontWeight="Bold" Foreground="White"/>
+                                <Border Background="#208E75FF" CornerRadius="4" Padding="8,2" VerticalAlignment="Center">
+                                    <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="#8E75FF"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock x:ConnectionId='8' x:Name="EmailText" Text="Loading email..." Foreground="#888888" FontSize="14"/>
+                            <TextBlock x:ConnectionId='9' x:Name="UserIdText" Text="ID: ..." Foreground="#555555" FontSize="11" FontFamily="Consolas"/>
+                        </StackPanel>
+
+                        <!-- Upgrade Button -->
+                        <Button Grid.Column="2" Background="#8E75FF" Foreground="White" CornerRadius="8" Padding="16,10" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE70F;" FontSize="14"/>
+                                <TextBlock Text="Upgrade" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Stats Grid -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Activity Chart -->
+                    <Border Grid.Column="0" Background="#111116" CornerRadius="12" Padding="20" Margin="0,0,12,0" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
+                                <Border Width="4" Height="14" Background="#8E75FF" CornerRadius="2"/>
+                                <TextBlock Text="AGENT ACTIVITY" FontSize="11" FontWeight="Bold" Foreground="#666666" CharacterSpacing="80"/>
+                            </StackPanel>
+                            <Grid Height="80">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Height="25" VerticalAlignment="Bottom" Background="#338E75FF" CornerRadius="3,3,0,0" Margin="3,0"/>
+                                <Border Grid.Column="1" Height="40" VerticalAlignment="Bottom" Background="#338E75FF" CornerRadius="3,3,0,0" Margin="3,0"/>
+                                <Border Grid.Column="2" Height="30" VerticalAlignment="Bottom" Background="#338E75FF" CornerRadius="3,3,0,0" Margin="3,0"/>
+                                <Border Grid.Column="3" Height="55" VerticalAlignment="Bottom" Background="#338E75FF" CornerRadius="3,3,0,0" Margin="3,0"/>
+                                <Border Grid.Column="4" Height="35" VerticalAlignment="Bottom" Background="#338E75FF" CornerRadius="3,3,0,0" Margin="3,0"/>
+                                <Border Grid.Column="5" Height="65" VerticalAlignment="Bottom" Background="#338E75FF" CornerRadius="3,3,0,0" Margin="3,0"/>
+                                <Border Grid.Column="6" Height="50" VerticalAlignment="Bottom" Background="#8E75FF" CornerRadius="3,3,0,0" Margin="3,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Sessions -->
+                    <Border Grid.Column="1" Background="#111116" CornerRadius="12" Padding="20" Margin="6,0" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,12">
+                                <FontIcon Glyph="&#xE9D9;" Foreground="#00FF9D" FontSize="12"/>
+                                <TextBlock Text="SESSIONS" FontSize="10" FontWeight="Bold" Foreground="#666666" CharacterSpacing="80"/>
+                            </StackPanel>
+                            <TextBlock x:ConnectionId='7' x:Name="SessionsCountText" Text="0" FontSize="36" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock Text="+12% this week" FontSize="11" Foreground="#00FF9D"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Skills -->
+                    <Border Grid.Column="2" Background="#111116" CornerRadius="12" Padding="20" Margin="12,0,0,0" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,12">
+                                <FontIcon Glyph="&#xE70F;" Foreground="#00CAFF" FontSize="12"/>
+                                <TextBlock Text="SKILLS" FontSize="10" FontWeight="Bold" Foreground="#666666" CharacterSpacing="80"/>
+                            </StackPanel>
+                            <TextBlock x:ConnectionId='6' x:Name="SkillsCountText" Text="0" FontSize="36" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock Text="Custom Actions" FontSize="11" Foreground="#666666"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Preferences Section -->
+                <StackPanel Spacing="12">
+                    <TextBlock Text="PREFERENCES" FontSize="11" FontWeight="Bold" Foreground="#555555" CharacterSpacing="80" Margin="4,8,0,0"/>
+
+                    <!-- Settings Button -->
+                    <Button x:ConnectionId='4' x:Name="SettingsButton"                              HorizontalAlignment="Stretch" 
+                            Background="#111116" Padding="20,16" CornerRadius="12" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="40" Height="40" CornerRadius="20" Background="#1AFFFFFF">
+                                <FontIcon Glyph="&#xE713;" Foreground="White" FontSize="16"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="General Settings" FontWeight="SemiBold" Foreground="White"/>
+                                <TextBlock Text="Customize behavior, appearance and shortcuts" FontSize="12" Foreground="#666666"/>
+                            </StackPanel>
+                            <FontIcon Grid.Column="2" Glyph="&#xE76C;" Foreground="#444444" FontSize="14"/>
+                        </Grid>
+                    </Button>
+
+                    <!-- API Keys Button -->
+                    <Button x:ConnectionId='5' x:Name="ApiKeysButton"                             HorizontalAlignment="Stretch" 
+                            Background="#111116" Padding="20,16" CornerRadius="12" BorderThickness="1" BorderBrush="#1AFFFFFF">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="40" Height="40" CornerRadius="20" Background="#1AFFFFFF">
+                                <FontIcon Glyph="&#xE72E;" Foreground="White" FontSize="16"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Security &amp; API Keys" FontWeight="SemiBold" Foreground="White"/>
+                                <TextBlock Text="Manage access tokens and connected accounts" FontSize="12" Foreground="#666666"/>
+                            </StackPanel>
+                            <FontIcon Grid.Column="2" Glyph="&#xE76C;" Foreground="#444444" FontSize="14"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+
+                <!-- Footer -->
+                <StackPanel HorizontalAlignment="Center" Spacing="16" Margin="0,24,0,32">
+                    <StackPanel Orientation="Horizontal" Spacing="8" Opacity="0.5">
+                        <TextBlock Text="Member since" Foreground="#888888"/>
+                        <TextBlock x:ConnectionId='3' x:Name="MemberSinceText" Text="..." Foreground="White" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    
+                    <Button x:ConnectionId='2' x:Name="LogoutButton"                            Background="Transparent" 
+                            Foreground="#FF5555" Padding="16,8" BorderThickness="0">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE7E8;"/>
+                            <TextBlock Text="Sign Out" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
+

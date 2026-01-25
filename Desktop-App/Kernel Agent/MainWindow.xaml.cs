@@ -68,8 +68,8 @@ namespace Kernel_Agent
 
                 // Initialize Speech Client Once (Preventing the MoveNext error source)
                 InitializeSpeechClient();
-                
-                // Apply saved theme on startup
+
+                // Initialize Theme
                 InitializeTheme();
                 
                 // Connect to Python brain for skill commands and action reporting
@@ -244,12 +244,6 @@ namespace Kernel_Agent
                     
                     // Start continuous voice listening
                     StartContinuousVoiceListening();
-<<<<<<< HEAD
-                    
-                    // Start automatic data synchronization from backend
-                    StartDataSync();
-=======
->>>>>>> 10b4fd20a6a26d2999e1f594177dde26b4b203fb
                 });
             }
             catch (Exception ex)
@@ -723,28 +717,6 @@ namespace Kernel_Agent
                 {
                     AddToThoughtLog($"[Voice] ⚠️ Speech init failed: {ex.Message}");
                 });
-            }
-        }
-
-        private void InitializeTheme()
-        {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine("[THEME] Initializing theme...");
-                
-                // Apply saved theme from settings
-                ThemeManager.Instance.ApplyTheme(SettingsService.Instance.Theme);
-                
-                this.DispatcherQueue.TryEnqueue(() =>
-                {
-                    AddToThoughtLog($"[System] 🎨 Theme: {ThemeManager.Instance.GetThemeName()}");
-                });
-                
-                System.Diagnostics.Debug.WriteLine("[THEME] ✓ Theme initialized!");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[THEME] ❌ Init failed: {ex.Message}");
             }
         }
 
@@ -1310,148 +1282,24 @@ namespace Kernel_Agent
         }
 
         #endregion
-<<<<<<< HEAD
 
-        #region Data Synchronization
+        #region Theme Support
 
-        /// <summary>
-        /// Start automatic data synchronization from backend
-        /// </summary>
-        private void StartDataSync()
+        private void InitializeTheme()
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("[DataSync] Initializing data sync service...");
-                
-                // Subscribe to data update events
-                DataSyncService.Instance.OnSkillsUpdated += OnSkillsUpdated;
-                DataSyncService.Instance.OnActivitiesUpdated += OnActivitiesUpdated;
-                DataSyncService.Instance.OnStatsUpdated += OnStatsUpdated;
-                DataSyncService.Instance.OnMetricsUpdated += OnMetricsUpdated;
-                DataSyncService.Instance.OnSessionsUpdated += OnSessionsUpdated;
-                DataSyncService.Instance.OnMemoriesUpdated += OnMemoriesUpdated;
-                DataSyncService.Instance.OnError += OnDataSyncError;
-                
-                // Start automatic synchronization
-                DataSyncService.Instance.StartSync();
-                
-                AddToThoughtLog("📊 [System] Data synchronization started");
-                System.Diagnostics.Debug.WriteLine("[DataSync] Data sync service started successfully");
+                // Init ThemeManager
+                var theme = ThemeManager.Instance.CurrentTheme;
+                ThemeManager.Instance.ApplyTheme(theme);
+                System.Diagnostics.Debug.WriteLine("[THEME] ✓ Theme initialized!");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DataSync] Failed to start: {ex.Message}");
-                AddToThoughtLog($"⚠️ [System] Data sync error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[THEME] ❌ Init failed: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Handle skills data update
-        /// </summary>
-        private void OnSkillsUpdated(List<SkillDto> skills)
-        {
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                System.Diagnostics.Debug.WriteLine($"[DataSync] Skills updated: {skills.Count} skills");
-                AddToThoughtLog($"🔧 [Skills] Loaded {skills.Count} skills from backend");
-                
-                // You can update UI elements here
-                // For example, update a skills list in the Forge page
-            });
-        }
-
-        /// <summary>
-        /// Handle activities data update
-        /// </summary>
-        private void OnActivitiesUpdated(List<ActivityDto> activities)
-        {
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                System.Diagnostics.Debug.WriteLine($"[DataSync] Activities updated: {activities.Count} activities");
-                
-                // Display recent activities in thought log
-                var recentActivity = activities.FirstOrDefault();
-                if (recentActivity != null)
-                {
-                    var stateIcon = recentActivity.State switch
-                    {
-                        "EXECUTING" => "⚡",
-                        "THINKING" => "🤔",
-                        "OBSERVING" => "👁️",
-                        "PLANNING" => "📋",
-                        _ => "•"
-                    };
-                    
-                    AddToThoughtLog($"{stateIcon} [{recentActivity.State}] {recentActivity.Title}");
-                }
-            });
-        }
-
-        /// <summary>
-        /// Handle stats data update
-        /// </summary>
-        private void OnStatsUpdated(DashboardStatsDto stats)
-        {
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                System.Diagnostics.Debug.WriteLine($"[DataSync] Stats updated - Tasks: {stats.TotalTasks}, Success: {stats.SuccessRate}%");
-                AddToThoughtLog($"📈 [Stats] {stats.TotalTasks} tasks | {stats.SuccessRate}% success | {stats.AverageLatency}ms latency");
-            });
-        }
-
-        /// <summary>
-        /// Handle metrics data update
-        /// </summary>
-        private void OnMetricsUpdated(MetricsDto metrics)
-        {
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                System.Diagnostics.Debug.WriteLine("[DataSync] Metrics updated");
-                // Metrics can be used to update charts/graphs in the UI
-            });
-        }
-
-        /// <summary>
-        /// Handle sessions data update
-        /// </summary>
-        private void OnSessionsUpdated(List<SessionDto> sessions)
-        {
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                System.Diagnostics.Debug.WriteLine($"[DataSync] Sessions updated: {sessions.Count} sessions");
-                AddToThoughtLog($"📜 [History] {sessions.Count} sessions loaded");
-            });
-        }
-
-        /// <summary>
-        /// Handle memories data update
-        /// </summary>
-        private void OnMemoriesUpdated(List<MemoryDto> memories)
-        {
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                System.Diagnostics.Debug.WriteLine($"[DataSync] Memories updated: {memories.Count} memories");
-                AddToThoughtLog($"🧠 [Memory] {memories.Count} memories loaded");
-            });
-        }
-
-        /// <summary>
-        /// Handle data sync errors
-        /// </summary>
-        private void OnDataSyncError(string error)
-        {
-            this.DispatcherQueue.TryEnqueue(() =>
-            {
-                System.Diagnostics.Debug.WriteLine($"[DataSync] Error: {error}");
-                AddToThoughtLog($"⚠️ [DataSync] {error}");
-            });
-        }
-
         #endregion
-
-
-        #endregion
-=======
->>>>>>> 10b4fd20a6a26d2999e1f594177dde26b4b203fb
     }
 }

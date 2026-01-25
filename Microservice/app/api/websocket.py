@@ -68,11 +68,153 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None, clien
             
             # Handle intent updates (from C# or voice command)
             if msg_type == "intent_update":
-                CURRENT_INTENT = data.get("payload")
+                user_message = data.get("payload", "")
+                print(f"[INTENT] Received: {user_message}")
+                
+                # ===== NEW: Route through Conversational Brain first =====
+                try:
+                    from app.brain import process_message, BrainOutputType
+                    from app.brain.conversation_context import get_context
+                    
+                    brain_output = await process_message(user_message, session_id)
+                    print(f"[BRAIN] Output: type={brain_output.type}, confidence={brain_output.confidence}")
+                    
+                    # --- CHAT: Pure conversation, no automation ---
+                    if brain_output.type == BrainOutputType.CHAT:
+                        print(f"[BRAIN] → CHAT response")
+                        
+                        # Send response back to C# client
+                        await websocket.send_json({
+                            "type": "chat_response",
+                            "payload": {
+                                "message": brain_output.message,
+                                "reasoning": brain_output.reasoning
+                            }
+                        })
+                        
+                        # Broadcast to frontends
+                        await manager.broadcast_to_frontends({
+                            "type": "agent_state",
+                            "state": "CHATTING",
+                            "title": "Conversation",
+                            "description": brain_output.message[:100] if brain_output.message else ""
+                        })
+                        continue
+                    
+                    # --- ASK: Need clarification ---
+                    if brain_output.type == BrainOutputType.ASK:
+                        print(f"[BRAIN] → ASK: {brain_output.question}")
+                        
+                        # Send question back to C# client
+                        await websocket.send_json({
+                            "type": "ask_question",
+                            "payload": {
+                                "question": brain_output.question,
+                                "about": brain_output.intent,
+                                "reasoning": brain_output.reasoning
+                            }
+                        })
+                        
+                        # Broadcast to frontends
+                        await manager.broadcast_to_frontends({
+                            "type": "agent_state",
+                            "state": "WAITING",
+                            "title": "Waiting for Clarification",
+                            "description": brain_output.question[:100] if brain_output.question else ""
+                        })
+                        continue
+                    
+                    # --- ACT: Execute automation (confidence >= 0.7) ---
+                    if brain_output.type == BrainOutputType.ACT:
+                        if brain_output.confidence >= 0.7:
+                            # High confidence → proceed with execution
+                            # Use ORIGINAL user message for planning, not just intent
+                            planning_command = user_message  # Original message like "open chrome"
+                            print(f"[BRAIN] → ACT (confident): {planning_command}")
+                            
+                            # Store for "do that again"
+                            ctx = get_context(session_id)
+                            ctx.last_intent = brain_output.intent
+                            ctx.last_target = brain_output.target
+                            
+                            # === NEW: Call LLM planner and send actions to C# ===
+                            try:
+                                from app.reasoning.llm_planner import plan_command_with_fallback
+                                
+                                # Get action steps from LLM planner using ORIGINAL message
+                                steps = await plan_command_with_fallback(planning_command, session_id)
+                                
+                                if steps:
+                                    print(f"[BRAIN] Got {len(steps)} action steps from planner")
+                                    
+                                    # Send action plan to C# executor
+                                    await websocket.send_json({
+                                        "type": "action_plan",
+                                        "payload": {
+                                            "steps": steps,
+                                            "original_command": planning_command,
+                                            "brain_reply": brain_output.message,  # LLM's friendly response
+                                            "confidence": brain_output.confidence
+                                        }
+                                    })
+                                    
+                                    # Broadcast to frontends
+                                    await manager.broadcast_to_frontends({
+                                        "type": "agent_state",
+                                        "state": "EXECUTING",
+                                        "title": "Executing Action",
+                                        "description": f"Running: {planning_command}"
+                                    })
+                                else:
+                                    print(f"[BRAIN] Planner returned no steps")
+                                    await websocket.send_json({
+                                        "type": "chat_response",
+                                        "payload": {
+                                            "message": f"I understood '{planning_command}' but couldn't figure out how to do it. Can you try rephrasing?",
+                                            "reasoning": "Planner returned empty"
+                                        }
+                                    })
+                            except Exception as e:
+                                print(f"[BRAIN] Planner error: {e}")
+                                import traceback
+                                traceback.print_exc()
+                                await websocket.send_json({
+                                    "type": "chat_response",
+                                    "payload": {
+                                        "message": f"I ran into an issue trying to execute that. Error: {str(e)[:100]}",
+                                        "reasoning": f"Planner error: {e}"
+                                    }
+                                })
+                            
+                            continue
+                            
+                        else:
+                            # Low confidence → ask for confirmation
+                            print(f"[BRAIN] → ACT (low confidence: {brain_output.confidence:.0%})")
+                            await websocket.send_json({
+                                "type": "ask_question",
+                                "payload": {
+                                    "question": f"I'm {brain_output.confidence:.0%} sure you want to {brain_output.intent} {brain_output.target or ''}. Should I proceed?",
+                                    "about": "confirmation",
+                                    "reasoning": brain_output.reasoning
+                                }
+                            })
+                            continue
+                            
+                except ImportError as e:
+                    print(f"[BRAIN] Import error, falling back to direct: {e}")
+                    CURRENT_INTENT = user_message
+                except Exception as e:
+                    print(f"[BRAIN] Error, falling back to direct: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    CURRENT_INTENT = user_message
+                
+                # Only reach here on fallback
                 PREVIOUS_ACTION = None
                 PREVIOUS_FRAME = None
                 AGENT_MEMORY.reset()
-                print(f"[INTENT] New Intent: {CURRENT_INTENT}")
+                print(f"[INTENT] Fallback proceeding with: {CURRENT_INTENT}")
                 
                 # Broadcast intent to frontends
                 await manager.broadcast_to_frontends({
