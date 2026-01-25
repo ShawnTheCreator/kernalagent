@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -472,6 +473,17 @@ namespace Kernel_Agent.Services
                 
                 if (root.TryGetProperty("steps", out JsonElement stepsElement))
                 {
+                    var steps = stepsElement.EnumerateArray().ToList();
+                    // Conversation brain: single "conversation" step → don't execute, surface message
+                    if (steps.Count == 1 && steps[0].TryGetProperty("action", out var aEl) &&
+                        string.Equals(aEl.GetString(), "conversation", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var conversationContent = steps[0].TryGetProperty("content", out var cEl) ? cEl.GetString() ?? "" : "";
+                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Conversation: {conversationContent}");
+                        _ = Task.Run(async () => await BrainConnectionService.Instance.ReportActionAsync("conversation", "", conversationContent));
+                        return conversationContent;
+                    }
+                    
                     // Use SmartExecutor for retry logic, timing, and VISION RECOVERY
                     var executor = new SmartExecutor();
                     executor.SetOriginalGoal(commandText);  // Pass original command for vision recovery
