@@ -1282,7 +1282,6 @@ namespace Kernel_Agent
         }
 
         #endregion
-    }
 
         #region Theme Support
 
