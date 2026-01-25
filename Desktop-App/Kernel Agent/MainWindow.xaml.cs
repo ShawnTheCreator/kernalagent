@@ -69,6 +69,9 @@ namespace Kernel_Agent
                 // Initialize Speech Client Once (Preventing the MoveNext error source)
                 InitializeSpeechClient();
                 
+                // Apply saved theme on startup
+                InitializeTheme();
+                
                 // Connect to Python brain for skill commands and action reporting
                 _ = Task.Run(async () =>
                 {
@@ -241,9 +244,12 @@ namespace Kernel_Agent
                     
                     // Start continuous voice listening
                     StartContinuousVoiceListening();
+<<<<<<< HEAD
                     
                     // Start automatic data synchronization from backend
                     StartDataSync();
+=======
+>>>>>>> 10b4fd20a6a26d2999e1f594177dde26b4b203fb
                 });
             }
             catch (Exception ex)
@@ -717,6 +723,28 @@ namespace Kernel_Agent
                 {
                     AddToThoughtLog($"[Voice] ⚠️ Speech init failed: {ex.Message}");
                 });
+            }
+        }
+
+        private void InitializeTheme()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[THEME] Initializing theme...");
+                
+                // Apply saved theme from settings
+                ThemeManager.Instance.ApplyTheme(SettingsService.Instance.Theme);
+                
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    AddToThoughtLog($"[System] 🎨 Theme: {ThemeManager.Instance.GetThemeName()}");
+                });
+                
+                System.Diagnostics.Debug.WriteLine("[THEME] ✓ Theme initialized!");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[THEME] ❌ Init failed: {ex.Message}");
             }
         }
 
@@ -1282,6 +1310,7 @@ namespace Kernel_Agent
         }
 
         #endregion
+<<<<<<< HEAD
 
         #region Data Synchronization
 
@@ -1422,5 +1451,7 @@ namespace Kernel_Agent
 
 
         #endregion
+=======
+>>>>>>> 10b4fd20a6a26d2999e1f594177dde26b4b203fb
     }
 }
