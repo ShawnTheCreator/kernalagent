@@ -1,28 +1,38 @@
 """
-Conversational Brain - Central Intelligence for CHAT/ASK/ACT routing.
+Conversational Brain V2 - LLM-First Architecture.
 
-This is the new entry point for all user messages. Instead of treating
-every input as a command, the brain decides:
+The brain now works like ChatGPT:
+1. LLM decides intent + mode (CHAT / ASK / ACT) FIRST
+2. Patterns ONLY for hard overrides (stop, safety)
+3. Confidence gate for ACT decisions
 
-1. CHAT - Respond naturally (greetings, help, casual)
-2. ASK  - Request clarification (unclear intent)
-3. ACT  - Execute automation (confident intent)
-
-This enables natural conversation while maintaining automation capability.
+This is the shift from "regex brain with LLM backup" to "LLM brain with rule reflexes".
 """
 
 import os
-import re
 import logging
-from typing import Optional, Literal, List
-from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel
 from enum import Enum
+from pathlib import Path
+
+# Load environment
+from dotenv import load_dotenv
+env_path = Path(__file__).parent.parent.parent.parent / ".env"
+load_dotenv(env_path)
 
 logger = logging.getLogger(__name__)
 
+# Startup check for GROQ
+_groq_key = os.getenv("GROQ_API_KEY", "")
+if _groq_key:
+    logger.info(f"[BRAIN] ✅ GROQ_API_KEY loaded ({len(_groq_key)} chars)")
+else:
+    logger.warning(f"[BRAIN] ⚠️ GROQ_API_KEY not found! Looked in: {env_path}")
+
 
 # =============================================================================
-# Output Schema (Strict)
+# Output Schema
 # =============================================================================
 
 class BrainOutputType(str, Enum):
@@ -32,135 +42,118 @@ class BrainOutputType(str, Enum):
 
 
 class BrainOutput(BaseModel):
-    """
-    Strict output format for the Conversational Brain.
-    
-    The brain MUST output one of three types:
-    - CHAT: Pure conversation, no automation
-    - ASK: Need more information before acting
-    - ACT: Ready to execute with high confidence
-    """
+    """Structured output from the brain."""
     type: BrainOutputType
-    message: Optional[str] = None      # Response for CHAT
+    message: Optional[str] = None      # Response for CHAT/ASK
     question: Optional[str] = None     # Question for ASK
     intent: Optional[str] = None       # Action intent for ACT
     target: Optional[str] = None       # Action target for ACT
-    confidence: float = 0.0            # Confidence for ACT (safety gate)
-    reasoning: Optional[str] = None    # Why this decision was made
+    confidence: float = 0.0            # Confidence for ACT
+    reasoning: Optional[str] = None    # Why this decision
 
 
 # =============================================================================
-# Pattern Matchers (Fast Path before LLM)
+# Hard Override Patterns (ONLY for safety/interrupts)
 # =============================================================================
 
-GREETING_PATTERNS = [
-    r"^hi\b", r"^hello\b", r"^hey\b", r"^howdy\b", r"^greetings\b",
-    r"^good\s*(morning|afternoon|evening|day)\b",
-    r"^what'?s?\s*up\b", r"^sup\b", r"^yo\b",
-]
-
-HELP_PATTERNS = [
-    r"^help\b", r"what\s+can\s+you\s+do",
-    r"what\s+are\s+you(r)?\s+capabilit",
-    r"^how\s+do\s+(i|you)", r"^show\s+me\s+what",
-    r"^what\s+commands", r"^list\s+(your\s+)?commands",
-]
-
-THANKS_PATTERNS = [
-    r"^thanks?\b", r"^thank\s+you\b", r"^ty\b", r"^thx\b",
-    r"^appreciate", r"^cheers\b",
-]
-
-FAREWELL_PATTERNS = [
-    r"^bye\b", r"^goodbye\b", r"^see\s+you\b", r"^later\b",
-    r"^good\s*night\b", r"^take\s+care\b",
-]
+import re
 
 STOP_PATTERNS = [
-    r"^stop\b", r"^cancel\b", r"^abort\b", r"^nevermind\b",
-    r"^never\s+mind\b", r"^forget\s+it\b", r"^wait\b",
+    r"^stop\b", r"^cancel\b", r"^abort\b", r"^quit\b",
+    r"^nevermind\b", r"^never\s+mind\b", r"^forget\s+it\b",
 ]
 
-REPEAT_PATTERNS = [
-    r"^again\b", r"^repeat\b", r"do\s+(that|it)\s+again",
-    r"^same\s+(thing|action)\b", r"^one\s+more\s+time\b",
-]
-
-# Incomplete action patterns (need clarification)
-INCOMPLETE_PATTERNS = [
-    (r"^open\s*$", "What would you like me to open?", "open"),
-    (r"^close\s*$", "What would you like me to close?", "close"),
-    (r"^type\s*$", "What would you like me to type?", "type"),
-    (r"^search\s*$", "What would you like me to search for?", "search"),
-    (r"^go\s+to\s*$", "Where would you like me to go?", "navigate"),
-    (r"^play\s*$", "What would you like me to play?", "play"),
-    (r"^run\s*$", "What would you like me to run?", "run"),
-    (r"^click\s*$", "What should I click on?", "click"),
-]
+EMERGENCY_STOP = "Okay, I've stopped. What would you like me to do instead?"
 
 
 # =============================================================================
-# Greeting Responses (Varied)
+# Groq LLM Configuration (for natural conversation)
 # =============================================================================
 
-GREETING_RESPONSES = [
-    "Hello! How can I help you today?",
-    "Hey there! What would you like me to do?",
-    "Hi! Ready to assist. What's on your mind?",
-    "Greetings! I'm here to help.",
-    "Hello! What can I do for you?",
-]
-
-HELP_RESPONSE = """I can help you with:
-
-**🖥️ Apps & Windows**
-• Open apps: "open chrome", "launch notepad"
-• Close apps: "close spotify"
-
-**⌨️ Typing & Input**
-• Type text: "type hello world"
-• Press keys: "press enter", "press ctrl+s"
-
-**🌐 Browser**
-• Navigate: "go to youtube.com"
-• Search: "search for python tutorials"
-
-**🎵 Media**
-• Play/pause, volume, next/previous
-
-**📁 Files (Janitor)**
-• Organize files, clean downloads
-
-Just tell me what you need!"""
-
-THANKS_RESPONSES = [
-    "You're welcome! Let me know if you need anything else.",
-    "Happy to help! Anything else?",
-    "No problem! I'm here if you need me.",
-]
-
-FAREWELL_RESPONSES = [
-    "Goodbye! Take care!",
-    "See you later!",
-    "Bye! Have a great day!",
-]
-
-STOP_RESPONSE = "Okay, I've stopped. Let me know when you're ready."
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 
 # =============================================================================
-# Conversational Brain
+# LLM System Prompt (The Core of Natural Behavior)
+# =============================================================================
+
+BRAIN_SYSTEM_PROMPT = """You are Kernel, a conversational AI assistant with desktop automation abilities.
+
+You can:
+- Chat naturally about any topic
+- Ask follow-up questions when unclear
+- Decide when to execute computer actions
+
+You must:
+- Behave like ChatGPT in conversation
+- Only request automation when user intent is CLEAR
+- Ask questions when unsure or command is incomplete
+- Be concise (1-3 sentences unless asked for more)
+
+You must NEVER execute actions yourself.
+You ONLY decide whether an action should happen.
+
+OUTPUT FORMAT (JSON only):
+{
+  "mode": "CHAT" | "ASK" | "ACT",
+  "reply": "your response message",
+  "intent": "action type if ACT (open_app, navigate, type, etc.)",
+  "target": "action target if ACT (chrome, youtube.com, etc.)",
+  "confidence": 0.0-1.0,
+  "reason": "brief explanation"
+}
+
+RULES:
+- CHAT → reply is your response, no intent/target needed
+- ASK → reply is a clarifying question
+- ACT → intent + target required, confidence required
+
+EXAMPLES:
+User: "hi"
+{"mode":"CHAT","reply":"Hey! How can I help you today?","confidence":0,"reason":"greeting"}
+
+User: "what is evaporation?"  
+{"mode":"CHAT","reply":"Evaporation is the process where liquid turns into vapor at the surface, even below boiling point. It's how puddles disappear on a sunny day!","confidence":0,"reason":"knowledge question"}
+
+User: "how are you?"
+{"mode":"CHAT","reply":"I'm doing great, thanks for asking! Ready to help whenever you need.","confidence":0,"reason":"casual conversation"}
+
+User: "open"
+{"mode":"ASK","reply":"What would you like me to open?","confidence":0.3,"reason":"incomplete command"}
+
+User: "open chrome"
+{"mode":"ACT","reply":"Opening Chrome for you!","intent":"open_app","target":"chrome","confidence":0.95,"reason":"clear action request"}
+
+User: "go to youtube"
+{"mode":"ACT","reply":"Navigating to YouTube!","intent":"navigate","target":"youtube.com","confidence":0.9,"reason":"clear navigation request"}
+
+User: "actually no"
+{"mode":"CHAT","reply":"No problem! What would you like me to do instead?","confidence":0,"reason":"cancellation"}
+
+User: "tell me a joke"
+{"mode":"CHAT","reply":"Why don't scientists trust atoms? Because they make up everything! 😄","confidence":0,"reason":"entertainment request"}
+
+User: "nothing just chilling"
+{"mode":"CHAT","reply":"Nice! I'm here whenever you need me. Feel free to chat or ask me to do something.","confidence":0,"reason":"casual"}
+
+Be natural. Be helpful. Be like ChatGPT."""
+
+
+# =============================================================================
+# LLM-First Brain
 # =============================================================================
 
 class ConversationalBrain:
     """
-    Central intelligence that decides: CHAT, ASK, or ACT.
+    LLM-First Conversational Brain.
     
-    Conversation first, execution second.
+    The LLM decides EVERYTHING. Patterns only guard/override.
     """
     
     def __init__(self):
-        self._response_index = 0  # For varied responses
+        self._conversation_summary = ""
     
     async def process(
         self, 
@@ -169,134 +162,173 @@ class ConversationalBrain:
         session_id: str = "default"
     ) -> BrainOutput:
         """
-        Process a user message and decide the response type.
-        
-        Args:
-            message: User's input
-            context: Conversation context for multi-turn
-            session_id: Session identifier
-            
-        Returns:
-            BrainOutput with type CHAT, ASK, or ACT
+        Process a user message using LLM-first approach.
         """
         message = message.strip()
         message_lower = message.lower()
         
         logger.info(f"[BRAIN] Processing: '{message}'")
         
-        # === FAST PATH: Pattern matching for common cases ===
+        # ===========================================
+        # STEP 1: Hard Overrides (Safety Reflexes)
+        # ===========================================
         
-        # 1. Check for greetings
-        if self._matches_any(message_lower, GREETING_PATTERNS):
-            response = self._get_varied_response(GREETING_RESPONSES)
-            logger.info(f"[BRAIN] → CHAT (greeting)")
-            return BrainOutput(
-                type=BrainOutputType.CHAT,
-                message=response,
-                reasoning="Greeting detected"
-            )
-        
-        # 2. Check for help queries
-        if self._matches_any(message_lower, HELP_PATTERNS):
-            logger.info(f"[BRAIN] → CHAT (help)")
-            return BrainOutput(
-                type=BrainOutputType.CHAT,
-                message=HELP_RESPONSE,
-                reasoning="Help query detected"
-            )
-        
-        # 3. Check for thanks
-        if self._matches_any(message_lower, THANKS_PATTERNS):
-            response = self._get_varied_response(THANKS_RESPONSES)
-            logger.info(f"[BRAIN] → CHAT (thanks)")
-            return BrainOutput(
-                type=BrainOutputType.CHAT,
-                message=response,
-                reasoning="Thanks detected"
-            )
-        
-        # 4. Check for farewell
-        if self._matches_any(message_lower, FAREWELL_PATTERNS):
-            response = self._get_varied_response(FAREWELL_RESPONSES)
-            logger.info(f"[BRAIN] → CHAT (farewell)")
-            return BrainOutput(
-                type=BrainOutputType.CHAT,
-                message=response,
-                reasoning="Farewell detected"
-            )
-        
-        # 5. Check for stop/cancel
+        # STOP/CANCEL - immediate interrupt
         if self._matches_any(message_lower, STOP_PATTERNS):
-            logger.info(f"[BRAIN] → CHAT (stop)")
+            logger.info(f"[BRAIN] → CHAT (hard override: stop)")
             return BrainOutput(
                 type=BrainOutputType.CHAT,
-                message=STOP_RESPONSE,
-                reasoning="Stop command detected"
+                message=EMERGENCY_STOP,
+                reasoning="Stop command detected (hard override)"
             )
         
-        # 6. Check for repeat ("do that again")
-        if self._matches_any(message_lower, REPEAT_PATTERNS):
-            if context and context.get_last_action_description():
-                last_action = context.get_last_action_description()
-                logger.info(f"[BRAIN] → ACT (repeat: {last_action})")
-                return BrainOutput(
-                    type=BrainOutputType.ACT,
-                    intent=context.last_intent,
-                    target=context.last_target,
-                    confidence=0.9,
-                    reasoning=f"Repeating last action: {last_action}"
-                )
-            else:
-                logger.info(f"[BRAIN] → ASK (nothing to repeat)")
-                return BrainOutput(
-                    type=BrainOutputType.ASK,
-                    question="I don't have a previous action to repeat. What would you like me to do?",
-                    reasoning="Repeat requested but no previous action"
-                )
+        # ===========================================
+        # STEP 2: LLM Decides Everything Else
+        # ===========================================
         
-        # 7. Check for incomplete commands (need clarification)
-        for pattern, question, intent in INCOMPLETE_PATTERNS:
-            if re.match(pattern, message_lower, re.IGNORECASE):
-                if context:
-                    context.set_pending_clarification(question, intent)
-                logger.info(f"[BRAIN] → ASK (incomplete: {intent})")
+        llm_output = await self._llm_decide(message, context)
+        
+        # ===========================================
+        # STEP 3: Post-LLM Guards (Confidence Gate)
+        # ===========================================
+        
+        if llm_output.type == BrainOutputType.ACT:
+            if llm_output.confidence < 0.7:
+                # Low confidence ACT → Force to ASK
+                logger.info(f"[BRAIN] → ASK (confidence gate: {llm_output.confidence:.0%})")
                 return BrainOutput(
                     type=BrainOutputType.ASK,
-                    question=question,
-                    intent=intent,
-                    reasoning=f"Incomplete command detected: {intent}"
+                    message=f"Just to confirm - did you want me to {llm_output.intent} {llm_output.target or ''}?",
+                    question=f"Did you want me to {llm_output.intent} {llm_output.target or ''}?",
+                    intent=llm_output.intent,
+                    target=llm_output.target,
+                    confidence=llm_output.confidence,
+                    reasoning=f"Confidence gate: {llm_output.confidence:.0%} < 70%"
                 )
+            
+            # Store for "do that again"
+            if context:
+                context.last_intent = llm_output.intent
+                context.last_target = llm_output.target
         
-        # 8. Check if resolving a pending clarification
-        if context and context.pending_clarification:
-            combined = context.resolve_clarification(message)
-            logger.info(f"[BRAIN] → ACT (clarification resolved: {combined})")
-            return BrainOutput(
-                type=BrainOutputType.ACT,
-                intent=combined,
-                target=message,
-                confidence=0.85,
-                reasoning=f"Clarification resolved: {combined}"
-            )
-        
-        # === SLOW PATH: LLM analysis for complex cases ===
-        return await self._analyze_with_llm(message, context, session_id)
+        return llm_output
     
-    async def _analyze_with_llm(
+    async def _llm_decide(
         self, 
         message: str, 
-        context: "ConversationContext",
-        session_id: str
+        context: "ConversationContext"
     ) -> BrainOutput:
         """
-        Use LLM to analyze complex or ambiguous messages.
+        Use LLM to decide mode and generate response.
+        This is the PRIMARY decision maker.
         """
+        import httpx
+        import json
+        
+        if not GROQ_API_KEY:
+            logger.warning("[BRAIN] No GROQ_API_KEY - using Gemini fallback")
+            return await self._gemini_fallback(message, context)
+        
         try:
-            # Get context string
-            context_str = context.get_context_for_llm() if context else "No context"
+            # Build conversation history
+            messages = [{"role": "system", "content": BRAIN_SYSTEM_PROMPT}]
             
-            # Use the intent analyzer for action detection
+            # Add context summary if available
+            if context and context.messages:
+                for msg in context.messages[-10:]:
+                    # Handle Pydantic model access
+                    role = msg.role.value if hasattr(msg.role, 'value') else str(msg.role)
+                    content = msg.content
+                    
+                    messages.append({
+                        "role": role,
+                        "content": content
+                    })
+            
+            # Add current message
+            messages.append({"role": "user", "content": message})
+            
+            # Call Groq
+            logger.info(f"[BRAIN] Calling Groq LLM (via SDK)...")
+            
+            # Lazy import Groq to avoid circular deps
+            from groq import AsyncGroq
+            client = AsyncGroq(api_key=GROQ_API_KEY)
+            
+            completion = await client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=500,
+                response_format={"type": "json_object"}
+            )
+            
+            reply_text = completion.choices[0].message.content.strip()
+            logger.info(f"[BRAIN] Groq raw: {reply_text[:200]}")
+            
+            # Parse JSON response
+            try:
+                result = json.loads(reply_text)
+                return self._parse_llm_response(result)
+            except json.JSONDecodeError:
+                logger.warning(f"[BRAIN] Failed to parse JSON, treating as chat")
+                return BrainOutput(
+                    type=BrainOutputType.CHAT,
+                    message=reply_text,
+                    reasoning="LLM response (non-JSON)"
+                )
+                    
+        except Exception as e:
+            logger.error(f"[BRAIN] Groq request failed: {e}")
+            return await self._gemini_fallback(message, context)
+    
+    def _parse_llm_response(self, result: Dict[str, Any]) -> BrainOutput:
+        """Parse structured LLM response into BrainOutput."""
+        mode = result.get("mode", "CHAT").upper()
+        reply = result.get("reply", "")
+        intent = result.get("intent")
+        target = result.get("target")
+        confidence = float(result.get("confidence", 0))
+        reason = result.get("reason", "")
+        
+        if mode == "ACT":
+            logger.info(f"[BRAIN] → ACT: {intent} {target} ({confidence:.0%})")
+            return BrainOutput(
+                type=BrainOutputType.ACT,
+                message=reply,
+                intent=intent,
+                target=target,
+                confidence=confidence,
+                reasoning=reason
+            )
+        elif mode == "ASK":
+            logger.info(f"[BRAIN] → ASK: {reply[:50]}")
+            return BrainOutput(
+                type=BrainOutputType.ASK,
+                message=reply,
+                question=reply,
+                reasoning=reason
+            )
+        else:  # CHAT
+            logger.info(f"[BRAIN] → CHAT: {reply[:50]}")
+            return BrainOutput(
+                type=BrainOutputType.CHAT,
+                message=reply,
+                reasoning=reason
+            )
+    
+    async def _gemini_fallback(
+        self, 
+        message: str, 
+        context: "ConversationContext"
+    ) -> BrainOutput:
+        """Fallback to Gemini if Groq unavailable."""
+        try:
             from app.reasoning.intent_analyzer import analyze_command
+            
+            context_str = ""
+            if context:
+                context_str = f"Recent conversation: {context.get_context_for_llm()}"
             
             analysis = await analyze_command(message, {"context": context_str})
             
@@ -304,75 +336,59 @@ class ConversationalBrain:
             confidence = analysis.get("confidence", 0.0)
             actions = analysis.get("actions", [])
             
-            logger.info(f"[BRAIN] LLM analysis: intent={intent}, confidence={confidence}, actions={len(actions)}")
+            logger.info(f"[BRAIN] Gemini fallback: intent={intent}, confidence={confidence}")
             
-            # High confidence with actions → ACT
             if confidence >= 0.7 and actions:
                 first_action = actions[0]
-                target = first_action.get("target", first_action.get("content", ""))
-                
-                logger.info(f"[BRAIN] → ACT (LLM confident)")
                 return BrainOutput(
                     type=BrainOutputType.ACT,
+                    message=f"Got it, {intent}!",
                     intent=intent,
-                    target=target,
+                    target=first_action.get("target", first_action.get("content", "")),
                     confidence=confidence,
-                    reasoning=analysis.get("reasoning", "LLM determined actionable intent")
+                    reasoning="Gemini fallback with high confidence"
                 )
-            
-            # Low confidence but has actions → ASK for confirmation
-            if 0.4 <= confidence < 0.7 and actions:
-                first_action = actions[0]
-                action_desc = f"{first_action.get('action', 'perform')} {first_action.get('target', first_action.get('content', ''))}"
-                
-                logger.info(f"[BRAIN] → ASK (low confidence)")
+            elif confidence >= 0.4:
                 return BrainOutput(
                     type=BrainOutputType.ASK,
-                    question=f"Did you want me to {action_desc.strip()}?",
+                    message=f"I think you want to {intent}. Is that right?",
+                    question=f"Did you want me to {intent}?",
                     intent=intent,
                     confidence=confidence,
-                    reasoning=f"Low confidence ({confidence:.0%}), asking for confirmation"
+                    reasoning="Gemini fallback with medium confidence"
                 )
-            
-            # Very low confidence or unclear → CHAT
-            logger.info(f"[BRAIN] → CHAT (unclear intent)")
-            return BrainOutput(
-                type=BrainOutputType.CHAT,
-                message=f"I'm not sure what you'd like me to do. Could you be more specific?\n\nSay 'help' to see what I can do!",
-                reasoning=f"Intent unclear (confidence: {confidence:.0%})"
-            )
-            
+            else:
+                return BrainOutput(
+                    type=BrainOutputType.CHAT,
+                    message="I'd love to help! Could you tell me more about what you'd like me to do?",
+                    reasoning="Gemini fallback with low confidence"
+                )
+                
         except Exception as e:
-            logger.error(f"[BRAIN] LLM analysis failed: {e}")
+            logger.error(f"[BRAIN] Gemini fallback failed: {e}")
             return BrainOutput(
                 type=BrainOutputType.CHAT,
-                message="I had trouble understanding that. Could you try rephrasing?",
-                reasoning=f"LLM error: {str(e)}"
+                message="I'm having trouble understanding that. Could you try rephrasing?",
+                reasoning=f"All fallbacks failed: {e}"
             )
     
     def _matches_any(self, text: str, patterns: List[str]) -> bool:
-        """Check if text matches any of the patterns."""
+        """Check if text matches any pattern."""
         for pattern in patterns:
             if re.search(pattern, text, re.IGNORECASE):
                 return True
         return False
-    
-    def _get_varied_response(self, responses: List[str]) -> str:
-        """Get a varied response from a list (round-robin)."""
-        response = responses[self._response_index % len(responses)]
-        self._response_index += 1
-        return response
 
 
 # =============================================================================
-# Singleton Instance
+# Singleton & Entry Point
 # =============================================================================
 
 _brain: Optional[ConversationalBrain] = None
 
 
 def get_brain() -> ConversationalBrain:
-    """Get the singleton Conversational Brain instance."""
+    """Get the singleton brain instance."""
     global _brain
     if _brain is None:
         _brain = ConversationalBrain()
@@ -385,9 +401,7 @@ async def process_message(
 ) -> BrainOutput:
     """
     Main entry point for processing user messages.
-    
-    This is the function that WebSocket should call instead of
-    going directly to the planner.
+    LLM-first, patterns-as-guards.
     """
     from app.brain.conversation_context import get_context
     
@@ -397,12 +411,13 @@ async def process_message(
     # Add user message to context
     context.add_user_message(message)
     
-    # Process through brain
+    # Process through LLM-first brain
     output = await brain.process(message, context, session_id)
     
-    # Add assistant response to context (if CHAT or ASK)
+    # Add response to context
     if output.type in (BrainOutputType.CHAT, BrainOutputType.ASK):
         response_text = output.message or output.question or ""
         context.add_assistant_message(response_text)
     
     return output
+ 

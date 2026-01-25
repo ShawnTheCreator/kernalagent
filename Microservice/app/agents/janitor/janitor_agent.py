@@ -29,7 +29,7 @@ from app.agents.janitor.file_categorizer import (
     categorize_file,
     FileCategory,
     get_destination_path,
-    is_old_installer,
+    is_old_file,
     get_file_age_days,
 )
 from app.agents.janitor.cleaning_plan import CleaningPlan, CleaningAction
