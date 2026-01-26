@@ -7,6 +7,7 @@ It provides a WebSocket API for real-time communication with the Desktop Client.
 import logging
 import sys
 import time
+import os
 
 # ===== CENTRALIZED LOGGING SETUP =====
 # Configure logging FIRST before any imports
@@ -232,6 +233,32 @@ async def find_click_target(request: Request):
 
 @app.on_event("startup")
 async def startup_event():
+    # Auto: rebuild semantic memory embeddings on startup
+    try:
+        from app.db.episodic_memory_repo import rebuild_memory_embeddings, list_local_session_ids
+
+        rebuild_force = os.getenv("MEMORY_REBUILD_FORCE", "false").lower() == "true"
+        rebuild_limit = int(os.getenv("MEMORY_REBUILD_LIMIT", "500"))
+        rebuild_session_id = os.getenv("MEMORY_REBUILD_SESSION_ID", "").strip()
+
+        session_ids = list_local_session_ids()
+        if rebuild_session_id:
+            session_ids.append(rebuild_session_id)
+
+        for session_id in session_ids:
+            if not session_id:
+                continue
+            result = await rebuild_memory_embeddings(
+                user_id=session_id,
+                limit=rebuild_limit,
+                force=rebuild_force
+            )
+            logger.info(
+                f"[MEMORY] Startup embedding rebuild for {session_id}: {result}"
+            )
+    except Exception as e:
+        logger.warning(f"[MEMORY] Startup embedding rebuild skipped: {e}")
+
     # Register agents on startup
     from app.agents.agent_registry import get_registry
     from app.agents.janitor.janitor_agent import JanitorAgent

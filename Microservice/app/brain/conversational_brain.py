@@ -333,21 +333,35 @@ class ConversationalBrain:
             
             # Add REAL memory context
             if recent_memories:
-                memory_context = "\n".join([f"- {mem}" for mem in recent_memories[-5:]])
+                # Deduplicate and preserve chronological order (newest first)
+                seen = set()
+                unique_memories = []
+                for mem in reversed(recent_memories[-5:]):  # newest first
+                    if mem not in seen:
+                        seen.add(mem)
+                        unique_memories.append(mem)
+                memory_context = "\n".join([f"- {mem}" for mem in reversed(unique_memories)])  # restore chronological
                 messages.append({
                     "role": "system", 
-                    "content": f"Recent memories from continuous flow:\n{memory_context}"
+                    "content": f"Recent memories from continuous flow (chronological, newest last):\n{memory_context}"
                 })
-                logger.info(f"[BRAIN] Added {len(recent_memories)} real memories to context")
+                logger.info(f"[BRAIN] Added {len(unique_memories)} real memories to context")
             
             # Add RELEVANT searched memories for specific queries
             if relevant_memories:
-                relevant_context = "\n".join([f"- {mem}" for mem in relevant_memories])
+                # Deduplicate relevant memories
+                seen = set()
+                unique_relevant = []
+                for mem in relevant_memories:
+                    if mem not in seen:
+                        seen.add(mem)
+                        unique_relevant.append(mem)
+                relevant_context = "\n".join([f"- {mem}" for mem in unique_relevant])
                 messages.append({
                     "role": "system",
-                    "content": f"Relevant memories for this query:\n{relevant_context}"
+                    "content": f"Relevant memories for this query (deduplicated):\n{relevant_context}"
                 })
-                logger.info(f"[BRAIN] Added {len(relevant_memories)} relevant memories for query")
+                logger.info(f"[BRAIN] Added {len(unique_relevant)} relevant memories for query")
             
             # Add session context
             if context_data.get("last_command") or context_data.get("active_app"):
@@ -492,61 +506,29 @@ class ConversationalBrain:
         This enhances context by finding specific past interactions.
         """
         try:
-            # Check if message contains memory search keywords
-            search_keywords = ["when", "what", "did i", "opened", "chrome", "notepad", "calculator", "search", "find", "remember", "do", "again", "yu", "you"]
-            message_lower = message.lower()
-            
-            if not any(keyword in message_lower for keyword in search_keywords):
-                return []
-            
-            # Extract potential search terms
-            search_terms = []
-            if "chrome" in message_lower:
-                search_terms.append("chrome")
-            if "notepad" in message_lower:
-                search_terms.append("notepad")
-            if "calculator" in message_lower:
-                search_terms.append("calculator")
-            if "opened" in message_lower or "open" in message_lower:
-                search_terms.append("opened")
-                search_terms.append("open")
-            if "do" in message_lower or "did" in message_lower:
-                search_terms.append("action")
-                search_terms.append("opened")
-            if "again" in message_lower:
-                search_terms.append("last")
-                search_terms.append("recent")
-            
-            if not search_terms:
-                search_terms = [message.split()[0] if message.split() else ""]
-            
             relevant_memories = []
-            
-            # Search for each term
-            for term in search_terms:
-                if term:
-                    results = await search_memories(
-                        user_id=session_id,
-                        query=term,
-                        event_types=["action_tool", "chat_user", "chat_agent"],
-                        limit=5
-                    )
-                    
-                    for result in results:
-                        if result.get('relevance_score', 0) >= 1:  # Lower threshold to catch more relevant results
-                            content = result.get('content', '')
-                            event_type = result.get('type', '')
-                            
-                            if event_type == 'action_tool':
-                                relevant_memories.append(f"Previous action: {content}")
-                            elif event_type == 'chat_user':
-                                relevant_memories.append(f"You previously said: {content}")
-                            elif event_type == 'chat_agent':
-                                relevant_memories.append(f"I previously responded: {content}")
-            
+
+            results = await search_memories(
+                user_id=session_id,
+                query=message,
+                event_types=["action_tool", "chat_user", "chat_agent"],
+                limit=6
+            )
+
+            for result in results:
+                content = result.get("content", "")
+                event_type = result.get("type", "")
+
+                if event_type == "action_tool":
+                    relevant_memories.append(f"Previous action: {content}")
+                elif event_type == "chat_user":
+                    relevant_memories.append(f"You previously said: {content}")
+                elif event_type == "chat_agent":
+                    relevant_memories.append(f"I previously responded: {content}")
+
             logger.info(f"[BRAIN] Found {len(relevant_memories)} relevant memories for '{message}'")
-            return relevant_memories[:3]  # Limit to top 3
-            
+            return relevant_memories[:3]
+
         except Exception as e:
             logger.warning(f"[BRAIN] Failed to search relevant memories: {e}")
             return []

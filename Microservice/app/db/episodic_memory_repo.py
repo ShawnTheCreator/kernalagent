@@ -13,13 +13,68 @@ Event Types:
 """
 
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List, Literal
+from typing import Optional, Dict, Any, List, Literal, Tuple
 import logging
 import uuid
+import torch
+import open_clip
+import torch.nn.functional as F
 
 from .firebase_client import get_firestore_client
 
 logger = logging.getLogger(__name__)
+
+_EMBEDDING_MODEL: Optional[torch.nn.Module] = None
+_EMBEDDING_TOKENIZER = None
+_EMBEDDING_DEVICE: Optional[torch.device] = None
+
+
+def _get_embedding_model() -> Tuple[torch.nn.Module, Any, torch.device]:
+    """Lazy-load the embedding model for semantic memory search."""
+    global _EMBEDDING_MODEL, _EMBEDDING_TOKENIZER, _EMBEDDING_DEVICE
+
+    if _EMBEDDING_MODEL is not None and _EMBEDDING_TOKENIZER is not None and _EMBEDDING_DEVICE is not None:
+        return _EMBEDDING_MODEL, _EMBEDDING_TOKENIZER, _EMBEDDING_DEVICE
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model, _, _ = open_clip.create_model_and_transforms("ViT-B-32", pretrained="openai")
+    tokenizer = open_clip.get_tokenizer("ViT-B-32")
+    model.eval().to(device)
+
+    _EMBEDDING_MODEL = model
+    _EMBEDDING_TOKENIZER = tokenizer
+    _EMBEDDING_DEVICE = device
+    logger.info("[TIMELINE] Loaded embedding model for semantic search")
+
+    return model, tokenizer, device
+
+
+def _build_embedding_text(content: str, metadata: Optional[Dict[str, Any]]) -> str:
+    parts = [content or ""]
+    if metadata:
+        for key, value in metadata.items():
+            if isinstance(value, str) and value:
+                parts.append(f"{key}: {value}")
+            elif isinstance(value, (int, float)):
+                parts.append(f"{key}: {value}")
+    return " | ".join(p for p in parts if p).strip()
+
+
+def _compute_embedding(text: str) -> List[float]:
+    """Compute a normalized embedding vector for semantic search."""
+    if not text:
+        return []
+
+    try:
+        model, tokenizer, device = _get_embedding_model()
+        tokens = tokenizer([text]).to(device)
+        with torch.no_grad():
+            embedding = model.encode_text(tokens)
+            embedding = F.normalize(embedding, dim=-1)
+        return embedding.squeeze(0).tolist()
+    except Exception as exc:
+        logger.warning(f"[TIMELINE] Failed to compute embedding: {exc}")
+        return []
 
 EventType = Literal["chat_user", "chat_agent", "action_tool", "memory_thought", "system_alert"]
 
@@ -30,6 +85,7 @@ class TimelineEvent:
         content: str,
         user_id: str,
         metadata: Optional[Dict[str, Any]] = None,
+        embedding: Optional[List[float]] = None,
         event_id: Optional[str] = None,
         timestamp: Optional[datetime] = None
     ):
@@ -39,6 +95,7 @@ class TimelineEvent:
         self.user_id = user_id
         self.metadata = metadata or {}
         self.timestamp = timestamp or datetime.now(timezone.utc)
+        self.embedding = embedding or []
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -46,12 +103,18 @@ class TimelineEvent:
             "type": self.event_type,
             "content": self.content,
             "metadata": self.metadata,
+            "embedding": self.embedding,
             "timestamp": self.timestamp.isoformat(),
             "created_at": self.timestamp  # For Firestore ordering
         }
 
 # In-memory storage for local dev/testing without Firebase
 _LOCAL_TIMELINE = {}
+
+
+def list_local_session_ids() -> List[str]:
+    """Return session IDs stored in local in-memory timeline."""
+    return list(_LOCAL_TIMELINE.keys())
 
 def _get_timeline_collection(user_id: str):
     """Get the timeline collection for a user (or mock)."""
@@ -73,7 +136,9 @@ async def log_event(
     Log a new event to the timeline.
     """
     try:
-        event = TimelineEvent(event_type, content, user_id, metadata)
+        embedding_text = _build_embedding_text(content, metadata)
+        embedding = _compute_embedding(embedding_text)
+        event = TimelineEvent(event_type, content, user_id, metadata, embedding=embedding)
         col = _get_timeline_collection(user_id)
         
         if col:
@@ -182,40 +247,27 @@ async def search_memories(
         # Search and rank results
         matches = []
         query_lower = query.lower()
+        query_embedding = _compute_embedding(query)
         
         for event in events:
             content = event.get('content', '').lower()
             metadata = event.get('metadata', {})
-            
-            # Calculate relevance score
-            score = 0
-            
-            # Exact match gets highest score
-            if query_lower in content:
-                score += 10
-                
-            # Word matches
-            query_words = query_lower.split()
-            content_words = content.split()
-            
-            for word in query_words:
-                if word in content_words:
-                    score += 2
-                    
-            # Metadata matches
-            for key, value in metadata.items():
-                if isinstance(value, str) and query_lower in value.lower():
-                    score += 1
-            
-            # Action-specific matching
-            if event.get('type') == 'action_tool':
-                if 'open' in query_lower and 'opened' in content:
-                    score += 3
-                elif 'chrome' in query_lower and 'chrome' in content.lower():
-                    score += 3
-                elif 'notepad' in query_lower and 'notepad' in content.lower():
-                    score += 3
-            
+            embedding = event.get('embedding') or []
+
+            # Semantic relevance score (cosine similarity of normalized vectors)
+            score = 0.0
+            if query_embedding and embedding:
+                score = float(sum(q * e for q, e in zip(query_embedding, embedding)))
+            else:
+                # Fallback to lightweight lexical match only if embeddings unavailable
+                if query_lower in content:
+                    score = 0.5
+                else:
+                    for key, value in metadata.items():
+                        if isinstance(value, str) and query_lower in value.lower():
+                            score = 0.3
+                            break
+
             if score > 0:
                 matches.append({
                     **event,
@@ -232,6 +284,62 @@ async def search_memories(
     except Exception as e:
         logger.error(f"[TIMELINE] Failed to search memories: {e}")
         return []
+
+
+async def rebuild_memory_embeddings(
+    user_id: str,
+    limit: int = 500,
+    force: bool = False
+) -> Dict[str, Any]:
+    """
+    Rebuild embeddings for existing memories to enable semantic search.
+
+    Args:
+        user_id: Session/user identifier
+        limit: Maximum number of events to process
+        force: If True, recompute embeddings even if they exist
+    """
+    updated = 0
+    skipped = 0
+    errors = 0
+
+    try:
+        col = _get_timeline_collection(user_id)
+
+        if col:
+            docs = list(col.order_by("created_at", direction="DESCENDING").limit(limit).stream())
+            for doc in docs:
+                data = doc.to_dict() or {}
+                embedding = data.get("embedding") or []
+
+                if embedding and not force:
+                    skipped += 1
+                    continue
+
+                embedding_text = _build_embedding_text(data.get("content", ""), data.get("metadata", {}))
+                embedding = _compute_embedding(embedding_text)
+                doc.reference.update({"embedding": embedding})
+                updated += 1
+        else:
+            events = _LOCAL_TIMELINE.get(user_id, [])
+            for event in events[:limit]:
+                embedding = event.get("embedding") or []
+                if embedding and not force:
+                    skipped += 1
+                    continue
+
+                embedding_text = _build_embedding_text(event.get("content", ""), event.get("metadata", {}))
+                event["embedding"] = _compute_embedding(embedding_text)
+                updated += 1
+
+        logger.info(
+            f"[TIMELINE] Rebuilt embeddings for {user_id}: updated={updated}, skipped={skipped}, errors={errors}"
+        )
+        return {"updated": updated, "skipped": skipped, "errors": errors}
+
+    except Exception as e:
+        logger.error(f"[TIMELINE] Failed to rebuild embeddings: {e}")
+        return {"updated": updated, "skipped": skipped, "errors": errors + 1, "error": str(e)}
 
 
 async def get_memory_summary(

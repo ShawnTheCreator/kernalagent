@@ -17,7 +17,12 @@ import logging
 from datetime import datetime
 
 # ===== MEMORY INTEGRATION =====
-from app.db.episodic_memory_repo import log_event, search_memories, get_memory_summary
+from app.db.episodic_memory_repo import (
+    log_event,
+    search_memories,
+    get_memory_summary,
+    rebuild_memory_embeddings
+)
 
 # ===== STRUCTURED LOGGING =====
 logging.basicConfig(
@@ -250,6 +255,13 @@ class MemorySummaryRequest(BaseModel):
     session_id: str
     limit: int = 50
     include_types: Optional[List[str]] = None
+
+
+class MemoryEmbeddingRebuildRequest(BaseModel):
+    """Request to rebuild memory embeddings for a session."""
+    session_id: str
+    limit: int = 500
+    force: bool = False
 
 
 class ActionStep(BaseModel):
@@ -1236,5 +1248,31 @@ async def get_memory_summary_endpoint(request: MemorySummaryRequest):
             "success": False,
             "error": str(e),
             "summary": {}
+        }
+
+
+@router.post("/memory/rebuild-embeddings")
+async def rebuild_memory_embeddings_endpoint(request: MemoryEmbeddingRebuildRequest):
+    """
+    Rebuild embeddings for existing memories to enable semantic search.
+    """
+    try:
+        result = await rebuild_memory_embeddings(
+            user_id=request.session_id,
+            limit=request.limit,
+            force=request.force
+        )
+
+        return {
+            "success": True,
+            "session_id": request.session_id,
+            "result": result
+        }
+
+    except Exception as e:
+        logger.error(f"[MEMORY] Embedding rebuild error: {e}")
+        return {
+            "success": False,
+            "error": str(e)
         }
 
