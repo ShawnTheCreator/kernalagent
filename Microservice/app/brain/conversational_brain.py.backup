@@ -1,13 +1,12 @@
 """
-Conversational Brain V2 - LLM-First Architecture with Continuous Memory Flow.
+Conversational Brain V2 - LLM-First Architecture.
 
 The brain now works like ChatGPT:
 1. LLM decides intent + mode (CHAT / ASK / ACT) FIRST
 2. Patterns ONLY for hard overrides (stop, safety)
 3. Confidence gate for ACT decisions
-4. REAL MEMORY INTEGRATION - continuous flow of episodic memory
 
-This is the shift from "regex brain with LLM backup" to "LLM brain with rule reflexes + memory".
+This is the shift from "regex brain with LLM backup" to "LLM brain with rule reflexes".
 """
 
 import os
@@ -22,7 +21,7 @@ import asyncio
 
 # Memory integration
 from app.memory.context import get_session, get_context_for_llm, update_session
-from app.db.episodic_memory_repo import TimelineEvent, log_event, get_timeline
+from app.db.episodic_memory_repo import TimelineEvent, log_event
 from app.db.firebase_client import get_firestore_client
 
 # Load environment
@@ -205,15 +204,14 @@ Be natural. Be helpful. Be like ChatGPT."""
 
 
 # =============================================================================
-# LLM-First Brain with Continuous Memory Flow
+# LLM-First Brain
 # =============================================================================
 
 class ConversationalBrain:
     """
-    LLM-First Conversational Brain with Real Memory Integration.
+    LLM-First Conversational Brain.
     
     The LLM decides EVERYTHING. Patterns only guard/override.
-    Memory flows continuously from episodic storage.
     """
     
     def __init__(self):
@@ -226,7 +224,7 @@ class ConversationalBrain:
         session_id: str = "default"
     ) -> BrainOutput:
         """
-        Process a user message using LLM-first approach with continuous memory flow.
+        Process a user message using LLM-first approach.
         """
         message = message.strip()
         message_lower = message.lower()
@@ -247,10 +245,10 @@ class ConversationalBrain:
             )
         
         # ===========================================
-        # STEP 2: LLM Decides Everything Else with Memory
+        # STEP 2: LLM Decides Everything Else
         # ===========================================
         
-        llm_output = await self._llm_decide_with_memory(message, context, session_id)
+        llm_output = await self._llm_decide(message, context)
         
         # ===========================================
         # STEP 3: Post-LLM Guards (Confidence Gate)
@@ -277,14 +275,14 @@ class ConversationalBrain:
         
         return llm_output
     
-    async def _llm_decide_with_memory(
+    async def _llm_decide(
         self, 
         message: str, 
         context: "ConversationContext",
         session_id: str = "default"
     ) -> BrainOutput:
         """
-        Enhanced LLM decision with REAL continuous memory flow.
+        Enhanced LLM decision with memory integration.
         """
         import httpx
         import json
@@ -295,15 +293,15 @@ class ConversationalBrain:
         
         try:
             # ===========================================
-            # STEP 1: Gather REAL Memory & Context
+            # STEP 1: Gather Memory & Context
             # ===========================================
             
             # Get session context
             session_context = get_session(session_id)
             context_data = get_context_for_llm(session_id)
             
-            # Get REAL recent memories from episodic storage
-            recent_memories = await self._get_continuous_memories(session_id)
+            # Get recent memories (last 10 events)
+            recent_memories = await self._get_recent_memories(session_id)
             
             # Detect mood from message
             detected_mood = self._detect_mood(message)
@@ -311,19 +309,18 @@ class ConversationalBrain:
                 context.user_mood = detected_mood
             
             # ===========================================
-            # STEP 2: Build Enhanced Prompt with REAL Memory
+            # STEP 2: Build Enhanced Prompt
             # ===========================================
             
             messages = [{"role": "system", "content": BRAIN_SYSTEM_PROMPT}]
             
-            # Add REAL memory context
+            # Add memory context
             if recent_memories:
                 memory_context = "\n".join([f"- {mem}" for mem in recent_memories[-5:]])
                 messages.append({
                     "role": "system", 
-                    "content": f"Recent memories from continuous flow:\n{memory_context}"
+                    "content": f"Recent memories:\n{memory_context}"
                 })
-                logger.info(f"[BRAIN] Added {len(recent_memories)} real memories to context")
             
             # Add session context
             if context_data.get("last_command") or context_data.get("active_app"):
@@ -348,10 +345,10 @@ class ConversationalBrain:
             })
             
             # ===========================================
-            # STEP 3: Call LLM with Memory Context
+            # STEP 3: Call LLM
             # ===========================================
             
-            logger.info(f"[BRAIN] Calling Groq with REAL memory context...")
+            logger.info(f"[BRAIN] Calling Groq with memory context...")
             
             from groq import AsyncGroq
             client = AsyncGroq(api_key=GROQ_API_KEY)
@@ -375,14 +372,14 @@ class ConversationalBrain:
                 result = json.loads(reply_text)
                 brain_output = self._parse_llm_response(result)
                 
-                # Add enhanced features with REAL memory
+                # Add enhanced features
                 brain_output.mood = detected_mood
                 brain_output.memories_used = [mem[:50] for mem in recent_memories[:3]]  # First 3 memories
                 brain_output.suggestions = self._generate_suggestions(message, context, recent_memories)
                 brain_output.personalization = self._get_personalization(session_context)
                 
-                # Log conversation to memory for CONTINUOUS FLOW
-                await self._log_to_continuous_memory(session_id, message, brain_output)
+                # Log conversation to memory
+                await self._log_conversation_event(session_id, message, brain_output)
                 
                 return brain_output
                 
@@ -398,65 +395,6 @@ class ConversationalBrain:
         except Exception as e:
             logger.error(f"[BRAIN] Groq request failed: {e}")
             return await self._gemini_fallback(message, context)
-    
-    async def _get_continuous_memories(self, session_id: str, limit: int = 10) -> List[str]:
-        """
-        Get REAL memories from episodic storage for continuous flow.
-        """
-        try:
-            # Get ACTUAL timeline events from episodic memory
-            events = await get_timeline(session_id, limit)
-            memories = []
-            
-            for event in events:
-                # Format memory entries based on event type
-                if event['type'] == 'chat_user':
-                    memories.append(f"User said: {event['content']}")
-                elif event['type'] == 'chat_agent':
-                    memories.append(f"Assistant responded: {event['content']}")
-                elif event['type'] == 'action_tool':
-                    memories.append(f"Action performed: {event['content']}")
-                elif event['type'] == 'memory_thought':
-                    memories.append(f"Thought: {event['content']}")
-                else:
-                    memories.append(f"Event: {event['content']}")
-            
-            logger.info(f"[BRAIN] Retrieved {len(memories)} REAL memories from continuous storage")
-            return memories[:limit]
-            
-        except Exception as e:
-            logger.warning(f"[BRAIN] Failed to get continuous memories: {e}")
-            return []
-    
-    async def _log_to_continuous_memory(self, session_id: str, user_message: str, brain_output: BrainOutput):
-        """
-        Log conversation to episodic memory for CONTINUOUS FLOW.
-        """
-        try:
-            # Log user message
-            await log_event(
-                user_id=session_id,
-                event_type="chat_user",
-                content=user_message,
-                metadata={"mood": brain_output.mood}
-            )
-            
-            # Log agent response
-            await log_event(
-                user_id=session_id,
-                event_type="chat_agent",
-                content=brain_output.message or "",
-                metadata={
-                    "type": brain_output.type.value,
-                    "confidence": brain_output.confidence,
-                    "memories_used": len(brain_output.memories_used)
-                }
-            )
-            
-            logger.info(f"[BRAIN] Logged conversation to continuous memory flow")
-            
-        except Exception as e:
-            logger.warning(f"[BRAIN] Failed to log to continuous memory: {e}")
     
     def _parse_llm_response(self, result: Dict[str, Any]) -> BrainOutput:
         """Parse structured LLM response into BrainOutput."""
@@ -504,7 +442,7 @@ class ConversationalBrain:
             
             context_str = ""
             if context:
-                context_str = f"Recent conversation: {context.get_context_for_lll()}"
+                context_str = f"Recent conversation: {context.get_context_for_llm()}"
             
             analysis = await analyze_command(message, {"context": context_str})
             
@@ -556,8 +494,37 @@ class ConversationalBrain:
         return False
 
     # ===========================================
-    # ENHANCED FEATURE METHODS
+    # MEMORY INTEGRATION METHODS
     # ===========================================
+    
+    async def _get_recent_memories(self, session_id: str, limit: int = 10) -> List[str]:
+        """Get recent memories for context from episodic memory."""
+        try:
+            # Get actual timeline events from episodic memory
+            from app.db.episodic_memory_repo import get_timeline
+            
+            events = await get_timeline(session_id, limit)
+            memories = []
+            
+            for event in events:
+                # Format memory entries based on event type
+                if event['type'] == 'chat_user':
+                    memories.append(f"User said: {event['content']}")
+                elif event['type'] == 'chat_agent':
+                    memories.append(f"Assistant responded: {event['content']}")
+                elif event['type'] == 'action_tool':
+                    memories.append(f"Action performed: {event['content']}")
+                elif event['type'] == 'memory_thought':
+                    memories.append(f"Thought: {event['content']}")
+                else:
+                    memories.append(f"Event: {event['content']}")
+            
+            logger.info(f"[BRAIN] Retrieved {len(memories)} memories from timeline")
+            return memories[:limit]
+            
+        except Exception as e:
+            logger.warning(f"[BRAIN] Failed to get memories: {e}")
+            return []
     
     def _detect_mood(self, message: str) -> Optional[str]:
         """Detect user mood from message."""
@@ -578,31 +545,59 @@ class ConversationalBrain:
         """Generate proactive suggestions based on context."""
         suggestions = []
         
-        # Context-aware suggestions
-        if "open" in message.lower():
-            suggestions.extend(["open browser", "open notepad", "open calculator"])
-        
-        if "help" in message.lower():
-            suggestions.extend(["show me what you can do", "tell me about features", "give me examples"])
-        
+    
+    return None
+
+def _generate_suggestions(self, message: str, context: Any, memories: List[str]) -> List[str]:
+    """Generate proactive suggestions based on context."""
+    suggestions = []
+    
+    # Context-aware suggestions
+    if "open" in message.lower():
+        suggestions.extend(["open browser", "open notepad", "open calculator"])
+    
+    if "help" in message.lower():
         if context and hasattr(context, 'last_command') and context.last_command:
             suggestions.append("do that again")
-        
-        return suggestions[:3]  # Max 3 suggestions
     
-    def _get_personalization(self, session_context) -> Dict[str, Any]:
-        """Get user personalization data."""
-        return {
-            "preferred_browser": session_context.preferences.get("default_browser", "chrome"),
-            "conversation_style": "friendly",
-            "proactive_suggestions": True
-        }
+    return suggestions[:3]  # Max 3 suggestions
+
+def _get_personalization(self, session_context) -> Dict[str, Any]:
+    """Get user personalization data."""
+    return {
+        "preferred_browser": session_context.preferences.get("default_browser", "chrome"),
+        "conversation_style": "friendly",
+        "proactive_suggestions": True
+    }
+
+async def _log_conversation_event(self, session_id: str, user_message: str, brain_output: BrainOutput):
+    """Log conversation to episodic memory."""
+    try:
+        # Log user message
+        await log_event(
+            user_id=session_id,
+            event_type="chat_user",
+            content=user_message,
+            metadata={"mood": brain_output.mood}
+        )
+        
+        # Log agent response
+        await log_event(
+            user_id=session_id,
+            event_type="chat_agent",
+            content=brain_output.message or "",
+            metadata={
+                "type": brain_output.type.value,
+                "confidence": brain_output.confidence,
+                "memories_used": len(brain_output.memories_used)
+            }
+        )
+    except Exception as e:
+        logger.warning(f"[BRAIN] Failed to log conversation: {e}")
 
 
 # =============================================================================
-# Singleton & Entry Point
-# =============================================================================
-
+# 
 _brain: Optional[ConversationalBrain] = None
 
 
@@ -619,7 +614,7 @@ async def process_message(
     session_id: str = "default"
 ) -> BrainOutput:
     """
-    Main entry point for processing user messages with continuous memory flow.
+    Main entry point for processing user messages.
     LLM-first, patterns-as-guards.
     """
     brain = get_brain()
@@ -628,7 +623,7 @@ async def process_message(
     context = get_context(session_id)
     context.add_user_message(message)
     
-    # Process through LLM-first brain with REAL memory
+    # Process through LLM-first brain
     output = await brain.process(message, context, session_id)
     
     # Add response to context
