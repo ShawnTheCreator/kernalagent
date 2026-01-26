@@ -16,6 +16,9 @@ import time
 import logging
 from datetime import datetime
 
+# ===== MEMORY INTEGRATION =====
+from app.db.episodic_memory_repo import log_event, search_memories, get_memory_summary
+
 # ===== STRUCTURED LOGGING =====
 logging.basicConfig(
     level=logging.INFO,
@@ -79,6 +82,149 @@ def format_voice_response(action: str, target: str = None, success: bool = True)
     return responses.get(action, "Done.")
 
 
+# ===== MEMORY INTEGRATION FUNCTIONS =====
+
+async def _log_automation_to_memory(session_id: str, command: str, steps: List[Dict], brain_output):
+    """
+    Log automation actions to episodic memory for continuous flow.
+    This bridges conversation and automation memory.
+    """
+    try:
+        # Log the user command that triggered automation
+        await log_event(
+            user_id=session_id,
+            event_type="chat_user",
+            content=command,
+            metadata={
+                "type": "automation_command",
+                "intent": brain_output.intent,
+                "target": brain_output.target,
+                "confidence": brain_output.confidence
+            }
+        )
+        
+        # Log each automation step
+        for i, step in enumerate(steps, 1):
+            action = step.get("action", "unknown")
+            target = step.get("target") or step.get("content") or step.get("url", "")
+            
+            # Format the action description
+            if action == "open_app":
+                description = f"Opened {target}"
+            elif action == "navigate":
+                description = f"Navigated to {target}"
+            elif action == "type_text":
+                description = f"Typed: {target[:50]}..."
+            elif action == "click":
+                description = f"Clicked on {target}"
+            elif action == "search_web":
+                description = f"Searched for {target}"
+            else:
+                description = f"Action: {action} {target}"
+            
+            await log_event(
+                user_id=session_id,
+                event_type="action_tool",
+                content=description,
+                metadata={
+                    "action": action,
+                    "target": target,
+                    "step_number": i,
+                    "total_steps": len(steps),
+                    "intent": brain_output.intent
+                }
+            )
+        
+        # Log the brain's response about the automation
+        await log_event(
+            user_id=session_id,
+            event_type="chat_agent",
+            content=brain_output.message or f"Executing {brain_output.intent} {brain_output.target or ''}",
+            metadata={
+                "type": "automation_response",
+                "intent": brain_output.intent,
+                "target": brain_output.target,
+                "confidence": brain_output.confidence,
+                "steps_count": len(steps)
+            }
+        )
+        
+        logger.info(f"[MEMORY] Logged automation with {len(steps)} steps to continuous memory")
+        
+    except Exception as e:
+        logger.warning(f"[MEMORY] Failed to log automation to memory: {e}")
+
+
+async def _log_v1_automation_to_memory(session_id: str, command: str, steps: List[ActionStep], source: str):
+    """
+    Log v1 automation actions to episodic memory for continuous flow.
+    This handles the original v1 endpoint that doesn't use ConversationalBrain.
+    """
+    try:
+        # Log the user command that triggered automation
+        await log_event(
+            user_id=session_id,
+            event_type="chat_user",
+            content=command,
+            metadata={
+                "type": "v1_automation_command",
+                "source": source,
+                "steps_count": len(steps)
+            }
+        )
+        
+        # Log each automation step
+        for i, step in enumerate(steps, 1):
+            action = step.action
+            target = step.target or step.content or step.url or ""
+            
+            # Format the action description
+            if action == "open_app":
+                description = f"Opened {target}"
+            elif action == "navigate":
+                description = f"Navigated to {target}"
+            elif action == "type_text":
+                description = f"Typed: {target[:50]}..."
+            elif action == "click":
+                description = f"Clicked on {target}"
+            elif action == "search_web":
+                description = f"Searched for {target}"
+            elif action == "agent_task":
+                description = f"Agent task: {target}"
+            else:
+                description = f"Action: {action} {target}"
+            
+            await log_event(
+                user_id=session_id,
+                event_type="action_tool",
+                content=description,
+                metadata={
+                    "action": action,
+                    "target": target,
+                    "step_number": i,
+                    "total_steps": len(steps),
+                    "source": source
+                }
+            )
+        
+        # Log automation completion
+        await log_event(
+            user_id=session_id,
+            event_type="chat_agent",
+            content=f"Completed automation: {command}",
+            metadata={
+                "type": "v1_automation_response",
+                "source": source,
+                "steps_count": len(steps)
+            }
+        )
+        
+        logger.info(f"[MEMORY] Logged v1 automation with {len(steps)} steps to continuous memory")
+        
+    except Exception as e:
+        logger.warning(f"[MEMORY] Failed to log v1 automation to memory: {e}")
+
+
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
 
@@ -88,6 +234,21 @@ class PlanRequest(BaseModel):
     session_id: Optional[str] = None
     # NEW: Environment context from C# ContextManager
     context: Optional[Dict[str, Any]] = None  # {active_window, active_app, app_type, clipboard, selected_text, last_action}
+
+
+class MemorySearchRequest(BaseModel):
+    """Request for memory search."""
+    session_id: str
+    query: str
+    event_types: Optional[List[str]] = None
+    limit: int = 20
+
+
+class MemorySummaryRequest(BaseModel):
+    """Request for memory summary."""
+    session_id: str
+    limit: int = 50
+    include_types: Optional[List[str]] = None
 
 
 class ActionStep(BaseModel):
@@ -691,6 +852,11 @@ async def get_action_plan(request: PlanRequest):
         action_summary = ", ".join([s.action for s in steps[:3]])
         logger.info(f"📤 Result: [{source}] {len(steps)} step(s): {action_summary} ({processing_time}ms)")
         
+        # ===========================================
+        # MEMORY INTEGRATION: Log v1 automation actions
+        # ===========================================
+        await _log_v1_automation_to_memory(session_id, request.command, steps, source)
+        
         return PlanResponse(
             session_id=session_id,
             steps=steps,
@@ -825,7 +991,7 @@ async def get_action_plan_v2(request: PlanRequest):
         from app.brain.conversational_brain import ConversationalBrain, BrainOutputType
         
         brain = ConversationalBrain()
-        brain_output = await brain.process(request.command)
+        brain_output = await brain.process(request.command, session_id=session_id)
         
         logger.info(f"[BRAIN] Type: {brain_output.type}, Message: {brain_output.message[:100]}...")
         
@@ -848,7 +1014,7 @@ async def get_action_plan_v2(request: PlanRequest):
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
         
-        # Step 3: Handle ACT responses (automation)
+        # Step 3: Handle ACT responses (automation) WITH MEMORY LOGGING
         elif brain_output.type == BrainOutputType.ACT and brain_output.confidence > 0.8:
             logger.info(f"[v2] ACT (conf={brain_output.confidence}), calling planner")
             
@@ -861,6 +1027,11 @@ async def get_action_plan_v2(request: PlanRequest):
             logger.info(f"[DEBUG] Planner returned {len(step_dicts)} steps:")
             for i, s in enumerate(step_dicts, 1):
                 logger.info(f"[DEBUG]   {i}. {s.get('action')} - content:{s.get('content')}")
+            
+            # ===========================================
+            # MEMORY INTEGRATION: Log automation actions
+            # ===========================================
+            await _log_automation_to_memory(session_id, request.command, step_dicts, brain_output)
             
             return PlanResponse(
                 session_id=session_id,
@@ -999,4 +1170,70 @@ async def attempt_vision_recovery(request: RecoveryRequest) -> RecoveryResponse:
             recovery_possible=False,
             message=str(e)
             )
+
+
+# ===== MEMORY SEARCH ENDPOINTS =====
+
+@router.post("/memory/search")
+async def search_memory(request: MemorySearchRequest):
+    """
+    Search through memories for specific content.
+    
+    Examples:
+    - query: "chrome" → Find all Chrome-related memories
+    - query: "opened" → Find all app openings
+    - query: "what did I do" → Find relevant actions
+    """
+    try:
+        results = await search_memories(
+            user_id=request.session_id,
+            query=request.query,
+            event_types=request.event_types,
+            limit=request.limit
+        )
+        
+        return {
+            "success": True,
+            "session_id": request.session_id,
+            "query": request.query,
+            "results": results,
+            "count": len(results)
+        }
+        
+    except Exception as e:
+        logger.error(f"[MEMORY] Search error: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "results": []
+        }
+
+
+@router.post("/memory/summary")
+async def get_memory_summary_endpoint(request: MemorySummaryRequest):
+    """
+    Get a summary of memories for a session.
+    
+    Returns statistics, key activities, and recent events.
+    """
+    try:
+        summary = await get_memory_summary(
+            user_id=request.session_id,
+            limit=request.limit,
+            include_types=request.include_types
+        )
+        
+        return {
+            "success": True,
+            "session_id": request.session_id,
+            "summary": summary
+        }
+        
+    except Exception as e:
+        logger.error(f"[MEMORY] Summary error: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "summary": {}
+        }
 

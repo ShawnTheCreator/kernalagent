@@ -22,7 +22,7 @@ import asyncio
 
 # Memory integration
 from app.memory.context import get_session, get_context_for_llm, update_session
-from app.db.episodic_memory_repo import TimelineEvent, log_event, get_timeline
+from app.db.episodic_memory_repo import TimelineEvent, log_event, get_timeline, search_memories, get_memory_summary
 from app.db.firebase_client import get_firestore_client
 
 # Load environment
@@ -305,6 +305,9 @@ class ConversationalBrain:
             # Get REAL recent memories from episodic storage
             recent_memories = await self._get_continuous_memories(session_id)
             
+            # Search for relevant memories based on current message
+            relevant_memories = await self._search_relevant_memories(session_id, message)
+            
             # Detect mood from message
             detected_mood = self._detect_mood(message)
             if context:
@@ -324,6 +327,15 @@ class ConversationalBrain:
                     "content": f"Recent memories from continuous flow:\n{memory_context}"
                 })
                 logger.info(f"[BRAIN] Added {len(recent_memories)} real memories to context")
+            
+            # Add RELEVANT searched memories for specific queries
+            if relevant_memories:
+                relevant_context = "\n".join([f"- {mem}" for mem in relevant_memories])
+                messages.append({
+                    "role": "system",
+                    "content": f"Relevant memories for this query:\n{relevant_context}"
+                })
+                logger.info(f"[BRAIN] Added {len(relevant_memories)} relevant memories for query")
             
             # Add session context
             if context_data.get("last_command") or context_data.get("active_app"):
@@ -408,6 +420,10 @@ class ConversationalBrain:
             events = await get_timeline(session_id, limit)
             memories = []
             
+            logger.info(f"[BRAIN] DEBUG: Session {session_id} retrieved {len(events)} events")
+            for i, event in enumerate(events[:3]):  # Log first 3 events
+                logger.info(f"[BRAIN] DEBUG: Event {i+1}: {event['type']} - {event['content'][:50]}...")
+            
             for event in events:
                 # Format memory entries based on event type
                 if event['type'] == 'chat_user':
@@ -457,6 +473,64 @@ class ConversationalBrain:
             
         except Exception as e:
             logger.warning(f"[BRAIN] Failed to log to continuous memory: {e}")
+    
+    async def _search_relevant_memories(self, session_id: str, message: str) -> List[str]:
+        """
+        Search for relevant memories based on the current message.
+        This enhances context by finding specific past interactions.
+        """
+        try:
+            # Check if message contains memory search keywords
+            search_keywords = ["when", "what", "did i", "opened", "chrome", "notepad", "calculator", "search", "find", "remember"]
+            message_lower = message.lower()
+            
+            if not any(keyword in message_lower for keyword in search_keywords):
+                return []
+            
+            # Extract potential search terms
+            search_terms = []
+            if "chrome" in message_lower:
+                search_terms.append("chrome")
+            if "notepad" in message_lower:
+                search_terms.append("notepad")
+            if "calculator" in message_lower:
+                search_terms.append("calculator")
+            if "opened" in message_lower or "open" in message_lower:
+                search_terms.append("opened")
+            
+            if not search_terms:
+                search_terms = [message.split()[0] if message.split() else ""]
+            
+            relevant_memories = []
+            
+            # Search for each term
+            for term in search_terms:
+                if term:
+                    results = await search_memories(
+                        user_id=session_id,
+                        query=term,
+                        event_types=["action_tool", "chat_user", "chat_agent"],
+                        limit=5
+                    )
+                    
+                    for result in results:
+                        if result.get('relevance_score', 0) >= 3:  # Only include high-relevance results
+                            content = result.get('content', '')
+                            event_type = result.get('type', '')
+                            
+                            if event_type == 'action_tool':
+                                relevant_memories.append(f"Previous action: {content}")
+                            elif event_type == 'chat_user':
+                                relevant_memories.append(f"You previously said: {content}")
+                            elif event_type == 'chat_agent':
+                                relevant_memories.append(f"I previously responded: {content}")
+            
+            logger.info(f"[BRAIN] Found {len(relevant_memories)} relevant memories for '{message}'")
+            return relevant_memories[:3]  # Limit to top 3
+            
+        except Exception as e:
+            logger.warning(f"[BRAIN] Failed to search relevant memories: {e}")
+            return []
     
     def _parse_llm_response(self, result: Dict[str, Any]) -> BrainOutput:
         """Parse structured LLM response into BrainOutput."""
@@ -575,7 +649,7 @@ class ConversationalBrain:
         return None
     
     def _generate_suggestions(self, message: str, context: Any, memories: List[str]) -> List[str]:
-        """Generate proactive suggestions based on context."""
+        """Generate proactive suggestions based on context and memory patterns."""
         suggestions = []
         
         # Context-aware suggestions
@@ -583,12 +657,19 @@ class ConversationalBrain:
             suggestions.extend(["open browser", "open notepad", "open calculator"])
         
         if "help" in message.lower():
-            suggestions.extend(["show me what you can do", "tell me about features", "give me examples"])
+            suggestions.extend(["show me what you can do", "tell me about features"])
         
         if context and hasattr(context, 'last_command') and context.last_command:
             suggestions.append("do that again")
         
-        return suggestions[:3]  # Max 3 suggestions
+        # Memory-based suggestions
+        memory_text = " ".join(memories).lower()
+        if "chrome" in memory_text and "open" in message.lower():
+            suggestions.append("open chrome again")
+        if "notepad" in memory_text:
+            suggestions.append("open notepad")
+        
+        return suggestions[:3]
     
     def _get_personalization(self, session_context) -> Dict[str, Any]:
         """Get user personalization data."""

@@ -149,3 +149,174 @@ async def clear_timeline(user_id: str) -> bool:
     except Exception as e:
         logger.error(f"[TIMELINE] Failed to clear timeline: {e}")
         return False
+
+
+async def search_memories(
+    user_id: str,
+    query: str,
+    event_types: Optional[List[str]] = None,
+    limit: int = 20,
+    before_timestamp: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    Search through memories for specific content.
+    
+    Args:
+        user_id: Session/user identifier
+        query: Search query string
+        event_types: Filter by event types (chat_user, chat_agent, action_tool, etc.)
+        limit: Maximum results to return
+        before_timestamp: Search only before this timestamp
+    
+    Returns:
+        List of matching memory events with relevance scores
+    """
+    try:
+        # Get all memories first
+        events = await get_timeline(user_id, limit=100, before_timestamp=before_timestamp)
+        
+        # Filter by event types if specified
+        if event_types:
+            events = [e for e in events if e.get('type') in event_types]
+        
+        # Search and rank results
+        matches = []
+        query_lower = query.lower()
+        
+        for event in events:
+            content = event.get('content', '').lower()
+            metadata = event.get('metadata', {})
+            
+            # Calculate relevance score
+            score = 0
+            
+            # Exact match gets highest score
+            if query_lower in content:
+                score += 10
+                
+            # Word matches
+            query_words = query_lower.split()
+            content_words = content.split()
+            
+            for word in query_words:
+                if word in content_words:
+                    score += 2
+                    
+            # Metadata matches
+            for key, value in metadata.items():
+                if isinstance(value, str) and query_lower in value.lower():
+                    score += 1
+            
+            # Action-specific matching
+            if event.get('type') == 'action_tool':
+                if 'open' in query_lower and 'opened' in content:
+                    score += 3
+                elif 'chrome' in query_lower and 'chrome' in content.lower():
+                    score += 3
+                elif 'notepad' in query_lower and 'notepad' in content.lower():
+                    score += 3
+            
+            if score > 0:
+                matches.append({
+                    **event,
+                    'relevance_score': score,
+                    'matched_content': content
+                })
+        
+        # Sort by relevance score (highest first) and limit
+        matches.sort(key=lambda x: x['relevance_score'], reverse=True)
+        
+        logger.info(f"[TIMELINE] Search '{query}' found {len(matches)} matches for {user_id}")
+        return matches[:limit]
+        
+    except Exception as e:
+        logger.error(f"[TIMELINE] Failed to search memories: {e}")
+        return []
+
+
+async def get_memory_summary(
+    user_id: str,
+    limit: int = 50,
+    include_types: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    """
+    Generate a summary of memories for a session.
+    
+    Args:
+        user_id: Session/user identifier
+        limit: Number of recent events to analyze
+        include_types: Specific event types to include
+    
+    Returns:
+        Dictionary with summary statistics and key events
+    """
+    try:
+        events = await get_timeline(user_id, limit)
+        
+        if include_types:
+            events = [e for e in events if e.get('type') in include_types]
+        
+        # Analyze events
+        summary = {
+            'total_events': len(events),
+            'event_types': {},
+            'automation_actions': [],
+            'recent_conversations': [],
+            'time_span': None,
+            'key_activities': []
+        }
+        
+        # Count event types
+        for event in events:
+            event_type = event.get('type', 'unknown')
+            summary['event_types'][event_type] = summary['event_types'].get(event_type, 0) + 1
+        
+        # Extract automation actions
+        for event in events:
+            if event.get('type') == 'action_tool':
+                summary['automation_actions'].append({
+                    'content': event.get('content', ''),
+                    'timestamp': event.get('timestamp', ''),
+                    'metadata': event.get('metadata', {})
+                })
+        
+        # Extract recent conversations
+        for event in events[:5]:  # Last 5 conversations
+            if event.get('type') in ['chat_user', 'chat_agent']:
+                summary['recent_conversations'].append({
+                    'type': event.get('type'),
+                    'content': event.get('content', '')[:100] + '...',
+                    'timestamp': event.get('timestamp', '')
+                })
+        
+        # Calculate time span
+        if events:
+            timestamps = [e.get('timestamp', '') for e in events if e.get('timestamp')]
+            if timestamps:
+                summary['time_span'] = {
+                    'first': timestamps[-1],
+                    'last': timestamps[0]
+                }
+        
+        # Identify key activities
+        app_opens = [e for e in events if 'opened' in e.get('content', '').lower()]
+        if app_opens:
+            summary['key_activities'].append(f"Opened {len(app_opens)} applications")
+        
+        chat_count = len([e for e in events if e.get('type') == 'chat_user'])
+        if chat_count > 0:
+            summary['key_activities'].append(f"Had {chat_count} conversations")
+        
+        logger.info(f"[TIMELINE] Generated summary for {user_id}: {summary['total_events']} events")
+        return summary
+        
+    except Exception as e:
+        logger.error(f"[TIMELINE] Failed to generate memory summary: {e}")
+        return {
+            'total_events': 0,
+            'event_types': {},
+            'automation_actions': [],
+            'recent_conversations': [],
+            'time_span': None,
+            'key_activities': []
+        }
