@@ -295,5 +295,5 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting Kernal Agent Brain...")
-    uvicorn.run(app, host=settings.HOST, port=settings.PORT, log_level="info")
+    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, log_level="info", reload=True)
 

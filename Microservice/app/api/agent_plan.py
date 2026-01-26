@@ -807,68 +807,93 @@ async def agent_status():
 @router.post("/plan/v2", response_model=PlanResponse)
 async def get_action_plan_v2(request: PlanRequest):
     """
-    Get action plan using LLM-First Architecture (v2).
+    Get action plan using Conversational Brain First (v2).
     
-    This endpoint uses the new Intent → Plan → Execute pipeline:
-    1. Intent Analyzer (LLM) extracts structured intent
-    2. Tool Registry maps to executor actions
-    3. Context Memory enables "do that again" support
-    
-    Falls back to deterministic parser if LLM fails.
+    This endpoint uses the Conversational Brain to determine intent:
+    1. Conversational Brain (LLM) decides: CHAT/ASK/ACT
+    2. If CHAT/ASK → Return conversation response
+    3. If ACT → Call planner for automation steps
     """
     session_id = request.session_id or str(uuid.uuid4())
     start_time = time.time()
-    source = "llm_first"
+    source = "conversational_brain"
     
     logger.info(f"📥 [v2] Command: '{request.command}'")
     
     try:
-        from app.reasoning.llm_planner import plan_command_with_fallback
+        # Step 1: Call Conversational Brain first
+        from app.brain.conversational_brain import ConversationalBrain, BrainOutputType
         
-        # Use the new LLM-first planner
-        step_dicts = await plan_command_with_fallback(request.command, session_id)
+        brain = ConversationalBrain()
+        brain_output = await brain.process(request.command)
         
-        # DEBUG: Log full step_dicts 
-        logger.info(f"[DEBUG] Planner returned {len(step_dicts)} steps:")
-        for i, s in enumerate(step_dicts, 1):
-            logger.info(f"[DEBUG]   {i}. {s.get('action')} - content:{s.get('content')}")
+        logger.info(f"[BRAIN] Type: {brain_output.type}, Message: {brain_output.message[:100]}...")
         
-        # Convert to ActionStep objects
-        steps = [
-            ActionStep(
-                action=s.get("action", ""),
-                target=s.get("target"),
-                url=s.get("url"),
-                query=s.get("query"),
-                content=s.get("content"),
-                amount=s.get("amount"),
-                x=s.get("x"),
-                y=s.get("y"),
-                requires_vision_targeting=s.get("requires_vision_targeting"),
-                goal=s.get("goal"),
+        # Step 2: Handle CHAT/ASK responses (conversation)
+        if brain_output.type in [BrainOutputType.CHAT, BrainOutputType.ASK]:
+            logger.info(f"[v2] Conversation ({brain_output.type}): {brain_output.message[:50]}... ({int((time.time() - start_time) * 1000)}ms)")
+            
+            # Return as conversation step
+            return PlanResponse(
+                session_id=session_id,
+                steps=[
+                    {
+                        "action": "conversation",
+                        "content": brain_output.message,
+                        "mode": brain_output.type.value.lower(),
+                        "confidence": brain_output.confidence
+                    }
+                ],
+                source=source,
+                processing_time_ms=int((time.time() - start_time) * 1000)
             )
-            for s in step_dicts
-        ]
         
-        processing_time = int((time.time() - start_time) * 1000)
+        # Step 3: Handle ACT responses (automation)
+        elif brain_output.type == BrainOutputType.ACT and brain_output.confidence > 0.8:
+            logger.info(f"[v2] ACT (conf={brain_output.confidence}), calling planner")
+            
+            from app.reasoning.llm_planner import plan_command_with_fallback
+            
+            # Use the new LLM-first planner
+            step_dicts = await plan_command_with_fallback(request.command, session_id)
+            
+            # DEBUG: Log full step_dicts 
+            logger.info(f"[DEBUG] Planner returned {len(step_dicts)} steps:")
+            for i, s in enumerate(step_dicts, 1):
+                logger.info(f"[DEBUG]   {i}. {s.get('action')} - content:{s.get('content')}")
+            
+            return PlanResponse(
+                session_id=session_id,
+                steps=step_dicts,
+                source="llm_first",
+                processing_time_ms=int((time.time() - start_time) * 1000)
+            )
         
-        # Log result
-        action_summary = ", ".join([s.action for s in steps[:3]])
-        logger.info(f"📤 [v2] Result: {len(steps)} step(s): {action_summary} ({processing_time}ms)")
-        
+        # Step 4: Low confidence ACT - ask for clarification
+        else:
+            logger.info(f"[v2] Low confidence ACT ({brain_output.confidence}), asking for clarification")
+            return PlanResponse(
+                session_id=session_id,
+                steps=[
+                    {
+                        "action": "conversation",
+                        "content": brain_output.message or "Could you be more specific about what you'd like me to do?",
+                        "mode": "ask",
+                        "confidence": brain_output.confidence
+                    }
+                ],
+                source=source,
+                processing_time_ms=int((time.time() - start_time) * 1000)
+            )
+    
+    except Exception as e:
+        logger.error(f"[v2] Error: {str(e)}")
         return PlanResponse(
             session_id=session_id,
-            steps=steps,
-            schema_version="2.0.0",
-            source=source,
-            processing_time_ms=processing_time,
-            timestamp=datetime.now().isoformat()
+            steps=[],
+            source="error",
+            processing_time_ms=int((time.time() - start_time) * 1000)
         )
-    except Exception as e:
-        logger.error(f"❌ [v2] Error: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ===== VISION-BASED RECOVERY (v3) =====

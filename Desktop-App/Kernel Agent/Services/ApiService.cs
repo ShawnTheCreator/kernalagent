@@ -465,7 +465,7 @@ namespace Kernel_Agent.Services
                 }
                 
                 var responseJson = await response.Content.ReadAsStringAsync();
-                System.Diagnostics.Debug.WriteLine($"[COMMAND] Response: {responseJson}");
+                System.Diagnostics.Debug.WriteLine($"[COMMAND] Full Response JSON: {responseJson}");
                 
                 // Parse and execute using SmartExecutor for reliable execution
                 using var doc = JsonDocument.Parse(responseJson);
@@ -474,14 +474,24 @@ namespace Kernel_Agent.Services
                 if (root.TryGetProperty("steps", out JsonElement stepsElement))
                 {
                     var steps = stepsElement.EnumerateArray().ToList();
+                    System.Diagnostics.Debug.WriteLine($"[COMMAND] Found {steps.Count} steps");
+                    
                     // Conversation brain: single "conversation" step → don't execute, surface message
                     if (steps.Count == 1 && steps[0].TryGetProperty("action", out var aEl) &&
                         string.Equals(aEl.GetString(), "conversation", StringComparison.OrdinalIgnoreCase))
                     {
                         var conversationContent = steps[0].TryGetProperty("content", out var cEl) ? cEl.GetString() ?? "" : "";
-                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Conversation: {conversationContent}");
+                        System.Diagnostics.Debug.WriteLine($"[COMMAND] DETECTED CONVERSATION: {conversationContent}");
                         _ = Task.Run(async () => await BrainConnectionService.Instance.ReportActionAsync("conversation", "", conversationContent));
                         return conversationContent;
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Not a conversation - steps count: {steps.Count}");
+                        if (steps.Count > 0 && steps[0].TryGetProperty("action", out var debugEl))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[COMMAND] First step action: {debugEl.GetString()}");
+                        }
                     }
                     
                     // Use SmartExecutor for retry logic, timing, and VISION RECOVERY

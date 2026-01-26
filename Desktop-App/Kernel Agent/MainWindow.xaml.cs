@@ -304,7 +304,11 @@ namespace Kernel_Agent
                 {
                     CommandInput.Text = ""; // Clear input
                     AddToThoughtLog($"User: {text}", true);
-                    await ApiService.Instance.SendCommandAsync(text);
+                    var response = await ApiService.Instance.SendCommandAsync(text);
+                    if (!string.IsNullOrEmpty(response))
+                    {
+                        AddToThoughtLog($"Agent: {response}");
+                    }
                 }
             }
         }
