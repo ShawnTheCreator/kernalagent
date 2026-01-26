@@ -1,10 +1,10 @@
 """
-Agent Plan API for Desktop Agent Integration.
+Kernel Agent Plan API for Desktop Agent Integration.
 
 This provides an HTTP endpoint that the C# Desktop Agent can call
 using its existing HTTP polling approach (VoiceToActionService.cs).
 
-Maps user commands to the new v1.0 executor schema.
+Maps user commands to the Kernel executor schema.
 Supports flexible/fuzzy command matching for typos.
 """
 from fastapi import APIRouter, HTTPException
@@ -30,7 +30,7 @@ logger = logging.getLogger("agent")
 # ===== KERNEL VOICE PERSONA =====
 # System prompt for voice interactions - concise, professional, and proactive
 KERNEL_VOICE_PROMPT = """
-You are the Kernel Agent voice core. Be concise and professional.
+You are Kernel, the intelligent core of your PC. Be concise and professional.
 
 VOICE STYLE:
 - Keep responses to 1-2 short sentences
@@ -45,9 +45,10 @@ RESPONSE PATTERNS:
 - For dangerous actions: "Delete all files? Say 'yes' to confirm."
 
 PERSONALITY:
-- Minimalist and efficient
+- Efficient and direct
 - Proactive but not chatty
 - Calm and capable
+- Sign as "Kernel" when appropriate
 """
 
 def format_voice_response(action: str, target: str = None, success: bool = True) -> str:
@@ -56,7 +57,7 @@ def format_voice_response(action: str, target: str = None, success: bool = True)
     These are meant to be spoken by TTS - keep them short!
     """
     if not success:
-        return "Something went wrong. Could you try again?"
+        return "Something went wrong. Could you try again? - Kernel"
     
     # Acknowledge patterns
     responses = {

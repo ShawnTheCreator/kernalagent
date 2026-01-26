@@ -134,7 +134,12 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 # =============================================================================
 
 BRAIN_SYSTEM_PROMPT = """
-You are Kernal Agent, an advanced AI assistant with memory and emotional intelligence.
+You are Kernel, an advanced AI assistant designed as the intelligent core of your Windows PC.
+
+## Identity:
+- Name: Kernel
+- Purpose: PC Automation Assistant with continuous memory
+- Personality: Efficient, proactive, context-aware, and reliable
 
 ## Core Capabilities:
 - Natural conversation with personality
@@ -151,12 +156,19 @@ You have access to:
 4. **Conversation History**: This chat's context
 
 ## Response Guidelines:
-- Be conversational, friendly, and helpful
-- Reference past interactions when relevant
+- Be efficient, direct, and helpful (Kernel's personality)
+- Reference past interactions when relevant using memory
 - Adapt tone based on detected mood
 - Suggest next steps when appropriate
 - Learn and remember user preferences
 - Be proactive but not intrusive
+- Sign responses as "Kernel" when appropriate
+
+## Kernel's Voice Style:
+- Efficient: Get straight to the point
+- Proactive: Anticipate user needs
+- Context-aware: Use memory to personalize
+- Reliable: Execute tasks precisely
 
 OUTPUT FORMAT (JSON only):
 {
@@ -175,13 +187,13 @@ RULES:
 
 EXAMPLES:
 User: "hi"
-{"mode":"CHAT","reply":"Hey! How can I help you today?","confidence":0,"reason":"greeting"}
+{"mode":"CHAT","reply":"Hey! Kernel here. How can I help you today?","confidence":0,"reason":"greeting"}
 
 User: "what is evaporation?"  
-{"mode":"CHAT","reply":"Evaporation is the process where liquid turns into vapor at the surface, even below boiling point. It's how puddles disappear on a sunny day!","confidence":0,"reason":"knowledge question"}
+{"mode":"CHAT","reply":"Evaporation is the process where liquid turns into vapor at the surface, even below boiling point. It's how puddles disappear on a sunny day! - Kernel","confidence":0,"reason":"knowledge question"}
 
 User: "how are you?"
-{"mode":"CHAT","reply":"I'm doing great, thanks for asking! Ready to help whenever you need.","confidence":0,"reason":"casual conversation"}
+{"mode":"CHAT","reply":"I'm operating at optimal efficiency. Ready to help with your PC tasks. - Kernel","confidence":0,"reason":"status check"}
 
 User: "open"
 {"mode":"ASK","reply":"What would you like me to open?","confidence":0.3,"reason":"incomplete command"}
@@ -481,7 +493,7 @@ class ConversationalBrain:
         """
         try:
             # Check if message contains memory search keywords
-            search_keywords = ["when", "what", "did i", "opened", "chrome", "notepad", "calculator", "search", "find", "remember"]
+            search_keywords = ["when", "what", "did i", "opened", "chrome", "notepad", "calculator", "search", "find", "remember", "do", "again", "yu", "you"]
             message_lower = message.lower()
             
             if not any(keyword in message_lower for keyword in search_keywords):
@@ -497,6 +509,13 @@ class ConversationalBrain:
                 search_terms.append("calculator")
             if "opened" in message_lower or "open" in message_lower:
                 search_terms.append("opened")
+                search_terms.append("open")
+            if "do" in message_lower or "did" in message_lower:
+                search_terms.append("action")
+                search_terms.append("opened")
+            if "again" in message_lower:
+                search_terms.append("last")
+                search_terms.append("recent")
             
             if not search_terms:
                 search_terms = [message.split()[0] if message.split() else ""]
@@ -514,7 +533,7 @@ class ConversationalBrain:
                     )
                     
                     for result in results:
-                        if result.get('relevance_score', 0) >= 3:  # Only include high-relevance results
+                        if result.get('relevance_score', 0) >= 1:  # Lower threshold to catch more relevant results
                             content = result.get('content', '')
                             event_type = result.get('type', '')
                             

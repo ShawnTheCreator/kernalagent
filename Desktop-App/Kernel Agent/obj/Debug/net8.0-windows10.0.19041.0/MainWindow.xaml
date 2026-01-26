@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="Kernel Agent - Mission Control">
+    Title="Kernel - Your PC's Intelligent Core">
 
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="BaseAlt" />
@@ -21,25 +21,25 @@
         <Grid x:ConnectionId='2' x:Name="AppTitleBar" Height="40">
             <StackPanel Orientation="Horizontal" Margin="15,0">
                 <FontIcon Glyph="&#xE99A;" Foreground="#8E75FF" FontSize="16"/>
-                <TextBlock Text="KERNEL MISSION CONTROL" VerticalAlignment="Center" 
+                <TextBlock Text="KERNEL - INTELLIGENT CORE" VerticalAlignment="Center" 
                            Margin="10,0" FontWeight="Bold" FontSize="11" CharacterSpacing="150"/>
             </StackPanel>
             
             <!-- Profile Section -->
-            <StackPanel x:ConnectionId='22' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,140,0" Visibility="Collapsed">
-                <PersonPicture x:ConnectionId='24' x:Name="ProfilePicture" Width="32" Height="32" Margin="0,0,8,0"/>
-                <TextBlock x:ConnectionId='25' x:Name="UserNameText" Text="User" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <Button x:ConnectionId='26' x:Name="ProfileButton" Background="Transparent" BorderThickness="0" Padding="8,4">
+            <StackPanel x:ConnectionId='23' x:Name="ProfileSection" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,140,0" Visibility="Collapsed">
+                <PersonPicture x:ConnectionId='25' x:Name="ProfilePicture" Width="32" Height="32" Margin="0,0,8,0"/>
+                <TextBlock x:ConnectionId='26' x:Name="UserNameText" Text="User" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Button x:ConnectionId='27' x:Name="ProfileButton" Background="Transparent" BorderThickness="0" Padding="8,4">
                     <FontIcon Glyph="&#xE70D;" FontSize="12"/>
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem x:ConnectionId='27' Text="View Profile" x:Name="ViewProfileMenuItem"                                  >
+                            <MenuFlyoutItem x:ConnectionId='28' Text="View Profile" x:Name="ViewProfileMenuItem"                                  >
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE77B;"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:ConnectionId='28' Text="Logout" x:Name="LogoutMenuItem"                             >
+                            <MenuFlyoutItem x:ConnectionId='29' Text="Logout" x:Name="LogoutMenuItem"                             >
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE7E8;"/>
                                 </MenuFlyoutItem.Icon>
@@ -50,7 +50,7 @@
             </StackPanel>
             
             <!-- Login Button (Header) -->
-            <Button x:ConnectionId='23' x:Name="LoginButton" Content="Login" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" 
+            <Button x:ConnectionId='24' x:Name="LoginButton" Content="Login" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" 
                     Background="#8E75FF" Foreground="White" Padding="15,6"                           Visibility="Collapsed"/>
         </Grid>
 
@@ -60,7 +60,7 @@
                                                                    
                         Visibility="Collapsed">
              <NavigationView.MenuItems>
-                 <NavigationViewItem Content="Mission Control" Icon="Target" Tag="mission"/>
+                 <NavigationViewItem Content="Kernel Control" Icon="Target" Tag="mission"/>
                  <NavigationViewItemHeader Content="Tools"/>
                  <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
                  <NavigationViewItem Content="Neural Sandbox" Icon="Play" Tag="sandbox"/>
@@ -70,7 +70,7 @@
                          <FontIcon Glyph="&#xE81C;" />
                      </NavigationViewItem.Icon>
                  </NavigationViewItem>
-                 <NavigationViewItem Content="Neural Memory" Icon="AllApps" Tag="memory"/>
+                 <NavigationViewItem Content="Kernel Memory" Icon="AllApps" Tag="memory"/>
                  <NavigationViewItemHeader Content="Security"/>
                  <NavigationViewItem Content="Security Vault" Icon="Permissions" Tag="security"/>
                  <NavigationViewItemHeader Content="Market"/>
@@ -95,12 +95,24 @@
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
-                     <Border CornerRadius="12" Background="#111111" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
+                     <Border CornerRadius="12" Background="Black" Margin="0,0,10,0" BorderThickness="1" BorderBrush="#333333">
                         <Grid>
-                            <Image x:ConnectionId='20' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
-                            <Canvas x:ConnectionId='21' x:Name="AiOverlayCanvas"/>
+                            <MediaPlayerElement x:ConnectionId='20' x:Name="BackgroundVideo" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="UniformToFill" AutoPlay="True" Opacity="0.6" IsHitTestVisible="False"/>
+                            
+                            <!-- Vignette Overlay to blend video edges into black -->
+                            <Rectangle IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.8" RadiusY="0.8">
+                                        <GradientStop Color="#00000000" Offset="0"/>
+                                        <GradientStop Color="#FF000000" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <Image x:ConnectionId='21' x:Name="LiveDesktopPreview" Stretch="Uniform"/>
+                            <Canvas x:ConnectionId='22' x:Name="AiOverlayCanvas"/>
                             <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
-                                <TextBlock Text="AGENT STATUS: OBSERVING" Foreground="#34A853" FontWeight="Bold"/>
+                                <TextBlock Text="KERNEL STATUS: OBSERVING" Foreground="#34A853" FontWeight="Bold"/>
                                 <TextBlock Text="Target: Microsoft Excel" FontSize="12" Opacity="0.6"/>
                             </StackPanel>
                         </Grid>
@@ -175,7 +187,7 @@
                                 </Grid>
                             </Border>
 
-                            <TextBlock Grid.Row="1" Text="INTERNAL MONOLOGUE" FontSize="10" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,10"/>
+                            <TextBlock Grid.Row="1" Text="KERNEL THOUGHTS" FontSize="10" FontWeight="Bold" Opacity="0.5" Margin="0,0,0,10"/>
 
                             <ScrollViewer Grid.Row="2">
                                 <StackPanel x:ConnectionId='15' x:Name="ThoughtLog"/>
@@ -186,7 +198,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:ConnectionId='13' PlaceholderText="Command Agent..." 
+                                <TextBox x:ConnectionId='13' PlaceholderText="Command Kernel..." 
                                          CornerRadius="8" x:Name="CommandInput" Margin="0,0,8,0"
                                                                        />
                                 <Button x:ConnectionId='14' Grid.Column="1" x:Name="InternalMonologueVoiceButton" 
@@ -230,14 +242,14 @@
                 </Grid>
                 
                 <!-- Title -->
-                <TextBlock Text="KERNEL AGENT" 
+                <TextBlock Text="KERNEL" 
                            FontSize="32" 
                            FontWeight="Bold" 
                            HorizontalAlignment="Center"
                            CharacterSpacing="200"
                            Foreground="White"/>
                            
-                <TextBlock Text="Your AI Desktop Copilot" 
+                <TextBlock Text="Your PC's Intelligent Core" 
                            FontSize="16" 
                            Opacity="0.7" 
                            HorizontalAlignment="Center"

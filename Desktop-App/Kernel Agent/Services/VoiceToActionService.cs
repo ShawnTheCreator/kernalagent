@@ -16,6 +16,9 @@ namespace Kernel_Agent.Services
         // Production: Render deployed backend
         private readonly string _pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
         private readonly SpeechRecognitionEngine _recognizer;
+        
+        // Persistent session ID for memory continuity
+        private static readonly string _persistentSessionId = Guid.NewGuid().ToString();
 
         public VoiceToActionService()
         {
@@ -23,6 +26,8 @@ namespace Kernel_Agent.Services
             _recognizer.SetInputToDefaultAudioDevice();
             _recognizer.LoadGrammar(new DictationGrammar());
             _recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
+            
+            System.Diagnostics.Debug.WriteLine($"[VOICE] Using persistent session_id: {_persistentSessionId}");
         }
 
         public void StartListening()
@@ -48,7 +53,7 @@ namespace Kernel_Agent.Services
         private async Task<JsonElement[]> GetActionPlanFromPython(string userCommand)
         {
             using var client = new HttpClient();
-            var requestBody = new { command = userCommand };
+            var requestBody = new { command = userCommand, session_id = _persistentSessionId };
             var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
             var response = await client.PostAsync(_pythonBackendUrl, content);
             if (!response.IsSuccessStatusCode) return null;

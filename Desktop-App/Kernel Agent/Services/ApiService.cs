@@ -21,6 +21,9 @@ namespace Kernel_Agent.Services
         private static readonly string BASE_URL = "http://localhost:8000/";
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
+        
+        // Persistent session ID for memory continuity (shared with VoiceToActionService)
+        private static readonly string _persistentSessionId = Guid.NewGuid().ToString();
 
         public static ApiService Instance
         {
@@ -42,6 +45,8 @@ namespace Kernel_Agent.Services
                 Timeout = TimeSpan.FromSeconds(30)
             };
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            
+            System.Diagnostics.Debug.WriteLine($"[API_SERVICE] Using persistent session_id: {_persistentSessionId}");
         }
         // Thread-safe in-memory token cache (ApplicationData throws from background threads)
         private static string? _cachedAuthToken = null;
@@ -450,7 +455,7 @@ namespace Kernel_Agent.Services
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);
                 
-                var requestBody = new { command = commandText };
+                var requestBody = new { command = commandText, session_id = _persistentSessionId };
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 

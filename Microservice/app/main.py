@@ -1,7 +1,7 @@
 """
-Kernal Agent AI Brain - FastAPI Application Entry Point.
+Kernel AI Brain - FastAPI Application Entry Point.
 
-This is the main server that powers the Kernal Agent desktop copilot.
+This is the main server that powers the Kernel desktop copilot.
 It provides a WebSocket API for real-time communication with the Desktop Client.
 """
 import logging
@@ -277,7 +277,7 @@ async def startup_event():
         logger.warning(f"Janitor Daemon not started: {e}")
     
     logger.info("=" * 60)
-    logger.info("🚀 KERNAL AGENT BRAIN STARTING UP")
+    logger.info("🚀 KERNEL AI BRAIN STARTING UP")
     logger.info("=" * 60)
     logger.info(f"📡 Available endpoints:")
     logger.info(f"   POST /api/agent/plan        - v1 planning (Gemini)")
@@ -294,6 +294,6 @@ async def startup_event():
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting Kernal Agent Brain...")
+    logger.info("Starting Kernel AI Brain...")
     uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, log_level="info", reload=True)
 
