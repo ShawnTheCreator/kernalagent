@@ -126,6 +126,27 @@ class SentinelAgent(BaseAgent):
                 condition="thermal temperature fan cooling",
                 priority=7
             ),
+            # Expanded system metrics and monitoring triggers
+            AgentTrigger(
+                trigger_type="user_intent",
+                condition="system metrics real-time status performance cpu ram memory temperature usage",
+                priority=9
+            ),
+            AgentTrigger(
+                trigger_type="user_intent",
+                condition="show me system status health check monitor dashboard telemetry",
+                priority=9
+            ),
+            AgentTrigger(
+                trigger_type="user_intent",
+                condition="cpu usage memory temperature disk network performance monitor",
+                priority=9
+            ),
+            AgentTrigger(
+                trigger_type="user_intent",
+                condition="system information specs hardware details resource usage",
+                priority=8
+            ),
         ]
     
     async def analyze(self, context: Dict[str, Any]) -> AnalysisResult:
