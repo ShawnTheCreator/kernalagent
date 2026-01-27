@@ -262,10 +262,17 @@ async def startup_event():
     # Register agents on startup
     from app.agents.agent_registry import get_registry
     from app.agents.janitor.janitor_agent import JanitorAgent
+    from app.agents.sentinel.sentinel_agent import SentinelAgent
     
     registry = get_registry()
+    
+    # Register Janitor Agent
     if registry.get("JANITOR_AGENT") is None:
         registry.register(JanitorAgent())
+    
+    # Register Sentinel Agent
+    if registry.get("SENTINEL_AGENT") is None:
+        registry.register(SentinelAgent())
     
     # Start Janitor Daemon (autonomous mode)
     try:

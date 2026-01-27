@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import logging
+import os
 
 from app.agents.agent_registry import get_registry
 from app.agents.agent_planner import AgentPlanner
@@ -674,6 +675,181 @@ async def rename_file_smart(request: dict):
 
 
 # =============================================================================
+# Sentinel Agent Endpoints
+# =============================================================================
+
+@router.get("/sentinel/health-report")
+async def get_sentinel_health_report():
+    """
+    Get comprehensive system health report from Sentinel Agent.
+    
+    Returns CPU, RAM, temperature, disk, network metrics and alerts.
+    """
+    _ensure_sentinel_registered()
+    
+    registry = get_registry()
+    sentinel = registry.get("SENTINEL_AGENT")
+    
+    if sentinel is None:
+        raise HTTPException(status_code=500, detail="Sentinel agent not available")
+    
+    try:
+        report = await sentinel.get_health_report()
+        return report
+    except Exception as e:
+        logger.error(f"Sentinel health report error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/sentinel/optimize-focus")
+async def optimize_for_focus(request: dict):
+    """
+    Optimize system for a specific target application.
+    
+    Request:
+        {"target_app": "chrome.exe" or "Visual Studio" or "game"}
+    
+    Sets target app to HIGH priority, throttles background processes.
+    """
+    _ensure_sentinel_registered()
+    
+    registry = get_registry()
+    sentinel = registry.get("SENTINEL_AGENT")
+    
+    if sentinel is None:
+        raise HTTPException(status_code=500, detail="Sentinel agent not available")
+    
+    try:
+        target_app = request.get("target_app", "")
+        if not target_app:
+            return {"success": False, "error": "target_app required"}
+        
+        result = await sentinel.optimize_for_focus(target_app)
+        return result
+    except Exception as e:
+        logger.error(f"Sentinel focus optimization error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/sentinel/kill-hogs")
+async def kill_resource_hogs(request: dict):
+    """
+    Kill resource hog processes.
+    
+    Request:
+        {
+            "cpu_threshold": 90.0,  # optional, default 90%
+            "memory_threshold": 95.0  # optional, default 95%
+        }
+    
+    Terminates processes exceeding resource thresholds.
+    """
+    _ensure_sentinel_registered()
+    
+    registry = get_registry()
+    sentinel = registry.get("SENTINEL_AGENT")
+    
+    if sentinel is None:
+        raise HTTPException(status_code=500, detail="Sentinel agent not available")
+    
+    try:
+        cpu_threshold = request.get("cpu_threshold", 90.0)
+        memory_threshold = request.get("memory_threshold", 95.0)
+        
+        result = await sentinel.kill_resource_hogs(cpu_threshold, memory_threshold)
+        return result
+    except Exception as e:
+        logger.error(f"Sentinel resource hog killing error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/sentinel/cleanup-ghosts")
+async def cleanup_ghost_processes(request: dict):
+    """
+    Clean up ghost (zombie/idle) processes.
+    
+    Request:
+        {"idle_hours": 2.0}  # optional, default 2 hours
+    
+    Terminates processes that have been idle for specified hours.
+    """
+    _ensure_sentinel_registered()
+    
+    registry = get_registry()
+    sentinel = registry.get("SENTINEL_AGENT")
+    
+    if sentinel is None:
+        raise HTTPException(status_code=500, detail="Sentinel agent not available")
+    
+    try:
+        idle_hours = request.get("idle_hours", 2.0)
+        
+        result = await sentinel.cleanup_ghost_processes(idle_hours)
+        return result
+    except Exception as e:
+        logger.error(f"Sentinel ghost cleanup error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/sentinel/power-profile")
+async def set_power_profile(request: dict):
+    """
+    Set Windows power profile.
+    
+    Request:
+        {"profile": "high_performance"}  # options: high_performance, balanced, power_saver
+    
+    Changes Windows power scheme for thermal/performance management.
+    """
+    _ensure_sentinel_registered()
+    
+    registry = get_registry()
+    sentinel = registry.get("SENTINEL_AGENT")
+    
+    if sentinel is None:
+        raise HTTPException(status_code=500, detail="Sentinel agent not available")
+    
+    try:
+        profile = request.get("profile", "")
+        if profile not in ["high_performance", "balanced", "power_saver"]:
+            return {"success": False, "error": "Invalid profile. Use: high_performance, balanced, power_saver"}
+        
+        result = await sentinel.set_power_profile(profile)
+        return result
+    except Exception as e:
+        logger.error(f"Sentinel power profile error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/sentinel/metrics")
+async def get_sentinel_metrics():
+    """
+    Get Sentinel Agent performance metrics.
+    
+    Returns optimization history, success rates, and performance stats.
+    """
+    _ensure_sentinel_registered()
+    
+    registry = get_registry()
+    sentinel = registry.get("SENTINEL_AGENT")
+    
+    if sentinel is None:
+        raise HTTPException(status_code=500, detail="Sentinel agent not available")
+    
+    try:
+        metrics = sentinel.get_metrics()
+        status = sentinel.get_status()
+        
+        return {
+            "metrics": metrics,
+            "status": status,
+        }
+    except Exception as e:
+        logger.error(f"Sentinel metrics error: {e}")
+        return {"error": str(e)}
+
+
+# =============================================================================
 # Helper Functions
 # =============================================================================
 
@@ -697,3 +873,14 @@ def _ensure_recovery_registered():
         recovery = RecoveryAgent()
         registry.register(recovery)
         logger.info("Registered RECOVERY_AGENT")
+
+
+def _ensure_sentinel_registered():
+    """Ensure the Sentinel agent is registered."""
+    registry = get_registry()
+    
+    if registry.get("SENTINEL_AGENT") is None:
+        from app.agents.sentinel.sentinel_agent import SentinelAgent
+        sentinel = SentinelAgent()
+        registry.register(sentinel)
+        logger.info("Registered SENTINEL_AGENT")

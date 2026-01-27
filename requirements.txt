@@ -4,3 +4,6 @@ websockets
 google-genai
 pillow
 python-dotenv
+psutil
+wmi
+pywin32
