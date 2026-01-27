@@ -200,9 +200,33 @@ class HardwareMonitor:
                     for temp in temps:
                         if hasattr(temp, 'CurrentTemperature'):
                             # Convert from tenths of kelvin to celsius
-                            temp_celsius = (temp.CurrentTemperature - 2732) / 10.0
-                            zone_name = getattr(temp, 'InstanceName', getattr(temp, 'Name', f'ThermalZone_{len(temperatures)}'))
-                            temperatures[zone_name] = round(temp_celsius, 2)
+                            raw_temp = temp.CurrentTemperature
+                            logger.debug(f"[Sentinel] Raw temperature value: {raw_temp}")
+                            
+                            # Validate the raw value
+                            if isinstance(raw_temp, (int, float)):
+                                logger.debug(f"[Sentinel] Raw temperature value: {raw_temp}, type: {type(raw_temp)}")
+                                
+                                # Check if it's already in Kelvin (not tenths)
+                                if 200 <= raw_temp <= 400:  # Likely in Kelvin
+                                    temp_celsius = raw_temp - 273.15
+                                    logger.debug(f"[Sentinel] Converting from Kelvin: {raw_temp}K -> {temp_celsius}°C")
+                                elif 2000 <= raw_temp <= 4000:  # Likely in tenths of Kelvin
+                                    temp_celsius = (raw_temp - 2732) / 10.0
+                                    logger.debug(f"[Sentinel] Converting from tenths of Kelvin: {raw_temp} -> {temp_celsius}°C")
+                                else:
+                                    logger.warning(f"[Sentinel] Unexpected temperature value: {raw_temp}")
+                                    continue
+                                
+                                # Validate converted temperature
+                                if -50 <= temp_celsius <= 150:  # Reasonable temperature range
+                                    zone_name = getattr(temp, 'InstanceName', getattr(temp, 'Name', f'ThermalZone_{len(temperatures)}'))
+                                    temperatures[zone_name] = round(temp_celsius, 2)
+                                    logger.debug(f"[Sentinel] Valid temperature: {zone_name} = {temp_celsius}°C")
+                                else:
+                                    logger.warning(f"[Sentinel] Invalid converted temperature: {temp_celsius}°C from raw {raw_temp}")
+                            else:
+                                logger.warning(f"[Sentinel] Invalid raw temperature value: {raw_temp}")
                         elif hasattr(temp, 'Temperature'):
                             # Direct Celsius value
                             temp_celsius = temp.Temperature
@@ -235,6 +259,20 @@ class HardwareMonitor:
                                 temperatures[f"Core{i}"] = round(core_temp, 2)
                 except Exception as e:
                     logger.debug(f"[Sentinel] CoreTemp query failed: {e}")
+            
+            # Final fallback: try psutil temperature sensors
+            if not temperatures:
+                try:
+                    import psutil
+                    if hasattr(psutil, "sensors_temperatures"):
+                        temps = psutil.sensors_temperatures()
+                        for name, entries in temps.items():
+                            for entry in entries:
+                                if entry.current:
+                                    temperatures[f"psutil_{name}"] = round(entry.current, 2)
+                                    logger.debug(f"[Sentinel] psutil temperature: {name} = {entry.current}°C")
+                except Exception as e:
+                    logger.debug(f"[Sentinel] psutil temperature query failed: {e}")
             
             max_temp = None
             if temperatures:
