@@ -111,25 +111,42 @@ async def plan_command(
                 context = {"intent": command, "session_id": session_id}
                 analysis = await agent.analyze(context)
                 plan = await agent.plan(analysis)
-                
-                # Convert agent plan to executor steps format
-                agent_steps = []
-                for action in plan.actions:
-                    # Agent actions are in dict format
-                    step = {
-                        "action": "agent_task",
-                        "agent": agent.name,
-                        "plan_id": plan.plan_id,
-                        "requires_approval": plan.requires_approval,
-                        "estimated_impact": plan.estimated_impact,
-                        "content": f"Agent {agent.name} has {len(plan.actions)} actions pending approval",
-                    }
-                    agent_steps.append(step)
-                    break  # Return single meta-step for now
-                
-                if agent_steps:
-                    logger.info(f"[PLANNER] Agent plan ready with {len(plan.actions)} actions")
-                    return agent_steps
+
+                # Always return a single meta-step when an agent matches.
+                # IMPORTANT: even if the agent produces 0 executable actions, the agent may
+                # still have produced useful findings (e.g., a health report). We must not
+                # fall through into UI automation planning.
+                summary = None
+                try:
+                    findings = getattr(analysis, "findings", {}) or {}
+                    # Prefer a concise sentinel-style summary if present
+                    if isinstance(findings, dict) and "system_status" in findings:
+                        sys_status = findings.get("system_status") or {}
+                        summary = (
+                            f"System status: CPU={sys_status.get('cpu_status','unknown')}, "
+                            f"RAM={sys_status.get('memory_status','unknown')}, "
+                            f"Thermal={sys_status.get('thermal_status','unknown')}"
+                        )
+                    elif isinstance(findings, dict) and "health_report" in findings:
+                        hr = findings.get("health_report") or {}
+                        cpu = (hr.get("cpu") or {}).get("percent_total")
+                        mem = ((hr.get("memory") or {}).get("virtual") or {}).get("percent_used")
+                        temp = (hr.get("temperature") or {}).get("max_temp")
+                        summary = f"Health: CPU={cpu}%, RAM={mem}%, Temp={temp}"
+                except Exception:
+                    summary = None
+
+                step = {
+                    "action": "agent_task",
+                    "target": agent.name,
+                    "label": plan.plan_id,
+                    "requires_approval": plan.requires_approval,
+                    "estimated_impact": plan.estimated_impact,
+                    "content": summary or f"Agent {agent.name} plan ready ({len(plan.actions)} actions)",
+                }
+
+                logger.info(f"[PLANNER] Agent plan ready with {len(plan.actions)} actions")
+                return [step]
                     
     except Exception as e:
         logger.warning(f"[PLANNER] Agent routing failed: {e}, continuing with LLM...")
