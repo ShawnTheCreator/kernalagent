@@ -136,13 +136,11 @@ async def plan_command(
                 except Exception:
                     summary = None
 
+                # Return a non-executable step so the Desktop app can surface the result
+                # without attempting UI automation / recovery.
                 step = {
-                    "action": "agent_task",
-                    "target": agent.name,
-                    "label": plan.plan_id,
-                    "requires_approval": plan.requires_approval,
-                    "estimated_impact": plan.estimated_impact,
-                    "content": summary or f"Agent {agent.name} plan ready ({len(plan.actions)} actions)",
+                    "action": "conversation",
+                    "content": summary or f"{agent.name}: plan ready ({len(plan.actions)} actions)",
                 }
 
                 logger.info(f"[PLANNER] Agent plan ready with {len(plan.actions)} actions")
