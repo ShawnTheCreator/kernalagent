@@ -45,6 +45,7 @@ from app.api.speech_routes import router as speech_router  # Voice transcription
 from app.api.voice_ws import router as voice_ws_router  # Continuous voice WebSocket
 from app.api.agent_hub_routes import router as agent_hub_router  # Agent Hub API
 from app.api.sentinel_routes import router as sentinel_router
+from app.api.sentinel_dashboard import router as sentinel_dashboard_router
 from app.core.config import settings
 from app.db.init_db import init_database
 
@@ -117,6 +118,7 @@ app.include_router(speech_router)  # Voice transcription API (/api/speech/*)
 app.include_router(voice_ws_router)  # Continuous voice WebSocket (/ws/voice)
 app.include_router(agent_hub_router)  # Agent Hub API (/api/agents/*)
 app.include_router(sentinel_router)  # Sentinel WebSocket alerts (/ws/sentinel)
+app.include_router(sentinel_dashboard_router)  # Sentinel dashboard API (/api/sentinel/*)
 
 @app.get("/health")
 async def health_check():
@@ -333,12 +335,16 @@ async def startup_event():
     logger.info(f"   GET  /api/auth/poll         - fast auth poll (local)")
     logger.info(f"   GET  /api/agents            - list agents (NEW)")
     logger.info(f"   GET  /api/agents/janitor/quick-scan - janitor scan (NEW)")
-    logger.info(f"   GET  /api/agents/sentinel/health-report - Sentinel health (NEW)")
+    logger.info(f"   GET  /api/agents/sentinel/metrics - Sentinel metrics (NEW)")
     logger.info(f"   POST /api/agents/sentinel/optimize-focus - Sentinel focus (NEW)")
     logger.info(f"   POST /api/agents/sentinel/kill-hogs - Sentinel cleanup (NEW)")
     logger.info(f"   POST /api/agents/sentinel/cleanup-ghosts - Sentinel ghosts (NEW)")
     logger.info(f"   POST /api/agents/sentinel/power-profile - Sentinel power (NEW)")
-    logger.info(f"   GET  /api/agents/sentinel/metrics - Sentinel metrics (NEW)")
+    logger.info(f"   GET  /api/sentinel/metrics/history - Resource history (NEW)")
+    logger.info(f"   GET  /api/sentinel/alerts/history - Alert history (NEW)")
+    logger.info(f"   GET  /api/sentinel/status - Sentinel status (NEW)")
+    logger.info(f"   GET  /api/sentinel/predictions - Predictions (NEW)")
+    logger.info(f"   WS   /ws/sentinel - Sentinel alerts (NEW)")
     logger.info(f"   GET  /health                - health check")
     logger.info("=" * 60)
     logger.info("🧹 Janitor watching Downloads & Desktop for new files")

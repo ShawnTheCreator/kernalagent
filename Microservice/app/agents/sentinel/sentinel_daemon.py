@@ -118,6 +118,13 @@ class SentinelDaemon:
         except ImportError:
             logger.info("[Sentinel] Scheduled Maintenance not available")
         
+        # Initialize Gaming Mode Detector
+        try:
+            from app.agents.sentinel.gaming_detector import GamingModeDetector
+            self.gaming_detector = GamingModeDetector(self)
+        except ImportError:
+            logger.info("[Sentinel] Gaming Mode Detector not available")
+        
     async def start(self):
         """Start the monitoring daemon."""
         logger.info("[Sentinel] Starting autonomous monitoring daemon...")
@@ -137,7 +144,19 @@ class SentinelDaemon:
         if self.scheduled_maintenance:
             asyncio.create_task(self._start_scheduled_maintenance())
         
+        # Start gaming mode detector if available
+        if self.gaming_detector:
+            asyncio.create_task(self._start_gaming_detector())
+        
         logger.info("[Sentinel] Daemon started - monitoring every 20 seconds")
+    
+    async def _start_gaming_detector(self):
+        """Start gaming mode detector."""
+        try:
+            await self.gaming_detector.start()
+            logger.info("[Sentinel] Gaming Mode Detector started")
+        except Exception as e:
+            logger.error(f"[Sentinel] Failed to start Gaming Mode Detector: {e}")
     
     async def _start_scheduled_maintenance(self):
         """Start scheduled maintenance."""
