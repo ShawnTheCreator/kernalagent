@@ -19,3 +19,8 @@ watchdog
 psutil
 aiofiles
 requests
+
+# Sentinel Agent
+numpy
+pywin32
+wmi

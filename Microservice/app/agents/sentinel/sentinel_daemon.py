@@ -10,6 +10,8 @@ Features:
 - 10-day resource history
 - Multi-user support
 - Windows Event Viewer integration
+- Predictive analytics for resource exhaustion
+- Anomaly detection
 """
 
 import asyncio
@@ -31,7 +33,7 @@ logger = logging.getLogger(__name__)
 class SentinelAlert:
     """Represents a system alert."""
     id: str
-    type: str  # cpu, memory, temperature, disk, process
+    type: str  # cpu, memory, temperature, disk, process, system_event, prediction, anomaly
     severity: str  # warning, critical
     message: str
     current_value: float
@@ -40,6 +42,7 @@ class SentinelAlert:
     suggestions: List[str]
     processes: List[Dict[str, Any]]
     user_id: Optional[str] = None
+    extra_data: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -89,6 +92,31 @@ class SentinelDaemon:
         # Active alerts
         self.active_alerts: Dict[str, SentinelAlert] = {}
         
+        # Initialize advanced features
+        self.event_monitor = None
+        self.predictive_analyzer = None
+        
+        # Try to initialize Windows Event Monitor
+        try:
+            from app.agents.sentinel.event_monitor import WindowsEventMonitor
+            self.event_monitor = WindowsEventMonitor(self)
+        except ImportError:
+            logger.info("[Sentinel] Windows Event Monitor not available")
+        
+        # Initialize Predictive Analyzer
+        try:
+            from app.agents.sentinel.predictive_analyzer import PredictiveAnalyzer
+            self.predictive_analyzer = PredictiveAnalyzer(self)
+        except ImportError:
+            logger.info("[Sentinel] Predictive Analyzer not available")
+        
+        # Initialize Scheduled Maintenance
+        try:
+            from app.agents.sentinel.scheduled_maintenance import ScheduledMaintenance
+            self.scheduled_maintenance = ScheduledMaintenance(self)
+        except ImportError:
+            logger.info("[Sentinel] Scheduled Maintenance not available")
+        
     async def start(self):
         """Start the monitoring daemon."""
         logger.info("[Sentinel] Starting autonomous monitoring daemon...")
@@ -100,7 +128,31 @@ class SentinelDaemon:
         # Start cleanup tasks
         asyncio.create_task(self._cleanup_loop())
         
+        # Start advanced monitoring if available
+        if self.event_monitor:
+            asyncio.create_task(self._start_event_monitor())
+        
+        # Start scheduled maintenance if available
+        if self.scheduled_maintenance:
+            asyncio.create_task(self._start_scheduled_maintenance())
+        
         logger.info("[Sentinel] Daemon started - monitoring every 20 seconds")
+    
+    async def _start_scheduled_maintenance(self):
+        """Start scheduled maintenance."""
+        try:
+            await self.scheduled_maintenance.start()
+            logger.info("[Sentinel] Scheduled Maintenance started")
+        except Exception as e:
+            logger.error(f"[Sentinel] Failed to start Scheduled Maintenance: {e}")
+    
+    async def _start_event_monitor(self):
+        """Start Windows Event Monitor."""
+        try:
+            await self.event_monitor.start()
+            logger.info("[Sentinel] Windows Event Monitor started")
+        except Exception as e:
+            logger.error(f"[Sentinel] Failed to start Event Monitor: {e}")
     
     async def stop(self):
         """Stop the monitoring daemon."""
@@ -143,6 +195,20 @@ class SentinelDaemon:
                 # Store metrics
                 self.metrics_history.append(metrics)
                 
+                # Predictive analytics
+                if self.predictive_analyzer:
+                    self.predictive_analyzer.add_metrics(metrics)
+                    
+                    # Check predictions
+                    predictions = self.predictive_analyzer.predict_resource_exhaustion()
+                    for prediction in predictions:
+                        await self._send_prediction_alert(prediction)
+                    
+                    # Check anomalies
+                    anomalies = self.predictive_analyzer.detect_anomalies(metrics)
+                    for anomaly in anomalies:
+                        await self._send_anomaly_alert(anomaly)
+                
                 await asyncio.sleep(self.monitor_interval)
                 
             except Exception as e:
@@ -162,7 +228,7 @@ class SentinelDaemon:
         network_info = health_report.get("network", {})
         
         # Get top processes
-        processes = await self.hardware_monitor.get_top_processes(limit=10)
+        processes = await self.hardware_monitor._get_process_info(limit=10)
         
         return SystemMetrics(
             timestamp=datetime.utcnow(),
@@ -418,6 +484,46 @@ class SentinelDaemon:
         await self._broadcast_message(message)
         logger.info(f"[Sentinel] Alert sent: {alert.type} - {alert.message}")
     
+    async def _send_prediction_alert(self, prediction: Dict):
+        """Send predictive alert."""
+        alert_id = f"prediction_{prediction['type']}_{int(datetime.utcnow().timestamp())}"
+        
+        alert = SentinelAlert(
+            id=alert_id,
+            type="prediction",
+            severity=prediction.get("severity", "warning"),
+            message=f"Prediction: {prediction['type'].replace('_', ' ').title()} in {prediction.get('time_to_exhaustion', 0)}s",
+            current_value=prediction.get("current_value", 0),
+            threshold=prediction.get("predicted_value", 0),
+            timestamp=datetime.utcnow(),
+            suggestions=["prepare", "investigate", "ignore"],
+            processes=[],
+            extra_data=prediction
+        )
+        
+        self.active_alerts[alert_id] = alert
+        await self._send_alert(alert)
+    
+    async def _send_anomaly_alert(self, anomaly: Dict):
+        """Send anomaly alert."""
+        alert_id = f"anomaly_{anomaly['type']}_{int(datetime.utcnow().timestamp())}"
+        
+        alert = SentinelAlert(
+            id=alert_id,
+            type="anomaly",
+            severity=anomaly.get("severity", "warning"),
+            message=f"Anomaly detected: {anomaly['type'].replace('_', ' ').title()}",
+            current_value=anomaly.get("current_value", 0),
+            threshold=anomaly.get("normal_mean", 0),
+            timestamp=datetime.utcnow(),
+            suggestions=["investigate", "monitor", "ignore"],
+            processes=[],
+            extra_data=anomaly
+        )
+        
+        self.active_alerts[alert_id] = alert
+        await self._send_alert(alert)
+    
     async def _broadcast_health_score(self, score: int):
         """Broadcast system health score."""
         message = {
@@ -515,9 +621,48 @@ class SentinelDaemon:
     
     async def _trigger_cleanup(self):
         """Trigger system cleanup via Janitor agent."""
-        # This would integrate with Janitor agent
-        logger.info("[Sentinel] Triggering system cleanup")
-        # TODO: Call Janitor API
+        try:
+            # Import Janitor to trigger cleanup
+            from app.agents.janitor.janitor_agent import JanitorAgent
+            from app.agents.agent_registry import get_registry
+            
+            registry = get_registry()
+            janitor = registry.get("JANITOR_AGENT")
+            
+            if janitor:
+                # Create cleanup context
+                context = {
+                    "intent": "cleanup",
+                    "user_request": "System cleanup triggered by Sentinel",
+                    "autonomous": True
+                }
+                
+                # Run Janitor analysis and planning
+                analysis = await janitor.analyze(context)
+                plan = await janitor.plan(analysis)
+                
+                # Execute cleanup actions (with approval already given)
+                if plan.actions:
+                    for action in plan.actions:
+                        await janitor.execute(action)
+                    
+                    # Notify user
+                    await self._broadcast_message({
+                        "type": "sentinel_cleanup_completed",
+                        "actions_executed": len(plan.actions),
+                        "message": f"Cleanup completed: {len(plan.actions)} actions taken"
+                    })
+                
+                logger.info(f"[Sentinel] Triggered Janitor cleanup: {len(plan.actions)} actions")
+            else:
+                logger.warning("[Sentinel] Janitor agent not available for cleanup")
+        
+        except Exception as e:
+            logger.error(f"[Sentinel] Failed to trigger cleanup: {e}")
+            await self._broadcast_message({
+                "type": "sentinel_cleanup_failed",
+                "error": str(e)
+            })
     
     async def _whitelist_process(self, process_name: str):
         """Add process to whitelist."""
