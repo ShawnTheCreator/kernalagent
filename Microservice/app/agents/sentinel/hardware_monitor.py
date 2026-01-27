@@ -274,10 +274,29 @@ class HardwareMonitor:
                 except Exception as e:
                     logger.debug(f"[Sentinel] psutil temperature query failed: {e}")
             
+            # Convert all temperature values to Celsius first
+            converted_temps = {}
+            for key, value in temperatures.items():
+                if isinstance(value, (int, float)) and value > 0:
+                    # Convert from Kelvin to Celsius if needed
+                    if value > 200:  # Likely in Kelvin
+                        converted = value - 273.15
+                        if -50 <= converted <= 150:
+                            converted_temps[key] = round(converted, 2)
+                    elif value > 2000:  # Likely in tenths of Kelvin
+                        converted = (value - 2732) / 10.0
+                        if -50 <= converted <= 150:
+                            converted_temps[key] = round(converted, 2)
+                    else:
+                        converted_temps[key] = value  # Already in Celsius or invalid
+            
+            # Update temperatures dict with converted values
+            temperatures.update(converted_temps)
+            
+            # Now calculate max_temp from converted temperatures
             max_temp = None
-            if temperatures:
-                numeric_temps = [t for t in temperatures.values() if isinstance(t, (int, float)) and t > 0]
-                max_temp = max(numeric_temps) if numeric_temps else None
+            if converted_temps:
+                max_temp = max(converted_temps.values()) if converted_temps else None
             
             return {
                 "available": len(temperatures) > 0,
