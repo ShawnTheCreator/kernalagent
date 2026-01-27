@@ -44,6 +44,7 @@ from app.api.executor_ws import router as executor_ws_router  # Hybrid WebSocket
 from app.api.speech_routes import router as speech_router  # Voice transcription API
 from app.api.voice_ws import router as voice_ws_router  # Continuous voice WebSocket
 from app.api.agent_hub_routes import router as agent_hub_router  # Agent Hub API
+from app.api.sentinel_routes import router as sentinel_router
 from app.core.config import settings
 from app.db.init_db import init_database
 
@@ -115,6 +116,7 @@ app.include_router(executor_ws_router)  # Hybrid WebSocket executor (/ws/executo
 app.include_router(speech_router)  # Voice transcription API (/api/speech/*)
 app.include_router(voice_ws_router)  # Continuous voice WebSocket (/ws/voice)
 app.include_router(agent_hub_router)  # Agent Hub API (/api/agents/*)
+app.include_router(sentinel_router)  # Sentinel WebSocket alerts (/ws/sentinel)
 
 @app.get("/health")
 async def health_check():
@@ -308,7 +310,17 @@ async def startup_event():
         await daemon.start()
         logger.info("🧹 Janitor Daemon started in autonomous mode")
     except Exception as e:
-        logger.warning(f"Janitor Daemon not started: {e}")
+        logger.warning(f"Janitor daemon startup failed: {e}")
+    
+    # Start Sentinel Daemon (autonomous monitoring)
+    try:
+        from app.agents.sentinel.sentinel_daemon import get_sentinel_daemon
+        
+        sentinel_daemon = get_sentinel_daemon()
+        await sentinel_daemon.start()
+        logger.info("🛡️ Sentinel Daemon started - monitoring system every 20 seconds")
+    except Exception as e:
+        logger.warning(f"Sentinel daemon startup failed: {e}")
     
     logger.info("=" * 60)
     logger.info("🚀 KERNEL AI BRAIN STARTING UP")
