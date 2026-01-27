@@ -138,7 +138,16 @@ async def plan_command(
                             cpu_pct = cpu_info.get("percent_total", 0)
                             mem_pct = ((memory_info.get("virtual", {})).get("percent_used", 0))
                             temp = temp_info.get("max_temp", "N/A")
-                            disk_usage = ((disk_info.get("c", {})).get("percent_used", 0)) if disk_info.get("c") else 0
+                            
+                            # Get disk usage from new structure
+                            disk_usage = 0
+                            if disk_info and disk_info.get("usage"):
+                                c_drive = disk_info["usage"].get("c", {})
+                                disk_usage = c_drive.get("percent_used", 0)
+                            
+                            # Get network rates from new structure
+                            net_sent = network_info.get("bytes_sent_per_sec", 0)
+                            net_recv = network_info.get("bytes_recv_per_sec", 0)
                             
                             summary = (
                                 f"📊 Real-time System Metrics:\n"
@@ -146,12 +155,12 @@ async def plan_command(
                                 f"• RAM: {mem_pct}% (used: {memory_info.get('virtual', {}).get('used_gb', 'N/A')}GB / {memory_info.get('virtual', {}).get('total_gb', 'N/A')}GB)\n"
                                 f"• Temperature: {temp}°C\n"
                                 f"• Disk C: {disk_usage}% used\n"
-                                f"• Network: ↑{network_info.get('bytes_sent_per_sec', 0):.1f}KB/s ↓{network_info.get('bytes_recv_per_sec', 0):.1f}KB/s"
+                                f"• Network: ↑{net_sent/1024:.1f}KB/s ↓{net_recv/1024:.1f}KB/s"
                             )
                         elif "temperature" in intent_lower or "thermal" in intent_lower:
                             # Temperature-focused summary
                             temps = temp_info.get("sensors", {})
-                            temp_list = [f"{name}: {t['temp']}°C" for name, t in temps.items()]
+                            temp_list = [f"{name}: {t}°C" for name, t in temps.items() if isinstance(t, (int, float))]
                             summary = (
                                 f"🌡️ Thermal Status:\n"
                                 f"• Max Temperature: {temp_info.get('max_temp', 'N/A')}°C\n"
@@ -180,8 +189,9 @@ async def plan_command(
                         elif "disk" in intent_lower or "storage" in intent_lower:
                             # Disk-focused summary
                             disk_lines = []
-                            for drive, info in disk_info.items():
-                                disk_lines.append(f"• {drive.upper()}: {info.get('percent_used', 0)}% ({info.get('used_gb', 'N/A')}GB / {info.get('total_gb', 'N/A')}GB)")
+                            if disk_info and disk_info.get("usage"):
+                                for drive, info in disk_info["usage"].items():
+                                    disk_lines.append(f"• {drive.upper()}: {info.get('percent_used', 0)}% ({info.get('used_gb', 'N/A')}GB / {info.get('total_gb', 'N/A')}GB)")
                             summary = f"💿 Disk Usage:\n" + "\n".join(disk_lines) if disk_lines else "💿 Disk information unavailable"
                         elif "network" in intent_lower:
                             # Network-focused summary
@@ -198,11 +208,21 @@ async def plan_command(
                             mem_pct = ((memory_info.get("virtual", {})).get("percent_used", 0))
                             temp = temp_info.get("max_temp", "N/A")
                             
+                            # Get disk usage from new structure
+                            disk_usage = 0
+                            if disk_info and disk_info.get("usage"):
+                                c_drive = disk_info["usage"].get("c", {})
+                                disk_usage = c_drive.get("percent_used", 0)
+                            
+                            # Get network rates from new structure
+                            net_sent = network_info.get("bytes_sent_per_sec", 0)
+                            net_recv = network_info.get("bytes_recv_per_sec", 0)
+                            
                             summary = (
                                 f"🖥️ System Health Report:\n"
                                 f"• CPU: {cpu_pct}% | RAM: {mem_pct}% | Temp: {temp}°C\n"
-                                f"• Disk: {((disk_info.get('c', {})).get('percent_used', 0)) if disk_info.get('c') else 0}% used\n"
-                                f"• Network: ↑{network_info.get('bytes_sent_per_sec', 0):.1f}KB/s ↓{network_info.get('bytes_recv_per_sec', 0):.1f}KB/s"
+                                f"• Disk: {disk_usage}% used\n"
+                                f"• Network: ↑{net_sent/1024:.1f}KB/s ↓{net_recv/1024:.1f}KB/s"
                             )
                     else:
                         # Fallback to simple format
