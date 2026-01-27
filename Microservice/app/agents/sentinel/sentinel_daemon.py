@@ -81,7 +81,8 @@ class SentinelDaemon:
             "avg_cpu": 0, "avg_memory": 0, "samples": 0, "whitelisted": False
         })
         self.user_profiles: Dict[str, Dict] = defaultdict(lambda: {
-            "work_hours": (9, 17), "gaming_mode": False, "notifications": True
+            "work_hours": (9, 17), "gaming_mode": False, "notifications": True,
+            "battery_aware": True, "on_battery": False, "battery_percent": 100
         })
         
         # Thresholds (adaptive based on time/context)
@@ -301,6 +302,21 @@ class SentinelDaemon:
             if profile.get("gaming_mode"):
                 thresholds["cpu"] *= 1.2  # 20% more lenient
                 thresholds["memory"] *= 1.1
+            
+            # Battery awareness - more lenient on battery to save power
+            if profile.get("battery_aware") and profile.get("on_battery"):
+                battery_percent = profile.get("battery_percent", 100)
+                
+                # Very aggressive power saving when battery is low
+                if battery_percent < 20:
+                    thresholds["cpu"] *= 1.3  # 30% more lenient
+                    thresholds["memory"] *= 1.15
+                elif battery_percent < 50:
+                    thresholds["cpu"] *= 1.2  # 20% more lenient
+                    thresholds["memory"] *= 1.1
+                else:
+                    thresholds["cpu"] *= 1.1  # 10% more lenient
+                    thresholds["memory"] *= 1.05
         
         return thresholds
     
@@ -599,6 +615,37 @@ class SentinelDaemon:
             await self._whitelist_process(response.get("process_name"))
         
         logger.info(f"[Sentinel] Executed action: {action} for alert {alert_id}")
+    
+    async def handle_message(self, websocket, user_id: str, message: Dict):
+        """Handle incoming message from client."""
+        message_type = message.get("type")
+        
+        if message_type == "sentinel_action":
+            # User responded to an alert
+            await self.handle_user_response({
+                **message,
+                "user_id": user_id
+            })
+        
+        elif message_type == "update_profile":
+            # Update user preferences
+            profile = message.get("profile", {})
+            self.user_profiles[user_id].update(profile)
+            logger.info(f"[Sentinel] Updated profile for {user_id}: {profile}")
+        
+        elif message_type == "whitelist_process":
+            # Whitelist a process
+            process_name = message.get("process_name")
+            await self._whitelist_process(process_name)
+        
+        elif message_type == "battery_status":
+            # Update battery status
+            self.user_profiles[user_id]["on_battery"] = message.get("on_battery", False)
+            self.user_profiles[user_id]["battery_percent"] = message.get("battery_percent", 100)
+            logger.info(f"[Sentinel] Battery status updated: on_battery={message.get('on_battery')}, percent={message.get('battery_percent')}")
+        
+        else:
+            logger.warning(f"[Sentinel] Unknown message type: {message_type}")
     
     async def _kill_processes(self, pids: List[int]):
         """Kill specified processes."""
