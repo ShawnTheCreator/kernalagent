@@ -134,7 +134,7 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 # =============================================================================
 
 BRAIN_SYSTEM_PROMPT = """
-You are Kernel, an advanced AI assistant designed as the intelligent core of your Windows PC.
+You are Kernel, an advanced AI assistant designed as the intelligent core of your PC.
 
 ## Identity:
 - Name: Kernel
@@ -147,6 +147,11 @@ You are Kernel, an advanced AI assistant designed as the intelligent core of you
 - Emotional awareness and adaptive responses
 - Contextual understanding of user's current situation
 - Proactive assistance and suggestions
+
+## Automation vs Conversation Detection:
+IMPORTANT: Distinguish between conversation and automation requests:
+- CONVERSATION: greetings, questions, casual chat ("hi", "how are you", "what's up")
+- AUTOMATION: commands to perform tasks ("clean downloads", "open notepad", "organize files")
 
 ## Memory Integration:
 You have access to:
@@ -185,33 +190,21 @@ RULES:
 - ASK → reply is a clarifying question
 - ACT → intent + target required, confidence required
 
+AUTOMATION TRIGGERS:
+If message contains ANY of these, prioritize ACT mode:
+- Action verbs: "open", "close", "start", "launch", "run", "execute", "do", "scan", "clean", "organize", "move", "delete", "rename"
+- File/folder names: "downloads", "desktop", "documents", "pictures", "videos", "music"
+- App names: "notepad", "chrome", "explorer", "calculator", "word", "excel"
+- System commands: "shutdown", "restart", "lock", "sleep"
+
 EXAMPLES:
-User: "hi"
-{"mode":"CHAT","reply":"Hey! Kernel here. How can I help you today?","confidence":0,"reason":"greeting"}
-
-User: "what is evaporation?"  
-{"mode":"CHAT","reply":"Evaporation is the process where liquid turns into vapor at the surface, even below boiling point. It's how puddles disappear on a sunny day! - Kernel","confidence":0,"reason":"knowledge question"}
-
-User: "how are you?"
-{"mode":"CHAT","reply":"I'm operating at optimal efficiency. Ready to help with your PC tasks. - Kernel","confidence":0,"reason":"status check"}
-
-User: "open"
-{"mode":"ASK","reply":"What would you like me to open?","confidence":0.3,"reason":"incomplete command"}
-
-User: "open chrome"
-{"mode":"ACT","reply":"Opening Chrome for you!","intent":"open_app","target":"chrome","confidence":0.95,"reason":"clear action request"}
-
-User: "go to youtube"
-{"mode":"ACT","reply":"Navigating to YouTube!","intent":"navigate","target":"youtube.com","confidence":0.9,"reason":"clear navigation request"}
-
-User: "actually no"
-{"mode":"CHAT","reply":"No problem! What would you like me to do instead?","confidence":0,"reason":"cancellation"}
-
-User: "tell me a joke"
-{"mode":"CHAT","reply":"Why don't scientists trust atoms? Because they make up everything! 😄","confidence":0,"reason":"entertainment request"}
-
-User: "nothing just chilling"
-{"mode":"CHAT","reply":"Nice! I'm here whenever you need me. Feel free to chat or ask me to do something.","confidence":0,"reason":"casual"}
+User: "hi" → CHAT (greeting)
+User: "clean downloads" → ACT (automation)
+User: "organize my files" → ACT (automation)
+User: "open chrome" → ACT (automation)
+User: "how are you?" → CHAT (status check)
+User: "what's up?" → CHAT (casual chat)
+User: "tell me a joke" → CHAT (entertainment)
 
 Be natural. Be helpful. Be like ChatGPT."""
 
@@ -246,7 +239,17 @@ class ConversationalBrain:
         logger.info(f"[BRAIN] Processing: '{message}'")
         
         # ===========================================
-        # STEP 1: Hard Overrides (Safety Reflexes)
+        # STEP 1: Automation vs Conversation Detection
+        # ===========================================
+        
+        # Check for automation triggers first
+        if self._is_automation_request(message_lower):
+            logger.info(f"[BRAIN] Automation request detected: '{message}'")
+            # Force ACT mode for automation requests
+            return await self._process_as_automation(message, context, session_id)
+        
+        # ===========================================
+        # STEP 1. Hard Overrides (Safety Reflexes)
         # ===========================================
         
         # STOP/CANCEL - immediate interrupt
@@ -623,10 +626,53 @@ class ConversationalBrain:
                 reasoning=f"All fallbacks failed: {e}"
             )
     
+    def _is_automation_request(self, message: str) -> bool:
+        """Check if message contains automation triggers."""
+        automation_triggers = [
+            # Action verbs
+            "open", "close", "start", "launch", "run", "execute", "do", "scan", "clean", "organize", "move", "delete", "rename",
+            # File/folder names
+            "downloads", "desktop", "documents", "pictures", "videos", "music", "temp", "cache",
+            # App names
+            "notepad", "chrome", "explorer", "calculator", "word", "excel", "powerpoint", "vscode", "code",
+            # System commands
+            "shutdown", "restart", "lock", "sleep"
+        ]
+        
+        return any(trigger in message for trigger in automation_triggers)
+    
+    async def _process_as_automation(
+        self, 
+        message: str, 
+        context: "ConversationContext",
+        session_id: str
+    ) -> BrainOutput:
+        """Process message as automation request."""
+        try:
+            # Use LLM to determine the automation action
+            llm_output = await self._llm_decide_with_memory(message, context, session_id)
+            
+            # Ensure ACT mode for automation
+            if llm_output.type != BrainOutputType.ACT:
+                # Force ACT mode for automation requests
+                logger.info(f"[BRAIN] Forcing ACT mode for automation request")
+                llm_output.type = BrainOutputType.ACT
+                llm_output.confidence = 0.8  # Set reasonable confidence
+            
+            return llm_output
+            
+        except Exception as e:
+            logger.error(f"[BRAIN] Error processing automation: {e}")
+            return BrainOutput(
+                type=BrainOutputType.CHAT,
+                message="I had trouble processing that automation request. Could you try rephrasing?",
+                reasoning=f"Error: {str(e)}"
+            )
+    
     def _matches_any(self, text: str, patterns: List[str]) -> bool:
         """Check if text matches any pattern."""
         for pattern in patterns:
-            if re.search(pattern, text, re.IGNORECASE):
+            if pattern in text:
                 return True
         return False
 

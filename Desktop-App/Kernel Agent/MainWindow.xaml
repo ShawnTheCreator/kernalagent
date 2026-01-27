@@ -61,6 +61,12 @@
                         Visibility="Collapsed">
              <NavigationView.MenuItems>
                  <NavigationViewItem Content="Kernel Control" Icon="Target" Tag="mission"/>
+                 <NavigationViewItemHeader Content="System"/>
+                 <NavigationViewItem Content="🛡️ Sentinel Agent" Tag="sentinel">
+                     <NavigationViewItem.Icon>
+                         <FontIcon Glyph="&#xE8EE;" />
+                     </NavigationViewItem.Icon>
+                 </NavigationViewItem>
                  <NavigationViewItemHeader Content="Tools"/>
                  <NavigationViewItem Content="Skill Forge" Icon="Repair" Tag="forge"/>
                  <NavigationViewItem Content="Neural Sandbox" Icon="Play" Tag="sandbox"/>

@@ -32,60 +32,66 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agent")
 
-# ===== KERNEL VOICE PERSONA =====
-# System prompt for voice interactions - concise, professional, and proactive
-KERNEL_VOICE_PROMPT = """
-You are Kernel, the intelligent core of your PC. Be concise and professional.
 
-VOICE STYLE:
-- Keep responses to 1-2 short sentences
-- Never use three words when one will do
-- Speak with calm confidence
+router = APIRouter(prefix="/api/agent", tags=["agent"])
 
-RESPONSE PATTERNS:
-- Acknowledge immediately: "On it. Opening [app]."
-- Report progress briefly: "Searching for your template..."
-- Confirm completion: "Done. [App] is ready."
-- If audio unclear: "Could you repeat that?"
-- For dangerous actions: "Delete all files? Say 'yes' to confirm."
+# ===== MODELS =====
 
-PERSONALITY:
-- Efficient and direct
-- Proactive but not chatty
-- Calm and capable
-- Sign as "Kernel" when appropriate
-"""
+class PlanRequest(BaseModel):
+    """Request for action plan from user command."""
+    command: str
+    session_id: Optional[str] = None
+    device_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
 
-def format_voice_response(action: str, target: str = None, success: bool = True) -> str:
-    """
-    Generate concise voice response for an action.
-    These are meant to be spoken by TTS - keep them short!
-    """
-    if not success:
-        return "Something went wrong. Could you try again? - Kernel"
-    
-    # Acknowledge patterns
-    responses = {
-        "open_app": f"Opening {target or 'app'}.",
-        "close_app": f"Closing {target or 'app'}.",
-        "type_text": "Typing now.",
-        "navigate": f"Going to {target or 'page'}.",
-        "search_web": f"Searching for {target or 'that'}.",
-        "volume_up": "Volume up.",
-        "volume_down": "Volume down.",
-        "volume_mute": "Muted.",
-        "minimize_window": "Minimized.",
-        "maximize_window": "Maximized.",
-        "screenshot": "Screenshot taken.",
-        "copy": "Copied.",
-        "paste": "Pasted.",
-        "save": "Saved.",
-        "media_play_pause": "Playing.",
-        "brightness_up": "Brighter.",
-        "brightness_down": "Dimmer.",
-    }
-    
-    return responses.get(action, "Done.")
+
+class MemorySummaryRequest(BaseModel):
+    """Request for memory summary."""
+    session_id: str
+    limit: int = 50
+    include_types: Optional[List[str]] = None
+
+
+class MemorySearchRequest(BaseModel):
+    """Request for memory search."""
+    session_id: str
+    query: str
+    event_types: Optional[List[str]] = None
+    limit: int = 20
+
+
+class MemoryEmbeddingRebuildRequest(BaseModel):
+    """Request to rebuild memory embeddings for a session."""
+    session_id: str
+    limit: int = 500
+    force: bool = False
+
+
+class ActionStep(BaseModel):
+    """Legacy action format for backward compatibility with C#."""
+    action: str
+    target: Optional[str] = None
+    url: Optional[str] = None
+    query: Optional[str] = None
+    content: Optional[str] = None
+    x: Optional[int] = None
+    y: Optional[int] = None
+    label: Optional[str] = None
+    amount: Optional[int] = None  # For volume control
+    # Vision targeting flag - tells C# this step needs vision to find coordinates
+    requires_vision_targeting: Optional[bool] = None
+    goal: Optional[str] = None  # For vision_guided steps
+
+
+class PlanResponse(BaseModel):
+    """Response with action steps for C# to execute."""
+    session_id: str
+    steps: List[ActionStep]
+    schema_version: str = "1.0.0"
+    # Metadata for debugging and monitoring
+    source: Optional[str] = None  # "gemini" or "deterministic"
+    processing_time_ms: Optional[int] = None
+    timestamp: Optional[str] = None
 
 
 # ===== MEMORY INTEGRATION FUNCTIONS =====
@@ -229,66 +235,6 @@ async def _log_v1_automation_to_memory(session_id: str, command: str, steps: Lis
         
     except Exception as e:
         logger.warning(f"[MEMORY] Failed to log v1 automation to memory: {e}")
-
-
-router = APIRouter(prefix="/api/agent", tags=["agent"])
-
-
-class PlanRequest(BaseModel):
-    """Request from C# Desktop Agent."""
-    command: str
-    session_id: Optional[str] = None
-    # NEW: Environment context from C# ContextManager
-    context: Optional[Dict[str, Any]] = None  # {active_window, active_app, app_type, clipboard, selected_text, last_action}
-
-
-class MemorySearchRequest(BaseModel):
-    """Request for memory search."""
-    session_id: str
-    query: str
-    event_types: Optional[List[str]] = None
-    limit: int = 20
-
-
-class MemorySummaryRequest(BaseModel):
-    """Request for memory summary."""
-    session_id: str
-    limit: int = 50
-    include_types: Optional[List[str]] = None
-
-
-class MemoryEmbeddingRebuildRequest(BaseModel):
-    """Request to rebuild memory embeddings for a session."""
-    session_id: str
-    limit: int = 500
-    force: bool = False
-
-
-class ActionStep(BaseModel):
-    """Legacy action format for backward compatibility with C#."""
-    action: str
-    target: Optional[str] = None
-    url: Optional[str] = None
-    query: Optional[str] = None
-    content: Optional[str] = None
-    x: Optional[int] = None
-    y: Optional[int] = None
-    label: Optional[str] = None
-    amount: Optional[int] = None  # For volume control
-    # Vision targeting flag - tells C# this step needs vision to find coordinates
-    requires_vision_targeting: Optional[bool] = None
-    goal: Optional[str] = None  # For vision_guided steps
-
-
-class PlanResponse(BaseModel):
-    """Response with action steps for C# to execute."""
-    session_id: str
-    steps: List[ActionStep]
-    schema_version: str = "1.0.0"
-    # Metadata for debugging and monitoring
-    source: Optional[str] = None  # "gemini" or "deterministic"
-    processing_time_ms: Optional[int] = None
-    timestamp: Optional[str] = None
 
 
 # App name variations and typo tolerance

@@ -25,7 +25,10 @@ AGENT_KEYWORDS = {
         "clean", "cleanup", "organize", "declutter", "mess",
         "downloads", "desktop", "temp", "temporary", "cache",
         "delete old", "free space", "disk space", "storage",
-        "sort files", "file management"
+        "sort files", "file management",
+        # Add scan-related keywords
+        "scan", "check", "analyze", "examine", "inspect",
+        "look at", "review", "search", "find"
     ],
     "RECOVERY_AGENT": [
         "undo", "oops", "restore", "recover", "fix", 
@@ -51,7 +54,13 @@ async def should_route_to_agent(intent: str) -> Optional[str]:
     
     for agent_name, keywords in AGENT_KEYWORDS.items():
         matches = sum(1 for kw in keywords if kw in intent_lower)
-        if matches >= 2:  # Need at least 2 keyword matches
+        # More flexible matching:
+        # - Require 2 matches for general keywords
+        # - Require 1 match for strong keywords (scan, clean, organize)
+        strong_keywords = ["scan", "clean", "organize", "cleanup", "declutter"]
+        has_strong_match = any(kw in intent_lower for kw in strong_keywords)
+        
+        if (has_strong_match and matches >= 1) or (matches >= 2):
             logger.info(f"[AgentPlanner] Intent matches {agent_name} ({matches} keywords)")
             return agent_name
     

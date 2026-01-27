@@ -319,11 +319,17 @@ async def startup_event():
     logger.info(f"   POST /api/vision/find-target - vision targeting")
     logger.info(f"   POST /api/auth/sync         - fast auth sync (local)")
     logger.info(f"   GET  /api/auth/poll         - fast auth poll (local)")
-    logger.info(f"   GET  /api/agents            - list agents (NEW)")
-    logger.info(f"   GET  /api/agents/janitor/quick-scan - janitor scan (NEW)")
+    logger.info(f"   GET  /api/agents            - list agents")
+    logger.info(f"   GET  /api/agents/janitor/quick-scan - janitor scan")
+    logger.info(f"   GET  /api/agents/sentinel/health-report - sentinel health")
+    logger.info(f"   POST /api/agents/sentinel/optimize-focus - focus mode")
+    logger.info(f"   POST /api/agents/sentinel/kill-hogs - resource cleanup")
+    logger.info(f"   POST /api/agents/sentinel/cleanup-ghosts - ghost cleanup")
+    logger.info(f"   POST /api/agents/sentinel/power-profile - power management")
     logger.info(f"   GET  /health                - health check")
     logger.info("=" * 60)
     logger.info("🧹 Janitor watching Downloads & Desktop for new files")
+    logger.info("🛡️ Sentinel monitoring system health and performance")
 
 
 if __name__ == "__main__":

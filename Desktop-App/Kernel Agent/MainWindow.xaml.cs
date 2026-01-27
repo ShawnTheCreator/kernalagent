@@ -744,6 +744,9 @@ namespace Kernel_Agent
                         ContentFrame.Visibility = Visibility.Collapsed;
                         MissionRoot.Visibility = Visibility.Visible;
                         break;
+                    case "sentinel":
+                        NavigateToPage(typeof(SentinelPage));
+                        break;
                     case "forge":
                         NavigateToPage(typeof(ForgePage));
                         break;
