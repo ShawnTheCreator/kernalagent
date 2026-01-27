@@ -20,6 +20,16 @@ from app.db.memory_repo import get_memory
 logger = logging.getLogger(__name__)
 
 
+async def should_route_to_agent(intent: str, context: Optional[dict] = None) -> Optional[str]:
+    """Return the best matching agent name for this intent, if any.
+
+    This function is used by the LLM-first planner (Step 1.5) to decide whether to
+    delegate planning to a specialized agent.
+    """
+    router = get_intelligent_router()
+    return await router._trigger_based_route(intent)
+
+
 async def get_agent_for_intent(intent: str, context: Optional[dict] = None) -> Optional[BaseAgent]:
     """
     Find and return the agent that should handle this intent using intelligent routing.
