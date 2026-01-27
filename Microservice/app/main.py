@@ -336,5 +336,13 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting Kernel AI Brain...")
-    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, log_level="info", reload=True)
+    uvicorn.run(
+        "app.main:app", 
+        host=settings.HOST, 
+        port=settings.PORT, 
+        log_level="info", 
+        reload=True,
+        ws_ping_timeout=60,
+        ws_ping_interval=20
+    )
 
