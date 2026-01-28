@@ -5,12 +5,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Notifications;
 using System.Runtime.InteropServices;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
 
-namespace KernelAgent.Services
+namespace Kernel_Agent.Services
 {
     public class SentinelClient
     {
@@ -135,78 +134,78 @@ namespace KernelAgent.Services
         
         private void ShowWindowsNotification(SentinelAlert alert)
         {
-            var toast = new ToastContentBuilder()
-                .AddText($"🛡️ Sentinel Alert")
-                .AddText(alert.Message)
-                .AddText($"Severity: {alert.Severity.ToUpper()}")
-                .AddButton(new ToastButton()
-                    .SetContent("Ignore")
+            try
+            {
+                var builder = new AppNotificationBuilder()
+                    .AddText("Sentinel Alert")
+                    .AddText(alert.Message)
+                    .AddText($"Severity: {alert.Severity?.ToUpperInvariant()}");
+
+                builder.AddButton(new AppNotificationButton("Ignore")
                     .AddArgument("action", "ignore")
-                    .AddArgument("alertId", alert.Id))
-                .AddButton(new ToastButton()
-                    .SetContent("Investigate")
+                    .AddArgument("alertId", alert.Id));
+
+                builder.AddButton(new AppNotificationButton("Investigate")
                     .AddArgument("action", "investigate")
                     .AddArgument("alertId", alert.Id));
-            
-            // Add action buttons based on alert type
-            if (alert.Suggestions.Contains("kill_processes"))
-            {
-                toast.AddButton(new ToastButton()
-                    .SetContent("Kill Processes")
-                    .AddArgument("action", "kill_processes")
-                    .AddArgument("alertId", alert.Id));
+
+                if (alert.Suggestions != null && alert.Suggestions.Contains("kill_processes"))
+                {
+                    builder.AddButton(new AppNotificationButton("Kill Processes")
+                        .AddArgument("action", "kill_processes")
+                        .AddArgument("alertId", alert.Id));
+                }
+
+                if (alert.Suggestions != null && alert.Suggestions.Contains("cleanup"))
+                {
+                    builder.AddButton(new AppNotificationButton("Run Cleanup")
+                        .AddArgument("action", "cleanup")
+                        .AddArgument("alertId", alert.Id));
+                }
+
+                var notification = builder.BuildNotification();
+                AppNotificationManager.Default.Show(notification);
             }
-            
-            if (alert.Suggestions.Contains("cleanup"))
+            catch (Exception ex)
             {
-                toast.AddButton(new ToastButton()
-                    .SetContent("Run Cleanup")
-                    .AddArgument("action", "cleanup")
-                    .AddArgument("alertId", alert.Id));
+                System.Diagnostics.Debug.WriteLine($"[Sentinel] Notification failed: {ex.Message}");
             }
-            
-            var notification = new ToastNotification(toast.GetXml());
-            notification.Activated += Notification_Activated;
-            ToastNotificationManager.CreateToastNotifier("Kernel Agent").Show(notification);
         }
         
         private void ShowCleanupNotification(int actionsExecuted)
         {
-            var toast = new ToastContentBuilder()
-                .AddText("🧹 Cleanup Completed")
-                .AddText($"Executed {actionsExecuted} cleanup actions")
-                .AddText("Your system is now optimized");
-            
-            var notification = new ToastNotification(toast.GetXml());
-            ToastNotificationManager.CreateToastNotifier("Kernel Agent").Show(notification);
+            try
+            {
+                var notification = new AppNotificationBuilder()
+                    .AddText("Cleanup Completed")
+                    .AddText($"Executed {actionsExecuted} cleanup actions")
+                    .AddText("Your system is now optimized")
+                    .BuildNotification();
+                AppNotificationManager.Default.Show(notification);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Sentinel] Cleanup notification failed: {ex.Message}");
+            }
         }
         
         private void ShowMaintenanceNotification(string task)
         {
-            var toast = new ToastContentBuilder()
-                .AddText("🔧 Maintenance Completed")
-                .AddText($"Task: {task}")
-                .AddText("System maintenance completed successfully");
-            
-            var notification = new ToastNotification(toast.GetXml());
-            ToastNotificationManager.CreateToastNotifier("Kernel Agent").Show(notification);
-        }
-        
-        private async void Notification_Activated(ToastNotification sender, object args)
-        {
             try
             {
-                var toastArgs = args as ToastActivatedEventArgs;
-                var action = toastArgs.Arguments["action"];
-                var alertId = toastArgs.Arguments["alertId"];
-                
-                await SendUserResponse(alertId, action);
+                var notification = new AppNotificationBuilder()
+                    .AddText("Maintenance Completed")
+                    .AddText($"Task: {task}")
+                    .AddText("System maintenance completed successfully")
+                    .BuildNotification();
+                AppNotificationManager.Default.Show(notification);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Sentinel] Notification action error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Sentinel] Maintenance notification failed: {ex.Message}");
             }
         }
+
         
         private async Task SendUserResponse(string alertId, string action)
         {
@@ -231,6 +230,11 @@ namespace KernelAgent.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[Sentinel] Send response error: {ex.Message}");
             }
+        }
+
+        public Task SendUserResponseAsync(string alertId, string action)
+        {
+            return SendUserResponse(alertId, action);
         }
         
         private async Task SendUserProfile()

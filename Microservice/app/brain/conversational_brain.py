@@ -22,7 +22,7 @@ import asyncio
 
 # Memory integration
 from app.memory.context import get_session, get_context_for_llm, update_session
-from app.db.episodic_memory_repo import TimelineEvent, log_event, get_timeline, search_memories, get_memory_summary
+from app.db.memory_bridge import TimelineEvent, log_event, get_timeline, search_memories, get_memory_summary
 from app.db.firebase_client import get_firestore_client
 
 # Load environment

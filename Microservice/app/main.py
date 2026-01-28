@@ -239,7 +239,8 @@ async def find_click_target(request: Request):
 async def startup_event():
     # Auto: rebuild semantic memory embeddings on startup
     try:
-        from app.db.episodic_memory_repo import rebuild_memory_embeddings, list_local_session_ids
+        from app.db.memory_bridge import rebuild_memory_embeddings
+        from app.db.episodic_memory_repo import list_local_session_ids
 
         rebuild_force = os.getenv("MEMORY_REBUILD_FORCE", "false").lower() == "true"
         rebuild_limit = int(os.getenv("MEMORY_REBUILD_LIMIT", "500"))

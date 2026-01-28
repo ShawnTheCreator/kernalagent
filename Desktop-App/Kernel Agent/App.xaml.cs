@@ -17,6 +17,7 @@ using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Kernel_Agent.Services;
+using Microsoft.Windows.AppNotifications;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -41,6 +42,36 @@ namespace Kernel_Agent
             
             // Initialize Sentinel client
             SentinelClient = new SentinelClient();
+
+            try
+            {
+                AppNotificationManager.Default.Register();
+                AppNotificationManager.Default.NotificationInvoked += OnNotificationInvoked;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[NOTIFICATIONS] Init failed: {ex.Message}");
+            }
+
+            AppDomain.CurrentDomain.ProcessExit += (_, __) =>
+            {
+                try
+                {
+                    SentinelClient?.DisconnectAsync().GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    // Best-effort shutdown
+                }
+
+                try
+                {
+                    AppNotificationManager.Default.NotificationInvoked -= OnNotificationInvoked;
+                }
+                catch
+                {
+                }
+            };
             _ = Task.Run(async () => 
             {
                 try
@@ -52,6 +83,42 @@ namespace Kernel_Agent
                     System.Diagnostics.Debug.WriteLine($"Failed to connect Sentinel client: {ex.Message}");
                 }
             });
+        }
+
+        private static async void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
+        {
+            try
+            {
+                var parsed = ParseNotificationArguments(args.Argument);
+                parsed.TryGetValue("action", out var action);
+                parsed.TryGetValue("alertId", out var alertId);
+
+                if (!string.IsNullOrWhiteSpace(action) && !string.IsNullOrWhiteSpace(alertId))
+                {
+                    await (SentinelClient?.SendUserResponseAsync(alertId, action) ?? Task.CompletedTask);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[NOTIFICATIONS] Invoke handler failed: {ex.Message}");
+            }
+        }
+
+        private static Dictionary<string, string> ParseNotificationArguments(string raw)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(raw)) return dict;
+
+            foreach (var part in raw.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var kv = part.Split('=', 2);
+                if (kv.Length == 2)
+                {
+                    dict[Uri.UnescapeDataString(kv[0])] = Uri.UnescapeDataString(kv[1]);
+                }
+            }
+
+            return dict;
         }
 
         public Window? GetMainWindow()
@@ -67,24 +134,6 @@ namespace Kernel_Agent
         {
             _window = new MainWindow();
             _window.Activate();
-        }
-        
-        protected override void OnExit(ExitEventArgs e)
-        {
-            // Disconnect Sentinel client
-            _ = Task.Run(async () => 
-            {
-                try
-                {
-                    await SentinelClient?.DisconnectAsync();
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Failed to disconnect Sentinel client: {ex.Message}");
-                }
-            });
-            
-            base.OnExit(e);
         }
     }
 }

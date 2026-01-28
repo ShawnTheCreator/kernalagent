@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Storage;
 
 namespace Kernel_Agent.Services
 {
@@ -26,9 +27,14 @@ namespace Kernel_Agent.Services
         private CancellationTokenSource? _cts;
         private bool _isConnected = false;
         private readonly string _wsUrl;
+        private readonly string _sessionId;
         
         public event Action<string, string>? OnSkillExecutionRequested;
         public event Action<bool>? OnConnectionStateChanged;
+        public event Action<string>? OnAgentOutput;
+        public event Action<string>? OnAgentPrompt;
+        public event Action<string>? OnJanitorUpdate;
+        public event Action<string>? OnJanitorPermission;
         
         public static BrainConnectionService Instance
         {
@@ -44,13 +50,100 @@ namespace Kernel_Agent.Services
                 return _instance;
             }
         }
+
+        private static string FormatJanitorAction(JsonElement root)
+        {
+            try
+            {
+                var capability = root.TryGetProperty("capability", out var cap) ? cap.GetString() : null;
+                var action = root.TryGetProperty("action", out var act) ? act.GetString() : null;
+                var success = root.TryGetProperty("success", out var ok) && ok.ValueKind == JsonValueKind.True;
+
+                var file = root.TryGetProperty("file", out var f) ? f.GetString() : null;
+                var message = root.TryGetProperty("message", out var msg) ? msg.GetString() : null;
+
+                var status = success ? "✓" : "✗";
+                var main = $"{status} {capability ?? "janitor"}: {action ?? "action"}";
+                if (!string.IsNullOrWhiteSpace(file)) main += $" ({file})";
+                if (!string.IsNullOrWhiteSpace(message)) main += $" — {message}";
+                return main;
+            }
+            catch
+            {
+                return "Janitor: action completed";
+            }
+        }
+
+        private static string FormatJanitorPermission(JsonElement root)
+        {
+            try
+            {
+                var file = root.TryGetProperty("file", out var f) ? f.GetString() : null;
+                var suggestion = root.TryGetProperty("suggestion", out var s) ? s.GetString() : null;
+                var capability = root.TryGetProperty("capability", out var c) ? c.GetString() : null;
+                var actionId = root.TryGetProperty("action_id", out var a) ? a.GetString() : null;
+
+                var title = $"Permission needed{(string.IsNullOrWhiteSpace(capability) ? "" : $" ({capability})")}";
+                var body = string.IsNullOrWhiteSpace(file) ? "" : $": {file}";
+                var sug = string.IsNullOrWhiteSpace(suggestion) ? "" : $" — {suggestion}";
+                var id = string.IsNullOrWhiteSpace(actionId) ? "" : $" [id: {actionId}]";
+                return $"{title}{body}{sug}{id}";
+            }
+            catch
+            {
+                return "Janitor: permission needed";
+            }
+        }
+
+        private static string FormatActionPlan(JsonElement root)
+        {
+            try
+            {
+                if (!root.TryGetProperty("payload", out var payload))
+                    return "Action plan received";
+
+                var original = payload.TryGetProperty("original_command", out var oc) ? oc.GetString() : null;
+                var steps = payload.TryGetProperty("steps", out var st) && st.ValueKind == JsonValueKind.Array ? st.GetArrayLength() : 0;
+                var reply = payload.TryGetProperty("brain_reply", out var br) ? br.GetString() : null;
+
+                var line = $"[Automation] Plan ({steps} step{(steps == 1 ? "" : "s")}): {original}";
+                if (!string.IsNullOrWhiteSpace(reply))
+                    line += $" — {reply}";
+                return line;
+            }
+            catch
+            {
+                return "[Automation] Plan received";
+            }
+        }
         
         private BrainConnectionService()
         {
-            _wsUrl = Environment.GetEnvironmentVariable("BRAIN_WS_URL") ?? "ws://localhost:8000/ws/stream";
+            _sessionId = GetOrCreateSessionId();
+            var baseUrl = Environment.GetEnvironmentVariable("BRAIN_WS_URL") ?? "ws://localhost:8000/ws/stream";
+            _wsUrl = AppendQuery(baseUrl, $"client_type=csharp&session_id={Uri.EscapeDataString(_sessionId)}");
         }
         
         public bool IsConnected => _isConnected;
+
+        public async Task<bool> SendIntentAsync(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            if (!_isConnected)
+            {
+                await ConnectAsync();
+            }
+
+            if (!_isConnected) return false;
+
+            await SendMessageAsync(new
+            {
+                type = "intent_update",
+                payload = text
+            });
+
+            return true;
+        }
         
         /// <summary>
         /// Connect to the Python brain WebSocket.
@@ -171,6 +264,34 @@ namespace Kernel_Agent.Services
                         // Execute the skill
                         await ExecuteSkillAsync(skillId!, skillName!);
                         break;
+
+                    case "chat_response":
+                        if (json.RootElement.TryGetProperty("payload", out var chatPayload) &&
+                            chatPayload.TryGetProperty("message", out var msgElem))
+                        {
+                            OnAgentOutput?.Invoke(msgElem.GetString() ?? string.Empty);
+                        }
+                        break;
+
+                    case "ask_question":
+                        if (json.RootElement.TryGetProperty("payload", out var askPayload) &&
+                            askPayload.TryGetProperty("question", out var qElem))
+                        {
+                            OnAgentPrompt?.Invoke(qElem.GetString() ?? string.Empty);
+                        }
+                        break;
+
+                    case "janitor_action":
+                        OnJanitorUpdate?.Invoke(FormatJanitorAction(json.RootElement));
+                        break;
+
+                    case "janitor_permission":
+                        OnJanitorPermission?.Invoke(FormatJanitorPermission(json.RootElement));
+                        break;
+
+                    case "action_plan":
+                        OnAgentOutput?.Invoke(FormatActionPlan(json.RootElement));
+                        break;
                         
                     case "action":
                         // Action plan from vision analysis - already handled by existing flow
@@ -259,6 +380,33 @@ namespace Kernel_Agent.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"[BRAIN] Send error: {ex.Message}");
+            }
+        }
+
+        private static string AppendQuery(string baseUrl, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return baseUrl;
+            if (baseUrl.Contains("?"))
+                return baseUrl + "&" + query;
+            return baseUrl + "?" + query;
+        }
+
+        private static string GetOrCreateSessionId()
+        {
+            // Best-effort persistence; LocalSettings may throw depending on thread.
+            try
+            {
+                var settings = ApplicationData.Current.LocalSettings;
+                if (settings.Values.TryGetValue("BrainSessionId", out var existing) && existing is string s && !string.IsNullOrWhiteSpace(s))
+                    return s;
+
+                var created = Guid.NewGuid().ToString();
+                settings.Values["BrainSessionId"] = created;
+                return created;
+            }
+            catch
+            {
+                return Guid.NewGuid().ToString();
             }
         }
         

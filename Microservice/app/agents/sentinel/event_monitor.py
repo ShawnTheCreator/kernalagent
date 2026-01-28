@@ -155,6 +155,12 @@ class WindowsEventMonitor:
         event_id = event.EventID
         source = event.SourceName
         
+        try:
+            if int(event_id) == 1001 and str(source).lower() == "windows error reporting":
+                return
+        except Exception:
+            pass
+        
         # Check for application crashes
         if event_id in self.critical_events.get('Application', {}):
             description = self.critical_events['Application'][event_id]
@@ -175,6 +181,14 @@ class WindowsEventMonitor:
                 processes=[],
                 user_id=None
             )
+            
+            try:
+                if alert.severity == "warning" and any(
+                    profile.get("gaming_mode") for profile in self.daemon.user_profiles.values()
+                ):
+                    return
+            except Exception:
+                pass
             
             if self.daemon._should_alert(f"event_app_{source}_{event_id}", datetime.utcnow()):
                 self.daemon.last_alerts[f"event_app_{source}_{event_id}"] = datetime.utcnow()

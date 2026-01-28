@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {}
+    "c:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {}
   },
   "projects": {
-    "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {
+    "c:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+        "projectUniqueName": "c:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
         "projectName": "Kernel Agent",
-        "projectPath": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+        "projectPath": "c:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
         "packagesPath": "C:\\Users\\anime\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\obj\\",
+        "outputPath": "c:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -77,10 +77,6 @@
             "NAudio": {
               "target": "Package",
               "version": "[2.2.1, )"
-            },
-            "System.Speech": {
-              "target": "Package",
-              "version": "[8.0.0, )"
             },
             "WindowsInput": {
               "target": "Package",

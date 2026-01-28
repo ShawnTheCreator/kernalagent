@@ -75,7 +75,7 @@ class TransactionManager:
             # We don't have user_id here easily, so we'll use "default_user" for now
             # In a multi-user system, we'd need to pass context down
             import asyncio
-            from app.db.episodic_memory_repo import log_event
+            from app.db.memory_bridge import log_event
             
             # Fire and forget (don't await in sync method)
             asyncio.create_task(log_event(

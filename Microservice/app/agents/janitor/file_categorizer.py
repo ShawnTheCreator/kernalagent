@@ -40,6 +40,12 @@ class FileCategory(str, Enum):
     CODE = "CODE"
     INSTALLERS = "INSTALLERS"
     ARCHIVES = "ARCHIVES"
+
+    # Creative / Other
+    DESIGN = "DESIGN"
+    FONTS = "FONTS"
+    THREE_D = "THREE_D"
+    EBOOKS = "EBOOKS"
     
     # Misc
     TRASH = "TRASH"
@@ -65,6 +71,7 @@ CATEGORY_MAP: dict[str, FileCategory] = {
     ".raw": FileCategory.IMAGES,
     ".tiff": FileCategory.IMAGES,
     ".tif": FileCategory.IMAGES,
+    ".jfif": FileCategory.IMAGES,
     
     # === VIDEOS ===
     ".mp4": FileCategory.VIDEOS,
@@ -106,6 +113,39 @@ CATEGORY_MAP: dict[str, FileCategory] = {
     ".md": FileCategory.DOCUMENTS,
     ".csv": FileCategory.DOCUMENTS,
     ".epub": FileCategory.DOCUMENTS,
+    ".mobi": FileCategory.EBOOKS,
+    ".azw": FileCategory.EBOOKS,
+    ".azw3": FileCategory.EBOOKS,
+    ".cbz": FileCategory.EBOOKS,
+    ".cbr": FileCategory.EBOOKS,
+
+    # === DESIGN ===
+    ".psd": FileCategory.DESIGN,
+    ".ai": FileCategory.DESIGN,
+    ".xd": FileCategory.DESIGN,
+    ".fig": FileCategory.DESIGN,
+    ".sketch": FileCategory.DESIGN,
+    ".indd": FileCategory.DESIGN,
+    ".ase": FileCategory.DESIGN,
+    ".aseprite": FileCategory.DESIGN,
+    ".blend": FileCategory.THREE_D,
+
+    # === FONTS ===
+    ".ttf": FileCategory.FONTS,
+    ".otf": FileCategory.FONTS,
+    ".woff": FileCategory.FONTS,
+    ".woff2": FileCategory.FONTS,
+
+    # === 3D ===
+    ".fbx": FileCategory.THREE_D,
+    ".obj": FileCategory.THREE_D,
+    ".stl": FileCategory.THREE_D,
+    ".glb": FileCategory.THREE_D,
+    ".gltf": FileCategory.THREE_D,
+    ".3ds": FileCategory.THREE_D,
+    ".dae": FileCategory.THREE_D,
+    ".usd": FileCategory.THREE_D,
+    ".usdz": FileCategory.THREE_D,
     
     # === CODE ===
     ".py": FileCategory.CODE,
@@ -145,6 +185,11 @@ CATEGORY_MAP: dict[str, FileCategory] = {
     ".lua": FileCategory.CODE,
     ".r": FileCategory.CODE,
     ".dart": FileCategory.CODE,
+    ".ipynb": FileCategory.CODE,
+    ".toml": FileCategory.CODE,
+    ".ini": FileCategory.CODE,
+    ".cfg": FileCategory.CODE,
+    ".env": FileCategory.CODE,
     
     # === ARCHIVES ===
     ".zip": FileCategory.ARCHIVES,
@@ -156,6 +201,7 @@ CATEGORY_MAP: dict[str, FileCategory] = {
     ".xz": FileCategory.ARCHIVES,
     ".iso": FileCategory.ARCHIVES,
     ".dmg": FileCategory.ARCHIVES,  # Also an installer on Mac
+    ".zst": FileCategory.ARCHIVES,
     
     # === INSTALLERS ===
     ".exe": FileCategory.INSTALLERS,
@@ -165,6 +211,7 @@ CATEGORY_MAP: dict[str, FileCategory] = {
     ".appx": FileCategory.INSTALLERS,
     ".msix": FileCategory.INSTALLERS,
     ".appimage": FileCategory.INSTALLERS,
+    ".apk": FileCategory.INSTALLERS,
     
     # === TRASH ===
     ".tmp": FileCategory.TRASH,
@@ -280,6 +327,12 @@ def get_destination_path(
         FileCategory.CODE: os.path.join(user_home, "Code"),
         FileCategory.INSTALLERS: os.path.join(user_home, "Downloads", "Software"),
         FileCategory.ARCHIVES: os.path.join(user_home, "Downloads", "Archives"),
+
+        # Creative / Other
+        FileCategory.DESIGN: os.path.join(user_home, "Documents", "Design"),
+        FileCategory.FONTS: os.path.join(user_home, "Documents", "Fonts"),
+        FileCategory.THREE_D: os.path.join(user_home, "3D Objects", year, month),
+        FileCategory.EBOOKS: os.path.join(user_home, "Documents", "Books"),
         
         # Legacy
         FileCategory.MEDIA: os.path.join(user_home, "Pictures", year, month),
@@ -379,6 +432,10 @@ def is_misplaced_file(filepath: str) -> Tuple[bool, Optional[FileCategory], Opti
         FileCategory.AUDIO: ["music", "audio", "songs"],
         FileCategory.DOCUMENTS: ["documents", "docs"],
         FileCategory.CODE: ["code", "projects", "dev", "development"],
+        FileCategory.DESIGN: ["design", "assets"],
+        FileCategory.FONTS: ["fonts"],
+        FileCategory.THREE_D: ["3d", "3d objects", "models"],
+        FileCategory.EBOOKS: ["books", "ebooks"],
     }
     
     # Check if file is in wrong location

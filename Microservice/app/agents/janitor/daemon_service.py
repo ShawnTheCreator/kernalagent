@@ -473,7 +473,7 @@ class OperationQueue:
         """Process operations from queue."""
         while self.running:
             try:
-                operation = self.pending_operations.get(timeout=1.0)
+                operation = await asyncio.to_thread(self.pending_operations.get, True, 1.0)
                 
                 # Add to active operations
                 self.active_operations[operation.operation_id] = operation

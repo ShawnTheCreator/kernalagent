@@ -82,5 +82,41 @@
       "destination": "C:\\Users\\anime\\TimelineTestZone\\moved_file.txt"
     },
     "reverted": false
+  },
+  {
+    "id": "tx_1769587216_7",
+    "agent": "Janitor",
+    "action_type": "move",
+    "timestamp": "2026-01-28 13:30:16.050034",
+    "description": "Moved test_file.txt",
+    "details": {
+      "source": "C:\\Users\\anime\\TimelineTestZone\\test_file.txt",
+      "destination": "C:\\Users\\anime\\TimelineTestZone\\moved_file.txt"
+    },
+    "reverted": false
+  },
+  {
+    "id": "tx_1769587527_8",
+    "agent": "Janitor",
+    "action_type": "move",
+    "timestamp": "2026-01-28 13:35:27.360853",
+    "description": "Moved test_file.txt",
+    "details": {
+      "source": "C:\\Users\\anime\\TimelineTestZone\\test_file.txt",
+      "destination": "C:\\Users\\anime\\TimelineTestZone\\moved_file.txt"
+    },
+    "reverted": false
+  },
+  {
+    "id": "tx_1769587603_9",
+    "agent": "Janitor",
+    "action_type": "move",
+    "timestamp": "2026-01-28 13:36:43.291196",
+    "description": "Moved test_file.txt",
+    "details": {
+      "source": "C:\\Users\\anime\\TimelineTestZone\\test_file.txt",
+      "destination": "C:\\Users\\anime\\TimelineTestZone\\moved_file.txt"
+    },
+    "reverted": false
   }
 ]

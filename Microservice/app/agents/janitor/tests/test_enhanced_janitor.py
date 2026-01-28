@@ -150,7 +150,7 @@ def sample_files(test_env):
         'archive': test_env.create_test_file(temp_dir, "archive.zip", "archive content", 25),
         'code': test_env.create_test_file(temp_dir, "script.py", "print('hello world')", 2),
         'generic': test_env.create_test_file(temp_dir, "file (1).txt", "generic content", 3),
-        'weird_name': test_env.create_test_file(temp_dir, "file@#$%^&*().txt", "weird chars content", 2),
+        'weird_name': test_env.create_test_file(temp_dir, "file@#$%^&().txt", "weird chars content", 2),
     }
     
     return files, temp_dir

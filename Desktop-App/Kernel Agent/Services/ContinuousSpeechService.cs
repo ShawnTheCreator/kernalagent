@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Kernel_Agent.Services
 {
@@ -33,6 +34,8 @@ namespace Kernel_Agent.Services
         private ClientWebSocket? _webSocket;
         private CancellationTokenSource? _cancellationTokenSource;
         private Task? _receiveTask;
+        private System.Timers.Timer? _keepAliveTimer;
+        private readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1, 1);
         
         private readonly string _wsUrl = "ws://localhost:8000/ws/voice";
         
@@ -61,6 +64,13 @@ namespace Kernel_Agent.Services
             
             try
             {
+                await _connectionLock.WaitAsync();
+
+                if (_webSocket?.State == WebSocketState.Open)
+                {
+                    return true;
+                }
+
                 _webSocket = new ClientWebSocket();
                 _cancellationTokenSource = new CancellationTokenSource();
                 
@@ -73,6 +83,8 @@ namespace Kernel_Agent.Services
                 
                 // Start receiving messages
                 _receiveTask = ReceiveMessagesAsync(_cancellationTokenSource.Token);
+
+                StartKeepAlive();
                 
                 return true;
             }
@@ -82,6 +94,10 @@ namespace Kernel_Agent.Services
                 OnError?.Invoke($"Connection failed: {ex.Message}");
                 SetState(VoiceState.Disconnected);
                 return false;
+            }
+            finally
+            {
+                try { _connectionLock.Release(); } catch { }
             }
         }
         
@@ -93,6 +109,7 @@ namespace Kernel_Agent.Services
             try
             {
                 _cancellationTokenSource?.Cancel();
+                StopKeepAlive();
                 
                 if (_webSocket?.State == WebSocketState.Open)
                 {
@@ -113,6 +130,42 @@ namespace Kernel_Agent.Services
                 _webSocket = null;
                 SetState(VoiceState.Disconnected);
                 OnDisconnected?.Invoke();
+            }
+        }
+
+        private void StartKeepAlive()
+        {
+            StopKeepAlive();
+
+            _keepAliveTimer = new System.Timers.Timer(15000);
+            _keepAliveTimer.AutoReset = true;
+            _keepAliveTimer.Elapsed += async (_, __) =>
+            {
+                try
+                {
+                    await SendMessageAsync(new { type = "ping" });
+                }
+                catch
+                {
+                    // Ignore - reconnect handled elsewhere.
+                }
+            };
+            _keepAliveTimer.Start();
+        }
+
+        private void StopKeepAlive()
+        {
+            try
+            {
+                if (_keepAliveTimer != null)
+                {
+                    _keepAliveTimer.Stop();
+                    _keepAliveTimer.Dispose();
+                    _keepAliveTimer = null;
+                }
+            }
+            catch
+            {
             }
         }
         
@@ -222,6 +275,15 @@ namespace Kernel_Agent.Services
             {
                 SetState(VoiceState.Disconnected);
                 OnDisconnected?.Invoke();
+
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(1000);
+                        await ConnectAsync();
+                    });
+                }
             }
         }
         
@@ -314,7 +376,9 @@ namespace Kernel_Agent.Services
         public void Dispose()
         {
             _cancellationTokenSource?.Cancel();
+            StopKeepAlive();
             _webSocket?.Dispose();
+            _connectionLock.Dispose();
         }
     }
 }

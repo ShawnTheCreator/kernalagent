@@ -165,8 +165,10 @@ class GamingModeDetector:
         try:
             for proc in psutil.process_iter(['pid', 'name']):
                 try:
-                    name = proc.info['name'].lower()
-                    if any(game in name for game in self.gaming_processes):
+                    name = (proc.info.get('name') or '').lower().strip()
+                    if not name:
+                        continue
+                    if name in self.gaming_processes:
                         gaming_procs.append(proc.info['name'])
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
@@ -209,6 +211,7 @@ class GamingModeDetector:
             # Check window states (simplified)
             import win32gui
             import win32con
+            import win32api
             
             def enum_windows_callback(hwnd, apps):
                 if win32gui.IsWindowVisible(hwnd):

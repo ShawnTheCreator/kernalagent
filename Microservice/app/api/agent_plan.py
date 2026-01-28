@@ -17,7 +17,7 @@ import logging
 from datetime import datetime
 
 # ===== MEMORY INTEGRATION =====
-from app.db.episodic_memory_repo import (
+from app.db.memory_bridge import (
     log_event,
     search_memories,
     get_memory_summary,

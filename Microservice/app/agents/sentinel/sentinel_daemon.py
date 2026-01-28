@@ -24,6 +24,8 @@ from collections import defaultdict, deque
 import psutil
 import platform
 
+from fastapi.encoders import jsonable_encoder
+
 from app.agents.sentinel.hardware_monitor import HardwareMonitor
 
 logger = logging.getLogger(__name__)
@@ -92,6 +94,10 @@ class SentinelDaemon:
         
         # Active alerts
         self.active_alerts: Dict[str, SentinelAlert] = {}
+
+        # Auto-remediation cooldowns (avoid repeatedly triggering heavy actions)
+        self._remediation_last_run: Dict[str, datetime] = {}
+        self._remediation_cooldown = timedelta(minutes=10)
         
         # Initialize advanced features
         self.event_monitor = None
@@ -129,6 +135,20 @@ class SentinelDaemon:
         """Start the monitoring daemon."""
         logger.info("[Sentinel] Starting autonomous monitoring daemon...")
         self.running = True
+        
+        # Collect initial metrics immediately
+        try:
+            logger.info("[Sentinel] Collecting initial metrics...")
+            initial_metrics = await self._collect_metrics()
+            self.metrics_history.append(initial_metrics)
+            
+            # Feed initial data to predictive analyzer
+            if self.predictive_analyzer:
+                self.predictive_analyzer.add_metrics(initial_metrics)
+                logger.info("[Sentinel] Initial metrics fed to predictive analyzer")
+                
+        except Exception as e:
+            logger.error(f"[Sentinel] Failed to collect initial metrics: {e}")
         
         # Start monitoring loop
         asyncio.create_task(self._monitoring_loop())
@@ -214,6 +234,9 @@ class SentinelDaemon:
                 
                 # Store metrics
                 self.metrics_history.append(metrics)
+
+                # Auto-remediation playbooks
+                await self._run_remediation_playbooks(metrics)
                 
                 # Predictive analytics
                 if self.predictive_analyzer:
@@ -234,6 +257,41 @@ class SentinelDaemon:
             except Exception as e:
                 logger.error(f"[Sentinel] Monitoring loop error: {e}")
                 await asyncio.sleep(5)  # Quick retry on error
+
+    def _is_gaming_mode(self) -> bool:
+        try:
+            return any(profile.get("gaming_mode") for profile in self.user_profiles.values())
+        except Exception:
+            return False
+
+    def _remediation_ready(self, key: str, now: datetime) -> bool:
+        last = self._remediation_last_run.get(key)
+        if not last:
+            return True
+        return now - last > self._remediation_cooldown
+
+    async def _run_remediation_playbooks(self, metrics: SystemMetrics) -> None:
+        """Run safe automatic remediation when system is under pressure."""
+        now = datetime.utcnow()
+
+        # Do not auto-remediate while gaming.
+        if self._is_gaming_mode():
+            return
+
+        # Disk pressure -> ask Janitor to generate aggressive reclaim plan.
+        try:
+            disk_pressure = any(usage >= 95 for usage in metrics.disk_usage.values())
+        except Exception:
+            disk_pressure = False
+
+        if disk_pressure and self._remediation_ready("disk_pressure", now):
+            self._remediation_last_run["disk_pressure"] = now
+            await self._trigger_cleanup(mode="disk_pressure")
+
+        # Memory pressure -> trigger temp/cache cleanup plan.
+        if metrics.memory_percent >= 95 and self._remediation_ready("memory_pressure", now):
+            self._remediation_last_run["memory_pressure"] = now
+            await self._trigger_cleanup(mode="memory_pressure")
     
     async def _collect_metrics(self) -> SystemMetrics:
         """Collect current system metrics."""
@@ -574,7 +632,7 @@ class SentinelDaemon:
         if not self.clients:
             return
         
-        message_str = json.dumps(message)
+        message_str = json.dumps(jsonable_encoder(message))
         disconnected = set()
         
         for client in self.clients:
@@ -685,7 +743,7 @@ class SentinelDaemon:
             except Exception as e:
                 logger.error(f"[Sentinel] Failed to adjust priority for {pid}: {e}")
     
-    async def _trigger_cleanup(self):
+    async def _trigger_cleanup(self, mode: str = "cleanup"):
         """Trigger system cleanup via Janitor agent."""
         try:
             # Import Janitor to trigger cleanup
@@ -699,7 +757,8 @@ class SentinelDaemon:
                 # Create cleanup context
                 context = {
                     "intent": "cleanup",
-                    "user_request": "System cleanup triggered by Sentinel",
+                    "mode": mode,
+                    "user_request": f"System cleanup triggered by Sentinel ({mode})",
                     "autonomous": True
                 }
                 
@@ -709,16 +768,16 @@ class SentinelDaemon:
                 
                 # Execute cleanup actions (with approval already given)
                 if plan.actions:
-                    for action in plan.actions:
-                        await janitor.execute(action)
-                    
-                    # Notify user
+                    plan.approve()
+                    result = await janitor.execute(plan)
+ 
                     await self._broadcast_message({
                         "type": "sentinel_cleanup_completed",
                         "actions_executed": len(plan.actions),
+                        "result": result.model_dump() if hasattr(result, "model_dump") else result,
                         "message": f"Cleanup completed: {len(plan.actions)} actions taken"
                     })
-                
+                 
                 logger.info(f"[Sentinel] Triggered Janitor cleanup: {len(plan.actions)} actions")
             else:
                 logger.warning("[Sentinel] Janitor agent not available for cleanup")

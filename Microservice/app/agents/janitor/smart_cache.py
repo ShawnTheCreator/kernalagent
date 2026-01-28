@@ -482,6 +482,9 @@ class SmartCache:
             'hit_rate': hit_rate,
             'cache_directory': self.cache_dir
         }
+
+    def get_stats(self) -> Dict[str, any]:
+        return self.get_cache_stats()
     
     def clear_cache(self):
         """Clear all cache data."""

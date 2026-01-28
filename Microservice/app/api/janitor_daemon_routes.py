@@ -23,7 +23,7 @@ from app.agents.janitor.daemon_service import (
 from app.brain.conversational_brain import ConversationalBrain, BrainOutput, BrainOutputType
 
 # Memory integration
-from app.db.episodic_memory_repo import log_event
+from app.db.memory_bridge import log_event
 
 logger = logging.getLogger(__name__)
 

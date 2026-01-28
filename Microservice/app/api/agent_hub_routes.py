@@ -58,15 +58,21 @@ async def list_agents():
     - Triggers
     - Current status
     """
+    logger.info("[AgentHub] Listing all agents...")
     registry = get_registry()
     
     # Ensure Janitor & Recovery are registered
     _ensure_janitor_registered()
     _ensure_recovery_registered()
+    _ensure_sentinel_registered()
+    
+    agents_info = registry.list_info()
+    logger.info(f"[AgentHub] Found {len(agents_info)} agents: {[a.get('name', 'unknown') for a in agents_info]}")
     
     return {
-        "agents": registry.list_info(),
-        "count": len(registry.get_all())
+        "agents": agents_info,
+        "count": len(registry.get_all()),
+        "registry_status": "active"
     }
 
 
@@ -192,19 +198,25 @@ async def janitor_quick_scan():
     
     Fast endpoint that returns summary stats without full analysis.
     """
+    logger.info("[AgentHub] Starting Janitor quick scan...")
     _ensure_janitor_registered()
     
     registry = get_registry()
     janitor = registry.get("JANITOR_AGENT")
     
     if janitor is None:
+        logger.error("[AgentHub] Janitor agent not available")
         raise HTTPException(status_code=500, detail="Janitor agent not available")
     
     try:
+        logger.info("[AgentHub] Executing quick scan...")
         result = await janitor.quick_scan()
+        logger.info(f"[AgentHub] Quick scan completed: {result.get('scan_status', 'unknown')}")
         return result
     except Exception as e:
-        logger.error(f"Quick scan error: {e}")
+        logger.error(f"[AgentHub] Quick scan error: {e}")
+        import traceback
+        logger.error(f"[AgentHub] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -468,7 +480,7 @@ async def get_memory_timeline(limit: int = 50, user_id: str = "default_user"):
     Returns a chronological feed of actions, chats, and thoughts.
     """
     try:
-        from app.db.episodic_memory_repo import get_timeline
+        from app.db.memory_bridge import get_timeline
         events = await get_timeline(user_id, limit)
         return {"events": events, "count": len(events)}
     except Exception as e:
@@ -480,7 +492,7 @@ async def log_timeline_event(event: dict, user_id: str = "default_user"):
     Log an external event to the timeline (e.g. from C# app).
     """
     try:
-        from app.db.episodic_memory_repo import log_event
+        from app.db.memory_bridge import log_event
         
         event_type = event.get("type", "system_alert")
         content = event.get("content", "")
@@ -495,7 +507,7 @@ async def log_timeline_event(event: dict, user_id: str = "default_user"):
 async def clear_memory_timeline(user_id: str = "default_user"):
     """Clear the episodic timeline."""
     try:
-        from app.db.episodic_memory_repo import clear_timeline
+        from app.db.memory_bridge import clear_timeline
         success = await clear_timeline(user_id)
         return {"success": success}
     except Exception as e:
