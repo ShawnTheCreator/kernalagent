@@ -111,25 +111,136 @@ async def plan_command(
                 context = {"intent": command, "session_id": session_id}
                 analysis = await agent.analyze(context)
                 plan = await agent.plan(analysis)
-                
-                # Convert agent plan to executor steps format
-                agent_steps = []
-                for action in plan.actions:
-                    # Agent actions are in dict format
-                    step = {
-                        "action": "agent_task",
-                        "agent": agent.name,
-                        "plan_id": plan.plan_id,
-                        "requires_approval": plan.requires_approval,
-                        "estimated_impact": plan.estimated_impact,
-                        "content": f"Agent {agent.name} has {len(plan.actions)} actions pending approval",
-                    }
-                    agent_steps.append(step)
-                    break  # Return single meta-step for now
-                
-                if agent_steps:
-                    logger.info(f"[PLANNER] Agent plan ready with {len(plan.actions)} actions")
-                    return agent_steps
+
+                # Always return a single meta-step when an agent matches.
+                # IMPORTANT: even if the agent produces 0 executable actions, the agent may
+                # still have produced useful findings (e.g., a health report). We must not
+                # fall through into UI automation planning.
+                summary = None
+                try:
+                    findings = getattr(analysis, "findings", {}) or {}
+                    health_report = findings.get("health_report", {})
+                    
+                    # Generate detailed, intent-specific summary
+                    if isinstance(health_report, dict):
+                        # Extract detailed metrics
+                        cpu_info = health_report.get("cpu", {})
+                        memory_info = health_report.get("memory", {})
+                        temp_info = health_report.get("temperature", {})
+                        disk_info = health_report.get("disk", {})
+                        network_info = health_report.get("network", {})
+                        
+                        # Build detailed summary based on intent
+                        intent_lower = command.lower()
+                        
+                        if "metrics" in intent_lower or "real-time" in intent_lower:
+                            # Real-time metrics format
+                            cpu_pct = cpu_info.get("percent_total", 0)
+                            mem_pct = ((memory_info.get("virtual", {})).get("percent_used", 0))
+                            temp = temp_info.get("max_temp", "N/A")
+                            
+                            # Get disk usage from new structure
+                            disk_usage = 0
+                            if disk_info and disk_info.get("usage"):
+                                c_drive = disk_info["usage"].get("c", {})
+                                disk_usage = c_drive.get("percent_used", 0)
+                            
+                            # Get network rates from new structure
+                            net_sent = network_info.get("bytes_sent_per_sec", 0)
+                            net_recv = network_info.get("bytes_recv_per_sec", 0)
+                            
+                            summary = (
+                                f"📊 Real-time System Metrics:\n"
+                                f"• CPU: {cpu_pct}% (cores: {cpu_info.get('cores', 'N/A')})\n"
+                                f"• RAM: {mem_pct}% (used: {memory_info.get('virtual', {}).get('used_gb', 'N/A')}GB / {memory_info.get('virtual', {}).get('total_gb', 'N/A')}GB)\n"
+                                f"• Temperature: {temp}°C\n"
+                                f"• Disk C: {disk_usage}% used\n"
+                                f"• Network: ↑{net_sent/1024:.1f}KB/s ↓{net_recv/1024:.1f}KB/s"
+                            )
+                        elif "temperature" in intent_lower or "thermal" in intent_lower:
+                            # Temperature-focused summary
+                            temps = temp_info.get("sensors", {})
+                            temp_list = [f"{name}: {t}°C" for name, t in temps.items() if isinstance(t, (int, float))]
+                            summary = (
+                                f"🌡️ Thermal Status:\n"
+                                f"• Max Temperature: {temp_info.get('max_temp', 'N/A')}°C\n"
+                                f"• Sensors: {', '.join(temp_list) if temp_list else 'N/A'}\n"
+                                f"• Fan Status: {temp_info.get('fan_status', 'N/A')}"
+                            )
+                        elif "cpu" in intent_lower:
+                            # CPU-focused summary
+                            summary = (
+                                f"⚡ CPU Performance:\n"
+                                f"• Total Usage: {cpu_info.get('percent_total', 0)}%\n"
+                                f"• Cores: {cpu_info.get('cores', 'N/A')}\n"
+                                f"• Frequency: {cpu_info.get('frequency', 'N/A')} GHz\n"
+                                f"• Load Average: {cpu_info.get('load_average', 'N/A')}"
+                            )
+                        elif "memory" in intent_lower or "ram" in intent_lower:
+                            # Memory-focused summary
+                            virt_mem = memory_info.get("virtual", {})
+                            phys_mem = memory_info.get("physical", {})
+                            summary = (
+                                f"💾 Memory Usage:\n"
+                                f"• Virtual: {virt_mem.get('percent_used', 0)}% ({virt_mem.get('used_gb', 'N/A')}GB / {virt_mem.get('total_gb', 'N/A')}GB)\n"
+                                f"• Physical: {phys_mem.get('percent_used', 0)}% ({phys_mem.get('used_gb', 'N/A')}GB / {phys_mem.get('total_gb', 'N/A')}GB)\n"
+                                f"• Available: {virt_mem.get('available_gb', 'N/A')}GB"
+                            )
+                        elif "disk" in intent_lower or "storage" in intent_lower:
+                            # Disk-focused summary
+                            disk_lines = []
+                            if disk_info and disk_info.get("usage"):
+                                for drive, info in disk_info["usage"].items():
+                                    disk_lines.append(f"• {drive.upper()}: {info.get('percent_used', 0)}% ({info.get('used_gb', 'N/A')}GB / {info.get('total_gb', 'N/A')}GB)")
+                            summary = f"💿 Disk Usage:\n" + "\n".join(disk_lines) if disk_lines else "💿 Disk information unavailable"
+                        elif "network" in intent_lower:
+                            # Network-focused summary
+                            summary = (
+                                f"🌐 Network Activity:\n"
+                                f"• Upload: {network_info.get('bytes_sent_per_sec', 0):.1f}KB/s\n"
+                                f"• Download: {network_info.get('bytes_recv_per_sec', 0):.1f}KB/s\n"
+                                f"• Total Sent: {network_info.get('bytes_sent_total', 0):.1f}MB\n"
+                                f"• Total Received: {network_info.get('bytes_recv_total', 0):.1f}MB"
+                            )
+                        else:
+                            # Default comprehensive summary
+                            cpu_pct = cpu_info.get("percent_total", 0)
+                            mem_pct = ((memory_info.get("virtual", {})).get("percent_used", 0))
+                            temp = temp_info.get("max_temp", "N/A")
+                            
+                            # Get disk usage from new structure
+                            disk_usage = 0
+                            if disk_info and disk_info.get("usage"):
+                                c_drive = disk_info["usage"].get("c", {})
+                                disk_usage = c_drive.get("percent_used", 0)
+                            
+                            # Get network rates from new structure
+                            net_sent = network_info.get("bytes_sent_per_sec", 0)
+                            net_recv = network_info.get("bytes_recv_per_sec", 0)
+                            
+                            summary = (
+                                f"🖥️ System Health Report:\n"
+                                f"• CPU: {cpu_pct}% | RAM: {mem_pct}% | Temp: {temp}°C\n"
+                                f"• Disk: {disk_usage}% used\n"
+                                f"• Network: ↑{net_sent/1024:.1f}KB/s ↓{net_recv/1024:.1f}KB/s"
+                            )
+                    else:
+                        # Fallback to simple format
+                        summary = f"{agent.name}: {len(plan.actions)} actions ready"
+                        
+                except Exception as e:
+                    logger.warning(f"[PLANNER] Failed to generate detailed summary: {e}")
+                    summary = f"{agent.name}: system analysis complete"
+
+                # Return a non-executable step so the Desktop app can surface the result
+                # without attempting UI automation / recovery.
+                step = {
+                    "action": "conversation",
+                    "content": summary or f"{agent.name}: plan ready ({len(plan.actions)} actions)",
+                }
+
+                logger.info(f"[PLANNER] Agent plan ready with {len(plan.actions)} actions")
+                return [step]
                     
     except Exception as e:
         logger.warning(f"[PLANNER] Agent routing failed: {e}, continuing with LLM...")

@@ -9,6 +9,7 @@ using Windows.Storage;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management;
+using Windows.Devices.Power;
 
 namespace Kernel_Agent.Services
 {
@@ -260,16 +261,9 @@ namespace Kernel_Agent.Services
             // Get battery status
             try
             {
-                var batteryReport = await Windows.Devices.Power.Battery.AggregateBattery.GetReportAsync();
-                if (batteryReport != null)
-                {
-                    info.BatteryPercentage = batteryReport.RemainingCapacityInMilliwattHours.HasValue && 
-                                            batteryReport.FullChargeCapacityInMilliwattHours.HasValue
-                        ? (int)((double)batteryReport.RemainingCapacityInMilliwattHours.Value / 
-                                batteryReport.FullChargeCapacityInMilliwattHours.Value * 100)
-                        : null;
-                    info.IsCharging = batteryReport.Status == Windows.System.Power.BatteryStatus.Charging;
-                }
+                // Alternative approach using Windows.System.Power
+                info.BatteryPercentage = Windows.System.Power.PowerManager.RemainingChargePercent;
+                info.IsCharging = Windows.System.Power.PowerManager.BatteryStatus == Windows.System.Power.BatteryStatus.Charging;
             }
             catch { }
 
@@ -295,24 +289,22 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                var battery = Windows.Devices.Power.Battery.AggregateBattery;
-                var report = await battery.GetReportAsync();
-
+                // Use Windows.System.Power.PowerManager as alternative
                 return new BatteryInfo
                 {
-                    Percentage = report.RemainingCapacityInMilliwattHours.HasValue && 
-                                report.FullChargeCapacityInMilliwattHours.HasValue
-                        ? (int)((double)report.RemainingCapacityInMilliwattHours.Value / 
-                                report.FullChargeCapacityInMilliwattHours.Value * 100)
-                        : 0,
-                    IsCharging = report.Status == Windows.System.Power.BatteryStatus.Charging,
-                    Status = report.Status.ToString()
+                    Percentage = Windows.System.Power.PowerManager.RemainingChargePercent,
+                    IsCharging = Windows.System.Power.PowerManager.BatteryStatus == Windows.System.Power.BatteryStatus.Charging,
+                    Status = Windows.System.Power.PowerManager.BatteryStatus.ToString()
                 };
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[SystemControl] Get battery info failed: {ex.Message}");
-                return new BatteryInfo { Percentage = 0, IsCharging = false, Status = "Unknown" };
+                return new BatteryInfo
+                {
+                    Percentage = 0,
+                    IsCharging = false,
+                    Status = $"Error: {ex.Message}"
+                };
             }
         }
 

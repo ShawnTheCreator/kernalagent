@@ -1,12 +1,13 @@
 """
-Kernal Agent AI Brain - FastAPI Application Entry Point.
+Kernel AI Brain - FastAPI Application Entry Point.
 
-This is the main server that powers the Kernal Agent desktop copilot.
+This is the main server that powers the Kernel desktop copilot.
 It provides a WebSocket API for real-time communication with the Desktop Client.
 """
 import logging
 import sys
 import time
+import os
 
 # ===== CENTRALIZED LOGGING SETUP =====
 # Configure logging FIRST before any imports
@@ -43,6 +44,8 @@ from app.api.executor_ws import router as executor_ws_router  # Hybrid WebSocket
 from app.api.speech_routes import router as speech_router  # Voice transcription API
 from app.api.voice_ws import router as voice_ws_router  # Continuous voice WebSocket
 from app.api.agent_hub_routes import router as agent_hub_router  # Agent Hub API
+from app.api.sentinel_routes import router as sentinel_router
+from app.api.sentinel_dashboard import router as sentinel_dashboard_router
 from app.core.config import settings
 from app.db.init_db import init_database
 
@@ -114,6 +117,8 @@ app.include_router(executor_ws_router)  # Hybrid WebSocket executor (/ws/executo
 app.include_router(speech_router)  # Voice transcription API (/api/speech/*)
 app.include_router(voice_ws_router)  # Continuous voice WebSocket (/ws/voice)
 app.include_router(agent_hub_router)  # Agent Hub API (/api/agents/*)
+app.include_router(sentinel_router)  # Sentinel WebSocket alerts (/ws/sentinel)
+app.include_router(sentinel_dashboard_router)  # Sentinel dashboard API (/api/sentinel/*)
 
 @app.get("/health")
 async def health_check():
@@ -232,13 +237,47 @@ async def find_click_target(request: Request):
 
 @app.on_event("startup")
 async def startup_event():
+    # Auto: rebuild semantic memory embeddings on startup
+    try:
+        from app.db.memory_bridge import rebuild_memory_embeddings
+        from app.db.episodic_memory_repo import list_local_session_ids
+
+        rebuild_force = os.getenv("MEMORY_REBUILD_FORCE", "false").lower() == "true"
+        rebuild_limit = int(os.getenv("MEMORY_REBUILD_LIMIT", "500"))
+        rebuild_session_id = os.getenv("MEMORY_REBUILD_SESSION_ID", "").strip()
+
+        session_ids = list_local_session_ids()
+        if rebuild_session_id:
+            session_ids.append(rebuild_session_id)
+
+        for session_id in session_ids:
+            if not session_id:
+                continue
+            result = await rebuild_memory_embeddings(
+                user_id=session_id,
+                limit=rebuild_limit,
+                force=rebuild_force
+            )
+            logger.info(
+                f"[MEMORY] Startup embedding rebuild for {session_id}: {result}"
+            )
+    except Exception as e:
+        logger.warning(f"[MEMORY] Startup embedding rebuild skipped: {e}")
+
     # Register agents on startup
     from app.agents.agent_registry import get_registry
     from app.agents.janitor.janitor_agent import JanitorAgent
+    from app.agents.sentinel.sentinel_agent import SentinelAgent
     
     registry = get_registry()
+    
+    # Register Janitor Agent
     if registry.get("JANITOR_AGENT") is None:
         registry.register(JanitorAgent())
+    
+    # Register Sentinel Agent
+    if registry.get("SENTINEL_AGENT") is None:
+        registry.register(SentinelAgent())
     
     # Start Janitor Daemon (autonomous mode)
     try:
@@ -274,10 +313,20 @@ async def startup_event():
         await daemon.start()
         logger.info("🧹 Janitor Daemon started in autonomous mode")
     except Exception as e:
-        logger.warning(f"Janitor Daemon not started: {e}")
+        logger.warning(f"Janitor daemon startup failed: {e}")
+    
+    # Start Sentinel Daemon (autonomous monitoring)
+    try:
+        from app.agents.sentinel.sentinel_daemon import get_sentinel_daemon
+        
+        sentinel_daemon = get_sentinel_daemon()
+        await sentinel_daemon.start()
+        logger.info("🛡️ Sentinel Daemon started - monitoring system every 20 seconds")
+    except Exception as e:
+        logger.warning(f"Sentinel daemon startup failed: {e}")
     
     logger.info("=" * 60)
-    logger.info("🚀 KERNAL AGENT BRAIN STARTING UP")
+    logger.info("🚀 KERNEL AI BRAIN STARTING UP")
     logger.info("=" * 60)
     logger.info(f"📡 Available endpoints:")
     logger.info(f"   POST /api/agent/plan        - v1 planning (Gemini)")
@@ -287,13 +336,32 @@ async def startup_event():
     logger.info(f"   GET  /api/auth/poll         - fast auth poll (local)")
     logger.info(f"   GET  /api/agents            - list agents (NEW)")
     logger.info(f"   GET  /api/agents/janitor/quick-scan - janitor scan (NEW)")
+    logger.info(f"   GET  /api/agents/sentinel/metrics - Sentinel metrics (NEW)")
+    logger.info(f"   POST /api/agents/sentinel/optimize-focus - Sentinel focus (NEW)")
+    logger.info(f"   POST /api/agents/sentinel/kill-hogs - Sentinel cleanup (NEW)")
+    logger.info(f"   POST /api/agents/sentinel/cleanup-ghosts - Sentinel ghosts (NEW)")
+    logger.info(f"   POST /api/agents/sentinel/power-profile - Sentinel power (NEW)")
+    logger.info(f"   GET  /api/sentinel/metrics/history - Resource history (NEW)")
+    logger.info(f"   GET  /api/sentinel/alerts/history - Alert history (NEW)")
+    logger.info(f"   GET  /api/sentinel/status - Sentinel status (NEW)")
+    logger.info(f"   GET  /api/sentinel/predictions - Predictions (NEW)")
+    logger.info(f"   WS   /ws/sentinel - Sentinel alerts (NEW)")
     logger.info(f"   GET  /health                - health check")
     logger.info("=" * 60)
     logger.info("🧹 Janitor watching Downloads & Desktop for new files")
+    logger.info("🛡️ Sentinel Agent monitoring system health & performance")
 
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting Kernal Agent Brain...")
-    uvicorn.run(app, host=settings.HOST, port=settings.PORT, log_level="info")
+    logger.info("Starting Kernel AI Brain...")
+    uvicorn.run(
+        "app.main:app", 
+        host=settings.HOST, 
+        port=settings.PORT, 
+        log_level="info", 
+        reload=True,
+        ws_ping_timeout=60,
+        ws_ping_interval=20
+    )
 

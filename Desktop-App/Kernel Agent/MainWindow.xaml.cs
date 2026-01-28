@@ -28,12 +28,22 @@ namespace Kernel_Agent
         // Continuous voice recognition (WebSocket-based)
         private ContinuousSpeechService? _continuousSpeechService;
         private bool _continuousVoiceEnabled = false;
+
+        private string _lastContinuousVoiceCommand = "";
+        private DateTime _lastContinuousVoiceCommandAt = DateTime.MinValue;
         
         // Voice recording state
         private string _currentTranscript = "";
         private DateTime _lastSpeechTime = DateTime.Now;
         private System.Timers.Timer? _silenceTimer;
         private const int SILENCE_THRESHOLD_MS = 2000; // 2 seconds of silence = auto-send
+
+        private bool _awaitingFollowUp = false;
+        private string? _pendingQuestion = null;
+
+        private readonly Dictionary<string, DateTime> _recentLog = new Dictionary<string, DateTime>();
+        private int? _lastSentinelScore = null;
+        private DateTime _lastSentinelScoreLoggedAt = DateTime.MinValue;
 
         public MainWindow()
         {
@@ -75,9 +85,87 @@ namespace Kernel_Agent
                 // Connect to Python brain for skill commands and action reporting
                 _ = Task.Run(async () =>
                 {
+                    BrainConnectionService.Instance.OnAgentOutput += (msg) =>
+                    {
+                        this.DispatcherQueue.TryEnqueue(() =>
+                        {
+                            if (!string.IsNullOrWhiteSpace(msg))
+                                AddToThoughtLogDedupe($"Agent: {msg}");
+                        });
+                    };
+
+                    BrainConnectionService.Instance.OnAgentPrompt += (q) =>
+                    {
+                        this.DispatcherQueue.TryEnqueue(() =>
+                        {
+                            if (!string.IsNullOrWhiteSpace(q))
+                            {
+                                _awaitingFollowUp = true;
+                                _pendingQuestion = q;
+                                CommandInput.PlaceholderText = "Answer the question…";
+                                AddToThoughtLogDedupe($"[Agent Question] {q}");
+                            }
+                        });
+                    };
+
+                    BrainConnectionService.Instance.OnJanitorUpdate += (raw) =>
+                    {
+                        this.DispatcherQueue.TryEnqueue(() =>
+                        {
+                            AddToThoughtLogDedupe($"[Janitor] {raw}");
+                        });
+                    };
+
+                    BrainConnectionService.Instance.OnJanitorPermission += (raw) =>
+                    {
+                        this.DispatcherQueue.TryEnqueue(() =>
+                        {
+                            AddToThoughtLogDedupe($"[Janitor Permission] {raw}");
+                        });
+                    };
+
                     await BrainConnectionService.Instance.ConnectAsync();
                     System.Diagnostics.Debug.WriteLine("[MAIN] Brain connection initiated");
                 });
+
+                // Surface Sentinel events in the UI (in addition to Windows notifications)
+                try
+                {
+                    if (App.SentinelClient != null)
+                    {
+                        App.SentinelClient.OnAlertReceived += (alert) =>
+                        {
+                            this.DispatcherQueue.TryEnqueue(() =>
+                            {
+                                if (alert != null)
+                                    AddToThoughtLogDedupe($"[Sentinel] {alert.Severity}: {alert.Message}");
+                            });
+                        };
+
+                        App.SentinelClient.OnHealthScoreUpdated += (score) =>
+                        {
+                            this.DispatcherQueue.TryEnqueue(() =>
+                            {
+                                var now = DateTime.Now;
+                                var shouldLog = !_lastSentinelScore.HasValue || _lastSentinelScore.Value != score;
+                                if (!shouldLog && (now - _lastSentinelScoreLoggedAt).TotalSeconds > 15)
+                                    shouldLog = true;
+
+                                _lastSentinelScore = score;
+
+                                if (shouldLog)
+                                {
+                                    _lastSentinelScoreLoggedAt = now;
+                                    AddToThoughtLogDedupe($"[Sentinel] Health Score: {score}/100", key: $"sentinel_score_{score}", dedupeMs: 15000);
+                                }
+                            });
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Sentinel] UI hook failed: {ex.Message}");
+                }
 
                 // Initialize Background Video
                 try
@@ -285,13 +373,140 @@ namespace Kernel_Agent
 
         private void StartContinuousVoiceListening()
         {
-            // Just initialize the Windows speech recognizer - it's set up to use button-triggered recording
-            System.Diagnostics.Debug.WriteLine("[UI] *** Initializing Windows speech recognition...");
+            System.Diagnostics.Debug.WriteLine("[UI] *** Initializing voice services...");
+
             InitializeSpeechClient();
-            
+
             if (_speechService != null)
             {
-                AddToThoughtLog("🎤 [Voice] Ready! Click the microphone button to speak.");
+                AddToThoughtLogDedupe("🎤 [Voice] Ready! Click the microphone button to speak.");
+            }
+
+            if (_continuousSpeechService == null)
+            {
+                _continuousSpeechService = new ContinuousSpeechService();
+
+                _continuousSpeechService.OnTranscription += (text, isFinal) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(text))
+                        {
+                            CommandInput.Text = text;
+                        }
+                    });
+                };
+
+                _continuousSpeechService.OnWakeWord += () =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLogDedupe("[Voice] 👋 Wake word detected", key: "voice_wake", dedupeMs: 5000);
+                    });
+                };
+
+                _continuousSpeechService.OnStopWord += () =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLogDedupe("[Voice] 🛑 Stop word detected", key: "voice_stop", dedupeMs: 5000);
+                    });
+                };
+
+                _continuousSpeechService.OnConnected += () =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLogDedupe("[Voice WS] ✓ Connected", key: "voice_ws_connected", dedupeMs: 10000);
+                    });
+                };
+
+                _continuousSpeechService.OnDisconnected += () =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLogDedupe("[Voice WS] Disconnected (reconnecting...)", key: "voice_ws_disconnected", dedupeMs: 10000);
+                    });
+                };
+
+                _continuousSpeechService.OnError += (err) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        AddToThoughtLogDedupe($"[Voice WS] ⚠️ {err}", key: "voice_ws_err", dedupeMs: 5000);
+                    });
+                };
+
+                _continuousSpeechService.OnCommand += (cmd) =>
+                {
+                    this.DispatcherQueue.TryEnqueue(async () =>
+                    {
+                        await HandleContinuousVoiceCommandAsync(cmd);
+                    });
+                };
+            }
+
+            if (!_continuousVoiceEnabled)
+            {
+                _continuousVoiceEnabled = true;
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var connected = await _continuousSpeechService.ConnectAsync();
+                        if (!connected) return;
+                        await _continuousSpeechService.StartListeningAsync(alwaysListening: true, silenceTimeout: 1.5f);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.DispatcherQueue.TryEnqueue(() =>
+                        {
+                            AddToThoughtLogDedupe($"[Voice WS] ⚠️ Start failed: {ex.Message}", key: "voice_ws_start_failed", dedupeMs: 10000);
+                        });
+                    }
+                });
+            }
+        }
+
+        private async Task HandleContinuousVoiceCommandAsync(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+                return;
+
+            var now = DateTime.Now;
+            var normalized = command.Trim();
+
+            if (!string.IsNullOrEmpty(_lastContinuousVoiceCommand) &&
+                string.Equals(_lastContinuousVoiceCommand, normalized, StringComparison.OrdinalIgnoreCase) &&
+                (now - _lastContinuousVoiceCommandAt).TotalMilliseconds < 2500)
+            {
+                return;
+            }
+
+            _lastContinuousVoiceCommand = normalized;
+            _lastContinuousVoiceCommandAt = now;
+
+            AddToThoughtLogDedupe($"[Voice] 🎤 \"{normalized}\"", key: $"voice_cmd_{normalized}", dedupeMs: 2500);
+
+            var toSend = normalized;
+            if (_awaitingFollowUp)
+            {
+                var q = _pendingQuestion;
+                _awaitingFollowUp = false;
+                _pendingQuestion = null;
+                CommandInput.PlaceholderText = "Command Agent...";
+                toSend = string.IsNullOrWhiteSpace(q) ? normalized : $"Regarding your question \"{q}\": {normalized}";
+            }
+
+            var sent = await BrainConnectionService.Instance.SendIntentAsync(toSend);
+            if (!sent)
+            {
+                var response = await ApiService.Instance.SendCommandAsync(toSend);
+                if (!string.IsNullOrEmpty(response))
+                {
+                    AddToThoughtLogDedupe($"Agent: {response}");
+                }
             }
         }
 
@@ -302,9 +517,28 @@ namespace Kernel_Agent
                 var text = CommandInput.Text;
                 if (!string.IsNullOrWhiteSpace(text))
                 {
-                    CommandInput.Text = ""; // Clear input
-                    AddToThoughtLog($"User: {text}", true);
-                    await ApiService.Instance.SendCommandAsync(text);
+                    CommandInput.Text = "";
+                    AddToThoughtLogDedupe($"User: {text}", isUser: true);
+
+                    var toSend = text;
+                    if (_awaitingFollowUp)
+                    {
+                        var q = _pendingQuestion;
+                        _awaitingFollowUp = false;
+                        _pendingQuestion = null;
+                        CommandInput.PlaceholderText = "Command Agent...";
+                        toSend = string.IsNullOrWhiteSpace(q) ? text : $"Regarding your question \"{q}\": {text}";
+                    }
+
+                    var sent = await BrainConnectionService.Instance.SendIntentAsync(toSend);
+                    if (!sent)
+                    {
+                        var response = await ApiService.Instance.SendCommandAsync(toSend);
+                        if (!string.IsNullOrEmpty(response))
+                        {
+                            AddToThoughtLogDedupe($"Agent: {response}");
+                        }
+                    }
                 }
             }
         }
@@ -322,6 +556,25 @@ namespace Kernel_Agent
                 FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas")
             };
             ThoughtLog.Children.Add(textBlock);
+        }
+
+        private void AddToThoughtLogDedupe(string message, bool isUser = false, string? key = null, int dedupeMs = 4000)
+        {
+            var k = key ?? message;
+            var now = DateTime.Now;
+
+            if (_recentLog.TryGetValue(k, out var last) && (now - last).TotalMilliseconds < dedupeMs)
+                return;
+
+            _recentLog[k] = now;
+
+            // Prevent unbounded growth
+            if (_recentLog.Count > 2000)
+            {
+                _recentLog.Clear();
+            }
+
+            AddToThoughtLog(message, isUser);
         }
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)

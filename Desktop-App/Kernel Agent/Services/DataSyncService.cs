@@ -139,7 +139,7 @@ namespace Kernel_Agent.Services
             try
             {
                 // Call the dashboard activities endpoint
-                var response = await ApiService.Instance.GetAsync("dashboard/activities");
+                var response = await ApiService.Instance.GetAsync<string>("dashboard/activities");
                 if (response != null)
                 {
                     var activities = System.Text.Json.JsonSerializer.Deserialize<List<ActivityDto>>(
@@ -168,7 +168,7 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                var response = await ApiService.Instance.GetAsync("dashboard/metrics");
+                var response = await ApiService.Instance.GetAsync<string>("dashboard/metrics");
                 if (response != null)
                 {
                     var metrics = System.Text.Json.JsonSerializer.Deserialize<MetricsDto>(
@@ -240,9 +240,9 @@ namespace Kernel_Agent.Services
             try
             {
                 var memories = await ApiService.Instance.GetMyMemoryAsync();
-                if (memories != null && memories.Any())
+                if (memories != null && memories.FrequentSkills != null && memories.FrequentSkills.Any())
                 {
-                    Memories = memories.ToList();
+                    Memories = new List<MemoryDto> { memories };
                     OnMemoriesUpdated?.Invoke(Memories);
                     System.Diagnostics.Debug.WriteLine($"[DataSync] Synced {Memories.Count} memories");
                 }

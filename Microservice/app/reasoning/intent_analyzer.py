@@ -49,11 +49,25 @@ Available tools and their parameters:
    - action: "up" | "down"
    - amount: number (1-100, optional)
 
+7. SPECIALIZED AGENTS (for complex tasks):
+   - JANITOR_AGENT: File organization, cleanup, scanning downloads/desktop
+     - Keywords: "clean", "organize", "scan", "downloads", "desktop", "files", "delete", "move", "rename"
+     - Examples: "clean downloads", "organize desktop", "scan files", "delete temp files"
+     - When detected, set intent: "agent_task" and target: "JANITOR_AGENT"
+   
+   - RECOVERY_AGENT: Undo/restore operations
+     - Keywords: "undo", "recover", "restore", "bring back", "oops"
+     - Examples: "undo last action", "recover deleted file", "restore changes"
+     - When detected, set intent: "agent_task" and target: "RECOVERY_AGENT"
+
+IMPORTANT: If command matches agent keywords, use agent_task instead of generic tools!
+
 7. browser
    - action: "navigate" | "search" | "new_tab" | "close_tab" | "refresh" | "back" | "forward"
    - url: URL (for navigate) - for YouTube use "https://youtube.com"
    - query: search terms (for search)
 
+8. window_control
 8. system
    - action: "screenshot" | "lock" | "sleep" | "shutdown" | "restart"
 

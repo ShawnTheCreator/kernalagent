@@ -1,5 +1,5 @@
 """
-Database module - Firebase Firestore implementation.
+Database module - Firebase Firestore + Local SQLite implementation.
 
 Exports:
     - init_database: Initialize Firebase connection
@@ -9,6 +9,8 @@ Exports:
     - sessions_repo: Agent sessions CRUD operations
     - memory_repo: Long-term memory CRUD operations
     - firebase_client: Firebase client utilities
+    - local_episodic_memory: Local SQLite for AI conversations
+    - memory_bridge: Bridge between Firebase and local storage
 """
 from .init_db import init_database
 from . import skills_repo
@@ -17,4 +19,6 @@ from . import settings_repo
 from . import sessions_repo
 from . import memory_repo
 from . import firebase_client
+from . import local_episodic_memory
+from . import memory_bridge
 

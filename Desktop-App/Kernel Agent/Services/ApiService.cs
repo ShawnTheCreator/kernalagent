@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -20,6 +21,9 @@ namespace Kernel_Agent.Services
         private static readonly string BASE_URL = "http://localhost:8000/";
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
+        
+        // Persistent session ID for memory continuity (shared with VoiceToActionService)
+        private static readonly string _persistentSessionId = Guid.NewGuid().ToString();
 
         public static ApiService Instance
         {
@@ -41,6 +45,8 @@ namespace Kernel_Agent.Services
                 Timeout = TimeSpan.FromSeconds(30)
             };
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            
+            System.Diagnostics.Debug.WriteLine($"[API_SERVICE] Using persistent session_id: {_persistentSessionId}");
         }
         // Thread-safe in-memory token cache (ApplicationData throws from background threads)
         private static string? _cachedAuthToken = null;
@@ -449,7 +455,7 @@ namespace Kernel_Agent.Services
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);
                 
-                var requestBody = new { command = commandText };
+                var requestBody = new { command = commandText, session_id = _persistentSessionId };
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
@@ -464,7 +470,7 @@ namespace Kernel_Agent.Services
                 }
                 
                 var responseJson = await response.Content.ReadAsStringAsync();
-                System.Diagnostics.Debug.WriteLine($"[COMMAND] Response: {responseJson}");
+                System.Diagnostics.Debug.WriteLine($"[COMMAND] Full Response JSON: {responseJson}");
                 
                 // Parse and execute using SmartExecutor for reliable execution
                 using var doc = JsonDocument.Parse(responseJson);
@@ -472,6 +478,27 @@ namespace Kernel_Agent.Services
                 
                 if (root.TryGetProperty("steps", out JsonElement stepsElement))
                 {
+                    var steps = stepsElement.EnumerateArray().ToList();
+                    System.Diagnostics.Debug.WriteLine($"[COMMAND] Found {steps.Count} steps");
+                    
+                    // Conversation brain: single "conversation" step → don't execute, surface message
+                    if (steps.Count == 1 && steps[0].TryGetProperty("action", out var aEl) &&
+                        string.Equals(aEl.GetString(), "conversation", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var conversationContent = steps[0].TryGetProperty("content", out var cEl) ? cEl.GetString() ?? "" : "";
+                        System.Diagnostics.Debug.WriteLine($"[COMMAND] DETECTED CONVERSATION: {conversationContent}");
+                        _ = Task.Run(async () => await BrainConnectionService.Instance.ReportActionAsync("conversation", "", conversationContent));
+                        return conversationContent;
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Not a conversation - steps count: {steps.Count}");
+                        if (steps.Count > 0 && steps[0].TryGetProperty("action", out var debugEl))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[COMMAND] First step action: {debugEl.GetString()}");
+                        }
+                    }
+                    
                     // Use SmartExecutor for retry logic, timing, and VISION RECOVERY
                     var executor = new SmartExecutor();
                     executor.SetOriginalGoal(commandText);  // Pass original command for vision recovery

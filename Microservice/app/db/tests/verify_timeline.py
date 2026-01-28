@@ -11,11 +11,12 @@ import os
 import asyncio
 import logging
 import aiohttp
+import time
 
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from app.db.episodic_memory_repo import log_event, get_timeline, clear_timeline
+from app.db.memory_bridge import log_event, get_timeline, clear_timeline
 from app.agents.janitor.janitor_tools import safe_move
 
 # Setup logging
@@ -78,20 +79,28 @@ async def test_timeline():
     print("\n5. Testing API Endpoint...")
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get("http://127.0.0.1:8000/api/memory/timeline") as resp:
-                print(f"   API Status: {resp.status}")
+            url = "http://127.0.0.1:8000/api/agents/memory/timeline"
+            deadline = time.time() + 15
+            last_err = None
+
+            while time.time() < deadline:
                 try:
-                    data = await resp.json()
-                    print(f"   API Data: {data}")
-                    
-                    if data.get('count') is not None and data.get('count') >= 2:
-                        print("   ✅ API Endpoint working")
-                    else:
-                        print(f"   ❌ API Endpoint returned invalid data: {data}")
-                except Exception as json_err:
-                    print(f"   ❌ Failed to parse JSON: {json_err}")
-                    text = await resp.text()
-                    print(f"   Response Text: {text}")
+                    async with session.get(url) as resp:
+                        print(f"   API Status: {resp.status}")
+                        data = await resp.json()
+                        print(f"   API Data: {data}")
+                        if data.get('count') is not None and data.get('count') >= 2:
+                            print("   ✅ API Endpoint working")
+                        else:
+                            print(f"   ❌ API Endpoint returned invalid data: {data}")
+                        last_err = None
+                        break
+                except Exception as attempt_err:
+                    last_err = attempt_err
+                    await asyncio.sleep(0.5)
+
+            if last_err is not None:
+                raise last_err
                     
         except Exception as e:
             print(f"   ❌ API Connection Failed: {e}")

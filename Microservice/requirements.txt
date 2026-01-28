@@ -9,13 +9,19 @@ open-clip-torch
 firebase-admin
 pydantic
 pytest
+pytest-asyncio
 groq
 SpeechRecognition
 vosk
-pyaudio
+pyaudio; python_version < "3.13"
 
 # Janitor Agent
 watchdog
 psutil
 aiofiles
 requests
+
+# Sentinel Agent
+numpy
+pywin32
+wmi
