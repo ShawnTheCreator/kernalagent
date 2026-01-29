@@ -12,7 +12,7 @@ from firebase_admin import auth
 from typing import Optional
 import logging
 
-from app.db.users_repo import get_user, create_user, update_last_login
+from app.db.users_repo import get_user, create_user, update_last_login, update_user
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,15 @@ async def verify_firebase_token(
         else:
             # Update last login timestamp
             update_last_login(user_id)
+            updates = {}
+            if email and email != existing_user.get("email"):
+                updates["email"] = email
+            if name and name != existing_user.get("name"):
+                updates["name"] = name
+            if photo_url and photo_url != existing_user.get("photoURL"):
+                updates["photoURL"] = photo_url
+            if updates:
+                update_user(user_id, updates)
         
         return user_id
         
@@ -127,14 +136,24 @@ async def get_optional_user(
         user_id = decoded["uid"]
         
         # Sync user to Firestore if needed
+        email = decoded.get("email")
+        name = decoded.get("name")
+        photo_url = decoded.get("picture")
+
         existing_user = get_user(user_id)
         if existing_user is None:
-            email = decoded.get("email")
-            name = decoded.get("name")
-            photo_url = decoded.get("picture")
             create_user(user_id=user_id, email=email, name=name, photo_url=photo_url)
         else:
             update_last_login(user_id)
+            updates = {}
+            if email and email != existing_user.get("email"):
+                updates["email"] = email
+            if name and name != existing_user.get("name"):
+                updates["name"] = name
+            if photo_url and photo_url != existing_user.get("photoURL"):
+                updates["photoURL"] = photo_url
+            if updates:
+                update_user(user_id, updates)
         
         return user_id
         

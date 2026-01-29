@@ -45,6 +45,39 @@ namespace Kernel_Agent
         private int? _lastSentinelScore = null;
         private DateTime _lastSentinelScoreLoggedAt = DateTime.MinValue;
 
+        private void AddToThoughtLog(string message, bool isUser = false, string? key = null, int dedupeMs = 4000)
+        {
+            var k = key ?? message;
+            var now = DateTime.Now;
+
+            if (_recentLog.TryGetValue(k, out var last) && (now - last).TotalMilliseconds < dedupeMs)
+                return;
+
+            _recentLog[k] = now;
+
+            if (_recentLog.Count > 2000)
+            {
+                _recentLog.Clear();
+            }
+
+            var textBlock = new TextBlock
+            {
+                Text = message,
+                Foreground = isUser ?
+                    new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)) :
+                    new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 255, 0)),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 4),
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas")
+            };
+            ThoughtLog.Children.Add(textBlock);
+        }
+
+        private void AddToThoughtLogDedupe(string message, bool isUser = false, string? key = null, int dedupeMs = 4000)
+        {
+            AddToThoughtLog(message, isUser, key, dedupeMs);
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -138,7 +171,7 @@ namespace Kernel_Agent
                             this.DispatcherQueue.TryEnqueue(() =>
                             {
                                 if (alert != null)
-                                    AddToThoughtLogDedupe($"[Sentinel] {alert.Severity}: {alert.Message}");
+                                    AddToThoughtLog($"[Sentinel] {alert.Severity}: {alert.Message}");
                             });
                         };
 
@@ -232,6 +265,20 @@ namespace Kernel_Agent
             storyboard.Begin();
         }
 
+        private async void CommandInput_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key != Windows.System.VirtualKey.Enter)
+                return;
+
+            var text = CommandInput.Text;
+            if (string.IsNullOrWhiteSpace(text))
+                return;
+
+            CommandInput.Text = string.Empty;
+            AddToThoughtLogDedupe($"User: {text}", isUser: true);
+            await ExecuteAgentCommand(text);
+        }
+
         private async void CheckAuthenticationAsync()
         {
             // Wait a moment for the window to be fully loaded
@@ -251,6 +298,11 @@ namespace Kernel_Agent
                 // Automatically open browser to login (Windsurf style)
                 await OpenWebLoginAsync();
             }
+        }
+
+        private async void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            await OpenWebLoginAsync();
         }
 
         private void ShowLoginButton()
@@ -274,6 +326,41 @@ namespace Kernel_Agent
             if (NavView != null) NavView.Visibility = Visibility.Visible;
         }
 
+        private async Task OpenWebLoginAsync()
+        {
+            try
+            {
+                // Show loading overlay
+                if (LoginLoadingOverlay != null)
+                {
+                    LoginLoadingOverlay.Visibility = Visibility.Visible;
+                }
+
+                // Update status
+                if (LoadingStatusText != null)
+                {
+                    LoadingStatusText.Text = "Browser opened. Waiting for login...";
+                }
+
+                // Open browser for web login (use localhost only)
+                var webAppUrl = "http://localhost:3000"; // Local frontend
+                var loginUrl = $"{webAppUrl}/login?deviceId={_loginDeviceId}";
+                await Windows.System.Launcher.LaunchUriAsync(new Uri(loginUrl));
+
+                // Start polling in the background
+                _ = Task.Run(async () => await PollAuthenticationStatusAsync());
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error opening web login: {ex.Message}");
+                // Hide loading on error
+                if (LoginLoadingOverlay != null)
+                {
+                    LoginLoadingOverlay.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
         private async Task ShowUserProfileAsync()
         {
             System.Diagnostics.Debug.WriteLine("[UI] ShowUserProfileAsync called");
@@ -288,11 +375,27 @@ namespace Kernel_Agent
                     {
                         System.Diagnostics.Debug.WriteLine($"[UI] User loaded: {user.Name}");
                         UserNameText.Text = user.Name;
+                        ProfilePicture.ProfilePicture = null;
                         // Set profile picture if available
                         if (!string.IsNullOrEmpty(user.Email))
                         {
                             ProfilePicture.DisplayName = user.Name;
                             ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
+                        }
+
+                        // Load profile picture (if provided)
+                        if (!string.IsNullOrEmpty(user.PhotoUrl))
+                        {
+                            try
+                            {
+                                ProfilePicture.ProfilePicture = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(user.PhotoUrl));
+                                System.Diagnostics.Debug.WriteLine($"[UI] Profile picture loaded: {user.PhotoUrl}");
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[UI] Failed to load profile pic: {ex.Message}");
+                                ProfilePicture.ProfilePicture = null;
+                            }
                         }
                     }
                     else
@@ -300,6 +403,7 @@ namespace Kernel_Agent
                         System.Diagnostics.Debug.WriteLine("[UI] User is null, using default name");
                         UserNameText.Text = "User";
                         ProfilePicture.Initials = "U";
+                        ProfilePicture.ProfilePicture = null;
                     }
                     
                     // Always show profile section after successful login
@@ -344,9 +448,39 @@ namespace Kernel_Agent
                     System.Diagnostics.Debug.WriteLine("[UI] Showing profile section despite error");
                     UserNameText.Text = "User";
                     ProfilePicture.Initials = "U";
+                    ProfilePicture.ProfilePicture = null;
                     ShowProfileSection();
                 });
             }
+        }
+
+        private void StartContinuousVoiceListening()
+        {
+            System.Diagnostics.Debug.WriteLine("[UI] *** Initializing voice services...");
+
+            if (_continuousSpeechService == null)
+            {
+                _continuousSpeechService = new ContinuousSpeechService();
+            }
+
+            if (_continuousVoiceEnabled)
+                return;
+
+            _continuousVoiceEnabled = true;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var connected = await _continuousSpeechService.ConnectAsync();
+                    if (!connected) return;
+                    await _continuousSpeechService.StartListeningAsync(alwaysListening: true, silenceTimeout: 1.5f);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Voice WS] ⚠️ Start failed: {ex.Message}");
+                }
+            });
         }
 
         private void OnMonologueUpdate(string thought)
@@ -369,340 +503,6 @@ namespace Kernel_Agent
                 // Auto-scroll to bottom (if ScrollViewer is accessible, or just let users scroll)
                 // If ThoughtLog is in a ScrollViewer, it would be nice to scroll to end.
             });
-        }
-
-        private void StartContinuousVoiceListening()
-        {
-            System.Diagnostics.Debug.WriteLine("[UI] *** Initializing voice services...");
-
-            InitializeSpeechClient();
-
-            if (_speechService != null)
-            {
-                AddToThoughtLogDedupe("🎤 [Voice] Ready! Click the microphone button to speak.");
-            }
-
-            if (_continuousSpeechService == null)
-            {
-                _continuousSpeechService = new ContinuousSpeechService();
-
-                _continuousSpeechService.OnTranscription += (text, isFinal) =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(text))
-                        {
-                            CommandInput.Text = text;
-                        }
-                    });
-                };
-
-                _continuousSpeechService.OnWakeWord += () =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLogDedupe("[Voice] 👋 Wake word detected", key: "voice_wake", dedupeMs: 5000);
-                    });
-                };
-
-                _continuousSpeechService.OnStopWord += () =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLogDedupe("[Voice] 🛑 Stop word detected", key: "voice_stop", dedupeMs: 5000);
-                    });
-                };
-
-                _continuousSpeechService.OnConnected += () =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLogDedupe("[Voice WS] ✓ Connected", key: "voice_ws_connected", dedupeMs: 10000);
-                    });
-                };
-
-                _continuousSpeechService.OnDisconnected += () =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLogDedupe("[Voice WS] Disconnected (reconnecting...)", key: "voice_ws_disconnected", dedupeMs: 10000);
-                    });
-                };
-
-                _continuousSpeechService.OnError += (err) =>
-                {
-                    this.DispatcherQueue.TryEnqueue(() =>
-                    {
-                        AddToThoughtLogDedupe($"[Voice WS] ⚠️ {err}", key: "voice_ws_err", dedupeMs: 5000);
-                    });
-                };
-
-                _continuousSpeechService.OnCommand += (cmd) =>
-                {
-                    this.DispatcherQueue.TryEnqueue(async () =>
-                    {
-                        await HandleContinuousVoiceCommandAsync(cmd);
-                    });
-                };
-            }
-
-            if (!_continuousVoiceEnabled)
-            {
-                _continuousVoiceEnabled = true;
-
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var connected = await _continuousSpeechService.ConnectAsync();
-                        if (!connected) return;
-                        await _continuousSpeechService.StartListeningAsync(alwaysListening: true, silenceTimeout: 1.5f);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.DispatcherQueue.TryEnqueue(() =>
-                        {
-                            AddToThoughtLogDedupe($"[Voice WS] ⚠️ Start failed: {ex.Message}", key: "voice_ws_start_failed", dedupeMs: 10000);
-                        });
-                    }
-                });
-            }
-        }
-
-        private async Task HandleContinuousVoiceCommandAsync(string command)
-        {
-            if (string.IsNullOrWhiteSpace(command))
-                return;
-
-            var now = DateTime.Now;
-            var normalized = command.Trim();
-
-            if (!string.IsNullOrEmpty(_lastContinuousVoiceCommand) &&
-                string.Equals(_lastContinuousVoiceCommand, normalized, StringComparison.OrdinalIgnoreCase) &&
-                (now - _lastContinuousVoiceCommandAt).TotalMilliseconds < 2500)
-            {
-                return;
-            }
-
-            _lastContinuousVoiceCommand = normalized;
-            _lastContinuousVoiceCommandAt = now;
-
-            AddToThoughtLogDedupe($"[Voice] 🎤 \"{normalized}\"", key: $"voice_cmd_{normalized}", dedupeMs: 2500);
-
-            var toSend = normalized;
-            if (_awaitingFollowUp)
-            {
-                var q = _pendingQuestion;
-                _awaitingFollowUp = false;
-                _pendingQuestion = null;
-                CommandInput.PlaceholderText = "Command Agent...";
-                toSend = string.IsNullOrWhiteSpace(q) ? normalized : $"Regarding your question \"{q}\": {normalized}";
-            }
-
-            var sent = await BrainConnectionService.Instance.SendIntentAsync(toSend);
-            if (!sent)
-            {
-                var response = await ApiService.Instance.SendCommandAsync(toSend);
-                if (!string.IsNullOrEmpty(response))
-                {
-                    AddToThoughtLogDedupe($"Agent: {response}");
-                }
-            }
-        }
-
-        private async void CommandInput_KeyDown(object sender, KeyRoutedEventArgs e)
-        {
-            if (e.Key == Windows.System.VirtualKey.Enter)
-            {
-                var text = CommandInput.Text;
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    CommandInput.Text = "";
-                    AddToThoughtLogDedupe($"User: {text}", isUser: true);
-
-                    var toSend = text;
-                    if (_awaitingFollowUp)
-                    {
-                        var q = _pendingQuestion;
-                        _awaitingFollowUp = false;
-                        _pendingQuestion = null;
-                        CommandInput.PlaceholderText = "Command Agent...";
-                        toSend = string.IsNullOrWhiteSpace(q) ? text : $"Regarding your question \"{q}\": {text}";
-                    }
-
-                    var sent = await BrainConnectionService.Instance.SendIntentAsync(toSend);
-                    if (!sent)
-                    {
-                        var response = await ApiService.Instance.SendCommandAsync(toSend);
-                        if (!string.IsNullOrEmpty(response))
-                        {
-                            AddToThoughtLogDedupe($"Agent: {response}");
-                        }
-                    }
-                }
-            }
-        }
-
-        private void AddToThoughtLog(string message, bool isUser = false)
-        {
-             var textBlock = new TextBlock
-            {
-                Text = message,
-                Foreground = isUser ? 
-                    new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)) : 
-                    new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 255, 0)),
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 4),
-                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas")
-            };
-            ThoughtLog.Children.Add(textBlock);
-        }
-
-        private void AddToThoughtLogDedupe(string message, bool isUser = false, string? key = null, int dedupeMs = 4000)
-        {
-            var k = key ?? message;
-            var now = DateTime.Now;
-
-            if (_recentLog.TryGetValue(k, out var last) && (now - last).TotalMilliseconds < dedupeMs)
-                return;
-
-            _recentLog[k] = now;
-
-            // Prevent unbounded growth
-            if (_recentLog.Count > 2000)
-            {
-                _recentLog.Clear();
-            }
-
-            AddToThoughtLog(message, isUser);
-        }
-
-        private async void LoginButton_Click(object sender, RoutedEventArgs e)
-        {
-            await OpenWebLoginAsync();
-        }
-
-        private async Task OpenWebLoginAsync()
-        {
-            try
-            {
-                // Show loading overlay
-                if (LoginLoadingOverlay != null)
-                {
-                    LoginLoadingOverlay.Visibility = Visibility.Visible;
-                }
-
-                // Update status
-                if (LoadingStatusText != null)
-                {
-                    LoadingStatusText.Text = "Connecting to server...";
-                }
-
-                // REAL-TIME: Connect to WebSocket and listen for auth events
-                await ConnectAuthWebSocketAsync();
-
-                // Open browser for web login (use localhost only)
-                var webAppUrl = "http://localhost:3000"; // Local frontend
-                var loginUrl = $"{webAppUrl}/login?deviceId={_loginDeviceId}";
-                await Windows.System.Launcher.LaunchUriAsync(new Uri(loginUrl));
-                
-                // Update status
-                if (LoadingStatusText != null)
-                {
-                    LoadingStatusText.Text = "Browser opened. Waiting for login...";
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error opening web login: {ex.Message}");
-                // Hide loading on error
-                if (LoginLoadingOverlay != null)
-                {
-                    LoginLoadingOverlay.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
-
-        private System.Net.WebSockets.ClientWebSocket? _authWebSocket;
-        private CancellationTokenSource? _authCancellation;
-
-        private async Task ConnectAuthWebSocketAsync()
-        {
-            try
-            {
-                _authWebSocket = new System.Net.WebSockets.ClientWebSocket();
-                _authCancellation = new CancellationTokenSource();
-                
-                // Connect to local Python backend WebSocket
-                var wsUri = new Uri("ws://localhost:8000/ws/stream?client_type=csharp");
-                
-                System.Diagnostics.Debug.WriteLine("[AUTH-WS] Connecting to WebSocket...");
-                await _authWebSocket.ConnectAsync(wsUri, _authCancellation.Token);
-                System.Diagnostics.Debug.WriteLine("[AUTH-WS] Connected! Listening for auth events...");
-
-                // Start listening for auth messages in background
-                _ = Task.Run(async () => await ListenForAuthMessagesAsync());
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Connection failed: {ex.Message}");
-                // Fallback to polling if WebSocket fails
-                await PollAuthenticationStatusAsync();
-            }
-        }
-
-        private async Task ListenForAuthMessagesAsync()
-        {
-            var buffer = new byte[4096];
-            
-            try
-            {
-                while (_authWebSocket?.State == System.Net.WebSockets.WebSocketState.Open)
-                {
-                    var result = await _authWebSocket.ReceiveAsync(
-                        new ArraySegment<byte>(buffer), 
-                        _authCancellation?.Token ?? CancellationToken.None
-                    );
-                    
-                    if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Text)
-                    {
-                        var message = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Received: {message}");
-                        
-                        // Parse JSON message
-                        using var doc = System.Text.Json.JsonDocument.Parse(message);
-                        var root = doc.RootElement;
-                        
-                        if (root.TryGetProperty("type", out var typeEl) && 
-                            typeEl.GetString() == "auth_success")
-                        {
-                            // Check if this is for our device
-                            if (root.TryGetProperty("deviceId", out var deviceIdEl) &&
-                                deviceIdEl.GetString() == _loginDeviceId)
-                            {
-                                if (root.TryGetProperty("token", out var tokenEl))
-                                {
-                                    var token = tokenEl.GetString();
-                                    if (!string.IsNullOrEmpty(token))
-                                    {
-                                        System.Diagnostics.Debug.WriteLine("[AUTH-WS] ✓ Auth token received via WebSocket!");
-                                        await HandleAuthSuccessAsync(token);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Close)
-                    {
-                        break;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Listen error: {ex.Message}");
-            }
         }
 
         private async Task HandleAuthSuccessAsync(string token)
@@ -731,7 +531,7 @@ namespace Kernel_Agent
                 if (LoginButton != null) LoginButton.Visibility = Visibility.Collapsed;
                 if (ProfileSection != null) ProfileSection.Visibility = Visibility.Visible;
                 
-                System.Diagnostics.Debug.WriteLine("[AUTH-WS] ✓ Main interface activated!");
+                System.Diagnostics.Debug.WriteLine("[AUTH-WS] Main interface activated!");
             });
             
             // Load user details in background
@@ -747,41 +547,45 @@ namespace Kernel_Agent
                             UserNameText.Text = user.Name;
                             ProfilePicture.DisplayName = user.Name;
                             ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
-                            
-                            // Load profile picture from Firebase
+
                             if (!string.IsNullOrEmpty(user.PhotoUrl))
                             {
                                 try
                                 {
                                     ProfilePicture.ProfilePicture = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(user.PhotoUrl));
-                                    System.Diagnostics.Debug.WriteLine($"[AUTH] Profile picture loaded: {user.PhotoUrl}");
                                 }
-                                catch (Exception ex)
+                                catch
                                 {
-                                    System.Diagnostics.Debug.WriteLine($"[AUTH] Failed to load profile pic: {ex.Message}");
+                                    ProfilePicture.ProfilePicture = null;
                                 }
+                            }
+                            else
+                            {
+                                ProfilePicture.ProfilePicture = null;
                             }
                         });
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[AUTH-WS] User load failed: {ex.Message}");
                 }
             });
         }
 
         private async Task PollAuthenticationStatusAsync()
         {
-            // OPTIMIZED: Poll every 500ms for up to 2 minutes (faster response)
-            var maxAttempts = 240; // 2 minutes * 60 seconds / 0.5 second intervals
+            // OPTIMIZED: Poll every 300ms for up to ~2 minutes (faster response)
+            var maxAttempts = 240;
             var attempt = 0;
 
             System.Diagnostics.Debug.WriteLine($"[AUTH] Starting FAST polling for deviceId: {_loginDeviceId}");
 
             while (attempt < maxAttempts)
             {
-                await Task.Delay(500);  // FAST: 500ms instead of 2000ms
+                if (attempt > 0)
+                {
+                    await Task.Delay(300);
+                }
                 attempt++;
 
                 System.Diagnostics.Debug.WriteLine($"[AUTH] Poll attempt {attempt}/{maxAttempts}");
@@ -797,47 +601,48 @@ namespace Kernel_Agent
 
                 // Check backend for token using deviceId
                 var success = await ApiService.Instance.CheckLoginStatusAsync(_loginDeviceId);
-                
+
                 System.Diagnostics.Debug.WriteLine($"[AUTH] Poll result: {success}");
-                
+
                 if (success)
                 {
                     System.Diagnostics.Debug.WriteLine("[AUTH] Login detected! Switching to main interface...");
-                    
+
                     // IMMEDIATELY switch to main interface on UI thread
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
                         System.Diagnostics.Debug.WriteLine("[AUTH] Hiding loading overlay and login screen...");
-                        
+
                         // Hide loading overlay
                         if (LoginLoadingOverlay != null)
                         {
                             LoginLoadingOverlay.Visibility = Visibility.Collapsed;
                         }
-                        
+
                         // Hide login overlay, show main navigation
-                        if (LoginOverlay != null) 
+                        if (LoginOverlay != null)
                         {
                             LoginOverlay.Visibility = Visibility.Collapsed;
                             System.Diagnostics.Debug.WriteLine("[AUTH] LoginOverlay hidden");
                         }
-                        if (NavView != null) 
+                        if (NavView != null)
                         {
                             NavView.Visibility = Visibility.Visible;
                             System.Diagnostics.Debug.WriteLine("[AUTH] NavView shown");
                         }
-                        
+
                         // Set default user info
                         if (UserNameText != null) UserNameText.Text = "User";
                         if (ProfilePicture != null) ProfilePicture.Initials = "U";
                         if (LoginButton != null) LoginButton.Visibility = Visibility.Collapsed;
                         if (ProfileSection != null) ProfileSection.Visibility = Visibility.Visible;
-                        
+
                         System.Diagnostics.Debug.WriteLine("[AUTH] Main interface activated!");
                     });
-                    
+
                     // Load user details in background (non-blocking)
-                    _ = Task.Run(async () => {
+                    _ = Task.Run(async () =>
+                    {
                         try
                         {
                             var user = await ApiService.Instance.GetCurrentUserAsync();
@@ -848,6 +653,22 @@ namespace Kernel_Agent
                                     UserNameText.Text = user.Name;
                                     ProfilePicture.DisplayName = user.Name;
                                     ProfilePicture.Initials = user.Name.Length >= 2 ? user.Name.Substring(0, 2).ToUpper() : "U";
+
+                                    if (!string.IsNullOrEmpty(user.PhotoUrl))
+                                    {
+                                        try
+                                        {
+                                            ProfilePicture.ProfilePicture = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(user.PhotoUrl));
+                                        }
+                                        catch
+                                        {
+                                            ProfilePicture.ProfilePicture = null;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        ProfilePicture.ProfilePicture = null;
+                                    }
                                 });
                             }
                         }
@@ -856,7 +677,7 @@ namespace Kernel_Agent
                             System.Diagnostics.Debug.WriteLine($"[AUTH] Background user load failed: {ex.Message}");
                         }
                     });
-                    
+
                     break;
                 }
             }
@@ -864,7 +685,7 @@ namespace Kernel_Agent
             if (attempt >= maxAttempts)
             {
                 System.Diagnostics.Debug.WriteLine("[AUTH] Polling timeout reached");
-                
+
                 // Hide loading overlay
                 this.DispatcherQueue.TryEnqueue(() =>
                 {

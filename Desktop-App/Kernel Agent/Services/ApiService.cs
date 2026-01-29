@@ -262,13 +262,23 @@ namespace Kernel_Agent.Services
                     // Parse the response - microservice returns UserProfileResponse
                     using var doc = System.Text.Json.JsonDocument.Parse(json);
                     var root = doc.RootElement;
+
+                    string? photoUrl = null;
+                    if (root.TryGetProperty("photoURL", out var photoEl))
+                        photoUrl = photoEl.GetString();
+                    else if (root.TryGetProperty("photoUrl", out var photoEl2))
+                        photoUrl = photoEl2.GetString();
+                    else if (root.TryGetProperty("photo_url", out var photoEl3))
+                        photoUrl = photoEl3.GetString();
+                    else if (root.TryGetProperty("picture", out var photoEl4))
+                        photoUrl = photoEl4.GetString();
                     
                     var user = new UserDto
                     {
                         UserId = root.TryGetProperty("id", out var idEl) ? idEl.GetString() : null,
                         Name = root.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "User" : "User",
                         Email = root.TryGetProperty("email", out var emailEl) ? emailEl.GetString() : null,
-                        PhotoUrl = root.TryGetProperty("photoURL", out var photoEl) ? photoEl.GetString() : null,
+                        PhotoUrl = photoUrl,
                     };
                     
                     // Parse createdAt if present

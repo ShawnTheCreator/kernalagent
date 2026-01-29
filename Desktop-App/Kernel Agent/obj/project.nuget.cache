@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "VNswR61b68k=",
+  "dgSpecHash": "tMJAyHEYc98=",
   "success": true,
-  "projectFilePath": "c:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
+  "projectFilePath": "C:\\Users\\anime\\3D Objects\\Ghost\\Desktop-App\\Kernel Agent\\Kernel Agent.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\anime\\.nuget\\packages\\dotenv.net\\4.0.0\\dotenv.net.4.0.0.nupkg.sha512",
     "C:\\Users\\anime\\.nuget\\packages\\firebaseadmin\\3.4.0\\firebaseadmin.3.4.0.nupkg.sha512",
@@ -59,15 +59,15 @@
     "C:\\Users\\anime\\.nuget\\packages\\system.security.principal.windows\\4.7.0\\system.security.principal.windows.4.7.0.nupkg.sha512",
     "C:\\Users\\anime\\.nuget\\packages\\windowsinput\\6.4.0\\windowsinput.6.4.0.nupkg.sha512",
     "C:\\Users\\anime\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x86\\8.0.23\\microsoft.netcore.app.runtime.win-x86.8.0.23.nupkg.sha512",
-    "C:\\Users\\anime\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.23\\microsoft.netcore.app.runtime.win-x64.8.0.23.nupkg.sha512",
-    "C:\\Users\\anime\\.nuget\\packages\\microsoft.netcore.app.runtime.win-arm64\\8.0.23\\microsoft.netcore.app.runtime.win-arm64.8.0.23.nupkg.sha512",
-    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x86\\8.0.23\\microsoft.windowsdesktop.app.runtime.win-x86.8.0.23.nupkg.sha512",
-    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.23\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.23.nupkg.sha512",
-    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-arm64\\8.0.23\\microsoft.windowsdesktop.app.runtime.win-arm64.8.0.23.nupkg.sha512",
+    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windows.sdk.net.ref\\10.0.19041.57\\microsoft.windows.sdk.net.ref.10.0.19041.57.nupkg.sha512",
     "C:\\Users\\anime\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x86\\8.0.23\\microsoft.aspnetcore.app.runtime.win-x86.8.0.23.nupkg.sha512",
+    "C:\\Users\\anime\\.nuget\\packages\\microsoft.netcore.app.runtime.win-arm64\\8.0.23\\microsoft.netcore.app.runtime.win-arm64.8.0.23.nupkg.sha512",
     "C:\\Users\\anime\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.23\\microsoft.aspnetcore.app.runtime.win-x64.8.0.23.nupkg.sha512",
+    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-arm64\\8.0.23\\microsoft.windowsdesktop.app.runtime.win-arm64.8.0.23.nupkg.sha512",
+    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.23\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.23.nupkg.sha512",
     "C:\\Users\\anime\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-arm64\\8.0.23\\microsoft.aspnetcore.app.runtime.win-arm64.8.0.23.nupkg.sha512",
-    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windows.sdk.net.ref\\10.0.19041.57\\microsoft.windows.sdk.net.ref.10.0.19041.57.nupkg.sha512"
+    "C:\\Users\\anime\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.23\\microsoft.netcore.app.runtime.win-x64.8.0.23.nupkg.sha512",
+    "C:\\Users\\anime\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x86\\8.0.23\\microsoft.windowsdesktop.app.runtime.win-x86.8.0.23.nupkg.sha512"
   ],
   "logs": []
 }
