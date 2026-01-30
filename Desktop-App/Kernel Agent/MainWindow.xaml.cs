@@ -42,8 +42,6 @@ namespace Kernel_Agent
         private string? _pendingQuestion = null;
 
         private readonly Dictionary<string, DateTime> _recentLog = new Dictionary<string, DateTime>();
-        private int? _lastSentinelScore = null;
-        private DateTime _lastSentinelScoreLoggedAt = DateTime.MinValue;
 
         private void AddToThoughtLog(string message, bool isUser = false, string? key = null, int dedupeMs = 4000)
         {
@@ -141,64 +139,9 @@ namespace Kernel_Agent
                         });
                     };
 
-                    BrainConnectionService.Instance.OnJanitorUpdate += (raw) =>
-                    {
-                        this.DispatcherQueue.TryEnqueue(() =>
-                        {
-                            AddToThoughtLogDedupe($"[Janitor] {raw}");
-                        });
-                    };
-
-                    BrainConnectionService.Instance.OnJanitorPermission += (raw) =>
-                    {
-                        this.DispatcherQueue.TryEnqueue(() =>
-                        {
-                            AddToThoughtLogDedupe($"[Janitor Permission] {raw}");
-                        });
-                    };
-
                     await BrainConnectionService.Instance.ConnectAsync();
                     System.Diagnostics.Debug.WriteLine("[MAIN] Brain connection initiated");
                 });
-
-                // Surface Sentinel events in the UI (in addition to Windows notifications)
-                try
-                {
-                    if (App.SentinelClient != null)
-                    {
-                        App.SentinelClient.OnAlertReceived += (alert) =>
-                        {
-                            this.DispatcherQueue.TryEnqueue(() =>
-                            {
-                                if (alert != null)
-                                    AddToThoughtLog($"[Sentinel] {alert.Severity}: {alert.Message}");
-                            });
-                        };
-
-                        App.SentinelClient.OnHealthScoreUpdated += (score) =>
-                        {
-                            this.DispatcherQueue.TryEnqueue(() =>
-                            {
-                                var now = DateTime.Now;
-                                var shouldLog = !_lastSentinelScore.HasValue || _lastSentinelScore.Value != score;
-                                if (!shouldLog && (now - _lastSentinelScoreLoggedAt).TotalSeconds > 15)
-                                    shouldLog = true;
-
-                                _lastSentinelScore = score;
-
-                                if (shouldLog)
-                                {
-                                    _lastSentinelScoreLoggedAt = now;
-                                    AddToThoughtLogDedupe($"[Sentinel] Health Score: {score}/100", key: $"sentinel_score_{score}", dedupeMs: 15000);
-                                }
-                            });
-                        };
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[Sentinel] UI hook failed: {ex.Message}");
-                }
 
                 // Initialize Background Video
                 try

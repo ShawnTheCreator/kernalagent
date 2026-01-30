@@ -30,7 +30,6 @@ namespace Kernel_Agent
     public partial class App : Application
     {
         internal Window? _window;
-        internal static SentinelClient? SentinelClient { get; private set; }
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -39,14 +38,10 @@ namespace Kernel_Agent
         public App()
         {
             InitializeComponent();
-            
-            // Initialize Sentinel client
-            SentinelClient = new SentinelClient();
 
             try
             {
                 AppNotificationManager.Default.Register();
-                AppNotificationManager.Default.NotificationInvoked += OnNotificationInvoked;
             }
             catch (Exception ex)
             {
@@ -57,68 +52,11 @@ namespace Kernel_Agent
             {
                 try
                 {
-                    SentinelClient?.DisconnectAsync().GetAwaiter().GetResult();
-                }
-                catch
-                {
-                    // Best-effort shutdown
-                }
-
-                try
-                {
-                    AppNotificationManager.Default.NotificationInvoked -= OnNotificationInvoked;
                 }
                 catch
                 {
                 }
             };
-            _ = Task.Run(async () => 
-            {
-                try
-                {
-                    await SentinelClient.ConnectAsync();
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Failed to connect Sentinel client: {ex.Message}");
-                }
-            });
-        }
-
-        private static async void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
-        {
-            try
-            {
-                var parsed = ParseNotificationArguments(args.Argument);
-                parsed.TryGetValue("action", out var action);
-                parsed.TryGetValue("alertId", out var alertId);
-
-                if (!string.IsNullOrWhiteSpace(action) && !string.IsNullOrWhiteSpace(alertId))
-                {
-                    await (SentinelClient?.SendUserResponseAsync(alertId, action) ?? Task.CompletedTask);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[NOTIFICATIONS] Invoke handler failed: {ex.Message}");
-            }
-        }
-
-        private static Dictionary<string, string> ParseNotificationArguments(string raw)
-        {
-            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (string.IsNullOrWhiteSpace(raw)) return dict;
-
-            foreach (var part in raw.Split('&', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var kv = part.Split('=', 2);
-                if (kv.Length == 2)
-                {
-                    dict[Uri.UnescapeDataString(kv[0])] = Uri.UnescapeDataString(kv[1]);
-                }
-            }
-
-            return dict;
         }
 
         public Window? GetMainWindow()

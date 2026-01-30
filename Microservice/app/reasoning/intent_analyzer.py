@@ -50,11 +50,6 @@ Available tools and their parameters:
    - amount: number (1-100, optional)
 
 7. SPECIALIZED AGENTS (for complex tasks):
-   - JANITOR_AGENT: File organization, cleanup, scanning downloads/desktop
-     - Keywords: "clean", "organize", "scan", "downloads", "desktop", "files", "delete", "move", "rename"
-     - Examples: "clean downloads", "organize desktop", "scan files", "delete temp files"
-     - When detected, set intent: "agent_task" and target: "JANITOR_AGENT"
-   
    - RECOVERY_AGENT: Undo/restore operations
      - Keywords: "undo", "recover", "restore", "bring back", "oops"
      - Examples: "undo last action", "recover deleted file", "restore changes"

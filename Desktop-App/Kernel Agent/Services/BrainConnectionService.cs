@@ -33,8 +33,6 @@ namespace Kernel_Agent.Services
         public event Action<bool>? OnConnectionStateChanged;
         public event Action<string>? OnAgentOutput;
         public event Action<string>? OnAgentPrompt;
-        public event Action<string>? OnJanitorUpdate;
-        public event Action<string>? OnJanitorPermission;
         
         public static BrainConnectionService Instance
         {
@@ -48,50 +46,6 @@ namespace Kernel_Agent.Services
                     }
                 }
                 return _instance;
-            }
-        }
-
-        private static string FormatJanitorAction(JsonElement root)
-        {
-            try
-            {
-                var capability = root.TryGetProperty("capability", out var cap) ? cap.GetString() : null;
-                var action = root.TryGetProperty("action", out var act) ? act.GetString() : null;
-                var success = root.TryGetProperty("success", out var ok) && ok.ValueKind == JsonValueKind.True;
-
-                var file = root.TryGetProperty("file", out var f) ? f.GetString() : null;
-                var message = root.TryGetProperty("message", out var msg) ? msg.GetString() : null;
-
-                var status = success ? "✓" : "✗";
-                var main = $"{status} {capability ?? "janitor"}: {action ?? "action"}";
-                if (!string.IsNullOrWhiteSpace(file)) main += $" ({file})";
-                if (!string.IsNullOrWhiteSpace(message)) main += $" — {message}";
-                return main;
-            }
-            catch
-            {
-                return "Janitor: action completed";
-            }
-        }
-
-        private static string FormatJanitorPermission(JsonElement root)
-        {
-            try
-            {
-                var file = root.TryGetProperty("file", out var f) ? f.GetString() : null;
-                var suggestion = root.TryGetProperty("suggestion", out var s) ? s.GetString() : null;
-                var capability = root.TryGetProperty("capability", out var c) ? c.GetString() : null;
-                var actionId = root.TryGetProperty("action_id", out var a) ? a.GetString() : null;
-
-                var title = $"Permission needed{(string.IsNullOrWhiteSpace(capability) ? "" : $" ({capability})")}";
-                var body = string.IsNullOrWhiteSpace(file) ? "" : $": {file}";
-                var sug = string.IsNullOrWhiteSpace(suggestion) ? "" : $" — {suggestion}";
-                var id = string.IsNullOrWhiteSpace(actionId) ? "" : $" [id: {actionId}]";
-                return $"{title}{body}{sug}{id}";
-            }
-            catch
-            {
-                return "Janitor: permission needed";
             }
         }
 
@@ -279,14 +233,6 @@ namespace Kernel_Agent.Services
                         {
                             OnAgentPrompt?.Invoke(qElem.GetString() ?? string.Empty);
                         }
-                        break;
-
-                    case "janitor_action":
-                        OnJanitorUpdate?.Invoke(FormatJanitorAction(json.RootElement));
-                        break;
-
-                    case "janitor_permission":
-                        OnJanitorPermission?.Invoke(FormatJanitorPermission(json.RootElement));
                         break;
 
                     case "action_plan":
