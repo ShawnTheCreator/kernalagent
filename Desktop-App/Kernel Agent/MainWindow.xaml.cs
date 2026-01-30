@@ -5,6 +5,9 @@ using WinRT.Interop;
 using System;
 using dotenv.net;
 using NAudio.Wave;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
@@ -20,6 +23,8 @@ namespace Kernel_Agent
         private OrbOverlayWindow? _orbOverlayWindow;
         private bool _isRecording = false;
         private string _loginDeviceId = Guid.NewGuid().ToString();
+        private CancellationTokenSource? _authFlowCts;
+        private int _authFlowCompleted = 0;
         private FirestoreRealtimeListener? _firestoreListener;
         
         // Python-based speech recognition service
@@ -116,6 +121,22 @@ namespace Kernel_Agent
                 // Connect to Python brain for skill commands and action reporting
                 _ = Task.Run(async () =>
                 {
+                    BrainConnectionService.Instance.OnAuthSuccess += (deviceId, token) =>
+                    {
+                        if (!string.Equals(deviceId, _loginDeviceId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return;
+                        }
+
+                        if (Interlocked.CompareExchange(ref _authFlowCompleted, 1, 0) != 0)
+                        {
+                            return;
+                        }
+
+                        try { _authFlowCts?.Cancel(); } catch { }
+                        _ = Task.Run(async () => await HandleAuthSuccessAsync(token));
+                    };
+
                     BrainConnectionService.Instance.OnAgentOutput += (msg) =>
                     {
                         this.DispatcherQueue.TryEnqueue(() =>
@@ -290,8 +311,29 @@ namespace Kernel_Agent
                 var loginUrl = $"{webAppUrl}/login?deviceId={_loginDeviceId}";
                 await Windows.System.Launcher.LaunchUriAsync(new Uri(loginUrl));
 
-                // Start polling in the background
-                _ = Task.Run(async () => await PollAuthenticationStatusAsync());
+                _authFlowCts?.Cancel();
+                _authFlowCts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                Interlocked.Exchange(ref _authFlowCompleted, 0);
+
+                // Prefer realtime websocket auth; keep polling as fallback
+                _ = Task.Run(async () => await ListenForAuthWebSocketAsync(_authFlowCts.Token));
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Give realtime paths (backend WS + microservice auth_success) a chance first
+                        await Task.Delay(2500, _authFlowCts.Token);
+                        if (_authFlowCts.Token.IsCancellationRequested || Interlocked.CompareExchange(ref _authFlowCompleted, 0, 0) == 1)
+                        {
+                            return;
+                        }
+
+                        await PollAuthenticationStatusAsync(_authFlowCts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -300,6 +342,114 @@ namespace Kernel_Agent
                 if (LoginLoadingOverlay != null)
                 {
                     LoginLoadingOverlay.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private async Task ListenForAuthWebSocketAsync(CancellationToken cancellationToken)
+        {
+            ClientWebSocket? ws = null;
+            try
+            {
+                var apiBase = (Environment.GetEnvironmentVariable("API_BASE_URL") ?? "https://kernal-agent-backend.onrender.com/api").TrimEnd('/');
+                var baseHost = apiBase.EndsWith("/api", StringComparison.OrdinalIgnoreCase)
+                    ? apiBase.Substring(0, apiBase.Length - 3)
+                    : apiBase;
+
+                var wsBase = baseHost.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                    ? "wss://" + baseHost.Substring("https://".Length)
+                    : baseHost.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                        ? "ws://" + baseHost.Substring("http://".Length)
+                        : baseHost;
+
+                wsBase = wsBase.TrimEnd('/');
+
+                var wsUrl = $"{wsBase}/ws/auth?deviceId={Uri.EscapeDataString(_loginDeviceId)}";
+                System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Connecting to {wsUrl}...");
+
+                ws = new ClientWebSocket();
+                await ws.ConnectAsync(new Uri(wsUrl), cancellationToken);
+                System.Diagnostics.Debug.WriteLine("[AUTH-WS] Connected");
+
+                var buffer = new byte[4096];
+                while (!cancellationToken.IsCancellationRequested && ws.State == WebSocketState.Open)
+                {
+                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        break;
+                    }
+
+                    if (result.MessageType != WebSocketMessageType.Text)
+                    {
+                        continue;
+                    }
+
+                    var msg = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Message: {msg}");
+
+                    using var doc = JsonDocument.Parse(msg);
+                    var root = doc.RootElement;
+                    if (!root.TryGetProperty("type", out var typeEl))
+                    {
+                        continue;
+                    }
+
+                    var type = typeEl.GetString();
+                    if (!string.Equals(type, "auth_success", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (root.TryGetProperty("deviceId", out var devEl))
+                    {
+                        var dev = devEl.GetString();
+                        if (!string.Equals(dev, _loginDeviceId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (!root.TryGetProperty("token", out var tokenEl))
+                    {
+                        continue;
+                    }
+
+                    var token = tokenEl.GetString();
+                    if (string.IsNullOrWhiteSpace(token))
+                    {
+                        continue;
+                    }
+
+                    if (Interlocked.CompareExchange(ref _authFlowCompleted, 1, 0) == 0)
+                    {
+                        try { _authFlowCts?.Cancel(); } catch { }
+                        await HandleAuthSuccessAsync(token);
+                    }
+
+                    break;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTH-WS] Error: {ex.Message}");
+            }
+            finally
+            {
+                if (ws != null)
+                {
+                    try
+                    {
+                        if (ws.State == WebSocketState.Open)
+                        {
+                            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                        }
+                    }
+                    catch { }
+                    ws.Dispose();
                 }
             }
         }
@@ -515,7 +665,12 @@ namespace Kernel_Agent
             });
         }
 
-        private async Task PollAuthenticationStatusAsync()
+        private Task PollAuthenticationStatusAsync()
+        {
+            return PollAuthenticationStatusAsync(CancellationToken.None);
+        }
+
+        private async Task PollAuthenticationStatusAsync(CancellationToken cancellationToken)
         {
             // OPTIMIZED: Poll every 300ms for up to ~2 minutes (faster response)
             var maxAttempts = 240;
@@ -525,6 +680,11 @@ namespace Kernel_Agent
 
             while (attempt < maxAttempts)
             {
+                if (cancellationToken.IsCancellationRequested || Interlocked.CompareExchange(ref _authFlowCompleted, 0, 0) == 1)
+                {
+                    break;
+                }
+
                 if (attempt > 0)
                 {
                     await Task.Delay(300);
@@ -549,6 +709,11 @@ namespace Kernel_Agent
 
                 if (success)
                 {
+                    if (Interlocked.CompareExchange(ref _authFlowCompleted, 1, 0) != 0)
+                    {
+                        break;
+                    }
+
                     System.Diagnostics.Debug.WriteLine("[AUTH] Login detected! Switching to main interface...");
 
                     // IMMEDIATELY switch to main interface on UI thread

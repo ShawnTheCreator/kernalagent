@@ -7,6 +7,7 @@ using System.Text;
 using KernalAgentBackend.Data;
 using KernalAgentBackend.DTOs;
 using KernalAgentBackend.Models;
+using KernalAgentBackend.Services;
 using DbUser = KernalAgentBackend.Models.User;
 using BCrypt.Net;
 using Google.Cloud.Firestore;
@@ -20,13 +21,16 @@ public class AuthController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
 
+    private readonly DeviceAuthWebSocketManager _deviceAuthWebSocketManager;
+
     private readonly FirestoreDb _firestoreDb;
 
-    public AuthController(ApplicationDbContext context, IConfiguration configuration, FirestoreDb firestoreDb)
+    public AuthController(ApplicationDbContext context, IConfiguration configuration, FirestoreDb firestoreDb, DeviceAuthWebSocketManager deviceAuthWebSocketManager)
     {
         _context = context;
         _configuration = configuration;
         _firestoreDb = firestoreDb;
+        _deviceAuthWebSocketManager = deviceAuthWebSocketManager;
     }
 
     [HttpPost("signup")]
@@ -193,7 +197,7 @@ public class AuthController : ControllerBase
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _deviceTokens = new();
 
     [HttpPost("device-verify")]
-    public IActionResult DeviceVerify([FromBody] DeviceLoginRequest request)
+    public async Task<IActionResult> DeviceVerify([FromBody] DeviceLoginRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.DeviceId) || string.IsNullOrWhiteSpace(request.Token))
         {
@@ -201,7 +205,17 @@ public class AuthController : ControllerBase
         }
 
         _deviceTokens.AddOrUpdate(request.DeviceId, request.Token, (k, v) => request.Token);
-        return Ok(new { message = "Device verified successfully" });
+
+        // Realtime push to desktop app if it is connected over WebSocket
+        var sent = await _deviceAuthWebSocketManager.SendAuthSuccessAsync(request.DeviceId, request.Token, HttpContext.RequestAborted);
+        return Ok(new { message = "Device verified successfully", delivery = sent > 0 ? "websocket" : "stored" });
+    }
+
+    [HttpPost("sync")]
+    public async Task<IActionResult> Sync([FromBody] DeviceLoginRequest request)
+    {
+        // Alias for device-verify (used by frontend)
+        return await DeviceVerify(request);
     }
 
     [HttpGet("poll")]

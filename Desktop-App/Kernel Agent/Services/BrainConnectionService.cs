@@ -33,6 +33,7 @@ namespace Kernel_Agent.Services
         public event Action<bool>? OnConnectionStateChanged;
         public event Action<string>? OnAgentOutput;
         public event Action<string>? OnAgentPrompt;
+        public event Action<string, string>? OnAuthSuccess;
         
         public static BrainConnectionService Instance
         {
@@ -206,6 +207,19 @@ namespace Kernel_Agent.Services
                 
                 switch (type)
                 {
+                    case "auth_success":
+                        if (json.RootElement.TryGetProperty("deviceId", out var devEl) &&
+                            json.RootElement.TryGetProperty("token", out var tokenEl))
+                        {
+                            var deviceId = devEl.GetString() ?? string.Empty;
+                            var token = tokenEl.GetString() ?? string.Empty;
+                            if (!string.IsNullOrWhiteSpace(deviceId) && !string.IsNullOrWhiteSpace(token))
+                            {
+                                OnAuthSuccess?.Invoke(deviceId, token);
+                            }
+                        }
+                        break;
+
                     case "run_skill":
                         var skillId = json.RootElement.GetProperty("skill_id").GetString();
                         var skillName = json.RootElement.TryGetProperty("skill_name", out var nameElem) 

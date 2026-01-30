@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using KernalAgentBackend.Data;
+using KernalAgentBackend.Services;
 using DotNetEnv;
 using Google.Cloud.Firestore;
 
@@ -101,6 +102,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// WebSocket manager for device auth (desktop login)
+builder.Services.AddSingleton<DeviceAuthWebSocketManager>();
+
 // Add OpenAPI/Swagger support (built-in for .NET 10)
 builder.Services.AddEndpointsApiExplorer();
 
@@ -176,8 +180,55 @@ if (app.Environment.IsDevelopment() &&
 // Use CORS
 app.UseCors("AllowFrontend");
 
+// Enable WebSockets (for desktop auth realtime)
+app.UseWebSockets();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Realtime auth for desktop app: ws://<host>/ws/auth?deviceId=...
+app.Map("/ws/auth", async context =>
+{
+    if (!context.WebSockets.IsWebSocketRequest)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsync("WebSocket request required");
+        return;
+    }
+
+    var deviceId = context.Request.Query["deviceId"].ToString();
+    if (string.IsNullOrWhiteSpace(deviceId))
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsync("deviceId query param is required");
+        return;
+    }
+
+    var wsManager = context.RequestServices.GetRequiredService<DeviceAuthWebSocketManager>();
+    using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+    var connectionId = wsManager.Register(deviceId, webSocket);
+
+    try
+    {
+        var buffer = new byte[1024];
+        while (webSocket.State == System.Net.WebSockets.WebSocketState.Open && !context.RequestAborted.IsCancellationRequested)
+        {
+            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), context.RequestAborted);
+            if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Close)
+            {
+                break;
+            }
+        }
+    }
+    finally
+    {
+        wsManager.Unregister(deviceId, connectionId);
+        if (webSocket.State == System.Net.WebSockets.WebSocketState.Open)
+        {
+            await webSocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+        }
+    }
+});
 
 app.MapControllers();
 
