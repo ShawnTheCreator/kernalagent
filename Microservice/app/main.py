@@ -44,6 +44,7 @@ from app.api.executor_ws import router as executor_ws_router  # Hybrid WebSocket
 from app.api.speech_routes import router as speech_router  # Voice transcription API
 from app.api.voice_ws import router as voice_ws_router  # Continuous voice WebSocket
 from app.api.agent_hub_routes import router as agent_hub_router  # Agent Hub API
+from app.api.tts_routes import router as tts_router  # TTS API (/api/tts/*)
 from app.core.config import settings
 from app.db.init_db import init_database
 
@@ -115,6 +116,7 @@ app.include_router(executor_ws_router)  # Hybrid WebSocket executor (/ws/executo
 app.include_router(speech_router)  # Voice transcription API (/api/speech/*)
 app.include_router(voice_ws_router)  # Continuous voice WebSocket (/ws/voice)
 app.include_router(agent_hub_router)  # Agent Hub API (/api/agents/*)
+app.include_router(tts_router)  # TTS API (/api/tts/*)
 
 @app.get("/health")
 async def health_check():

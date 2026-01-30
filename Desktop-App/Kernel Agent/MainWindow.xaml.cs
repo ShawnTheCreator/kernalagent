@@ -23,6 +23,7 @@ namespace Kernel_Agent
         private OrbOverlayWindow? _orbOverlayWindow;
         private bool _isRecording = false;
         private string _loginDeviceId = Guid.NewGuid().ToString();
+        
         private CancellationTokenSource? _authFlowCts;
         private int _authFlowCompleted = 0;
         private FirestoreRealtimeListener? _firestoreListener;
@@ -33,6 +34,8 @@ namespace Kernel_Agent
         // Continuous voice recognition (WebSocket-based)
         private ContinuousSpeechService? _continuousSpeechService;
         private bool _continuousVoiceEnabled = false;
+
+        private CancellationTokenSource? _orbVoiceCts;
 
         private string _lastContinuousVoiceCommand = "";
         private DateTime _lastContinuousVoiceCommandAt = DateTime.MinValue;
@@ -47,6 +50,9 @@ namespace Kernel_Agent
         private string? _pendingQuestion = null;
 
         private readonly Dictionary<string, DateTime> _recentLog = new Dictionary<string, DateTime>();
+
+        private readonly SmartExecutor _smartExecutor = new SmartExecutor();
+        private int _planExecutionInProgress = 0;
 
         private void AddToThoughtLog(string message, bool isUser = false, string? key = null, int dedupeMs = 4000)
         {
@@ -137,6 +143,14 @@ namespace Kernel_Agent
                         _ = Task.Run(async () => await HandleAuthSuccessAsync(token));
                     };
 
+                    BrainConnectionService.Instance.OnActionPlanReceived += (originalCommand, stepsJson) =>
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            await ExecuteActionPlanAsync(originalCommand, stepsJson);
+                        });
+                    };
+
                     BrainConnectionService.Instance.OnAgentOutput += (msg) =>
                     {
                         this.DispatcherQueue.TryEnqueue(() =>
@@ -210,6 +224,71 @@ namespace Kernel_Agent
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Critical Init Error: {ex.Message}");
+            }
+        }
+
+        private async Task ExecuteActionPlanAsync(string? originalCommand, string stepsJson)
+        {
+            if (string.IsNullOrWhiteSpace(stepsJson))
+                return;
+
+            if (Interlocked.CompareExchange(ref _planExecutionInProgress, 1, 0) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(stepsJson);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                    return;
+
+                var stepsArray = doc.RootElement;
+                int totalSteps = stepsArray.GetArrayLength();
+                if (totalSteps <= 0)
+                    return;
+
+                _smartExecutor.SetOriginalGoal(originalCommand ?? "");
+
+                ShowStepProgress(totalSteps, "Starting...");
+
+                var execResult = await _smartExecutor.ExecutePlanAsync(
+                    stepsArray,
+                    (current, total, action, target) =>
+                    {
+                        var stepDisplay = string.IsNullOrWhiteSpace(target)
+                            ? action
+                            : $"{action} {target}";
+                        UpdateStepProgress(current, total, stepDisplay);
+                    }
+                );
+
+                if (execResult.Success)
+                {
+                    UpdateStepProgress(totalSteps, totalSteps, "done", "success");
+                }
+                else
+                {
+                    UpdateStepProgress(totalSteps, totalSteps, execResult.Error ?? "Plan failed", "failed");
+                }
+
+                HideStepProgress();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] ExecuteActionPlanAsync error: {ex.Message}");
+                try
+                {
+                    UpdateStepProgress(1, 1, ex.Message, "failed");
+                    HideStepProgress();
+                }
+                catch
+                {
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _planExecutionInProgress, 0);
             }
         }
 
@@ -1327,21 +1406,150 @@ namespace Kernel_Agent
                     try 
                     {
                         _orbOverlayWindow.Activate();
+                        _orbOverlayWindow.MoveToTopCenter();
                     } 
                     catch (Exception ex) 
                     {
                         System.Diagnostics.Debug.WriteLine($"Error activating Orb: {ex.Message}");
                         // Re-create if disposed/closed unexpectedly
                         _orbOverlayWindow = new OrbOverlayWindow();
+                        _orbOverlayWindow.MoveToTopCenter();
                         _orbOverlayWindow.Activate();
                     }
+
+                    // Start orb voice mode (always-on listening)
+                    _ = Task.Run(StartOrbVoiceModeAsync);
                 }
                 else
                 {
+                    _ = Task.Run(StopOrbVoiceModeAsync);
                     _orbOverlayWindow?.Close();
                     _orbOverlayWindow = null;
                 }
             }
+        }
+
+        private async Task StartOrbVoiceModeAsync()
+        {
+            try
+            {
+                if (_orbOverlayWindow == null) return;
+
+                _orbVoiceCts?.Cancel();
+                _orbVoiceCts = new CancellationTokenSource();
+
+                _continuousSpeechService ??= new ContinuousSpeechService();
+
+                // Wire events once
+                _continuousSpeechService.OnStateChanged -= ContinuousSpeech_OnStateChanged;
+                _continuousSpeechService.OnStateChanged += ContinuousSpeech_OnStateChanged;
+
+                _continuousSpeechService.OnCommand -= ContinuousSpeech_OnCommand;
+                _continuousSpeechService.OnCommand += ContinuousSpeech_OnCommand;
+
+                _continuousSpeechService.OnError -= ContinuousSpeech_OnError;
+                _continuousSpeechService.OnError += ContinuousSpeech_OnError;
+
+                await _continuousSpeechService.ConnectAsync();
+                await _continuousSpeechService.StartListeningAsync(alwaysListening: true, silenceTimeout: 1.5f);
+
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    try { _orbOverlayWindow?.SetListening(); } catch { }
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] Start failed: {ex.Message}");
+            }
+        }
+
+        private async Task StopOrbVoiceModeAsync()
+        {
+            try
+            {
+                _orbVoiceCts?.Cancel();
+                _orbVoiceCts = null;
+
+                if (_continuousSpeechService != null)
+                {
+                    try { await _continuousSpeechService.StopListeningAsync(); } catch { }
+                    try { await _continuousSpeechService.DisconnectAsync(); } catch { }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void ContinuousSpeech_OnStateChanged(VoiceState state)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    if (_orbOverlayWindow == null) return;
+
+                    switch (state)
+                    {
+                        case VoiceState.Listening:
+                            _orbOverlayWindow.SetListening();
+                            break;
+                        case VoiceState.Processing:
+                            _orbOverlayWindow.SetProcessing();
+                            break;
+                        case VoiceState.Idle:
+                        case VoiceState.Stopped:
+                        case VoiceState.Disconnected:
+                        default:
+                            _orbOverlayWindow.StartIdleAnimation();
+                            break;
+                    }
+                }
+                catch
+                {
+                }
+            });
+        }
+
+        private void ContinuousSpeech_OnCommand(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command)) return;
+
+            // When minimized, we execute but show output on orb via animation + log to timeline.
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        try { _orbOverlayWindow?.SetProcessing(); } catch { }
+                    });
+
+                    await ExecuteAgentCommand(command);
+
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        try { _orbOverlayWindow?.ShowSuccess(); } catch { }
+                    });
+                }
+                catch
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        try { _orbOverlayWindow?.StartIdleAnimation(); } catch { }
+                    });
+                }
+            });
+        }
+
+        private void ContinuousSpeech_OnError(string message)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] {message}");
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                try { _orbOverlayWindow?.StartIdleAnimation(); } catch { }
+            });
         }
 
         #region Step Progress UI
@@ -1432,7 +1640,57 @@ namespace Kernel_Agent
             try
             {
                 AddToThoughtLog($"[Agent] Executing: {command}");
-                await ApiService.Instance.SendCommandAsync(command);
+                _ = Task.Run(async () =>
+                {
+                    try { await BrainConnectionService.Instance.SendIntentAsync(command); } catch { }
+                });
+                var result = await ApiService.Instance.SendCommandAsync(command);
+                if (!string.IsNullOrWhiteSpace(result))
+                {
+                    string? agentText = null;
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(result);
+                        var root = doc.RootElement;
+                        if (root.ValueKind == JsonValueKind.Object)
+                        {
+                            if (root.TryGetProperty("reply", out var replyEl))
+                            {
+                                agentText = replyEl.GetString();
+                            }
+                            else if (root.TryGetProperty("message", out var msgEl))
+                            {
+                                agentText = msgEl.GetString();
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    agentText ??= result;
+                    if (!string.IsNullOrWhiteSpace(agentText))
+                    {
+                        AddToThoughtLogDedupe($"Agent: {agentText}");
+                        
+                        // ===== TTS: Speak agent reply =====
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                var audioBytes = await ApiService.Instance.GenerateSpeechAsync(agentText);
+                                if (audioBytes.Length > 0)
+                                {
+                                    await AudioPlaybackService.Instance.PlayAudioAsync(audioBytes);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[TTS] Playback error: {ex.Message}");
+                            }
+                        });
+                    }
+                }
             }
             catch (Exception ex)
             {

@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Kernel_Agent.Services;
 
@@ -11,6 +12,7 @@ namespace Kernel_Agent
         private SettingsService? _settingsInstance;
         private SettingsService _settings => _settingsInstance ??= SettingsService.Instance;
         private bool _isLoading = true;
+        private CancellationTokenSource? _voiceDebounceCts;
 
         public SettingsPage()
         {
@@ -116,6 +118,29 @@ namespace Kernel_Agent
             await _settings.SyncToBackendAsync();
         }
 
+        private void DebouncedSaveLocalSettings()
+        {
+            if (_isLoading) return;
+
+            try { _voiceDebounceCts?.Cancel(); } catch { }
+            _voiceDebounceCts = new CancellationTokenSource();
+            var token = _voiceDebounceCts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(500, token);
+                    if (token.IsCancellationRequested) return;
+
+                    // Voice settings are local-only, so no backend sync.
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+        }
+
         #region Appearance Event Handlers
 
         private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -197,7 +222,10 @@ namespace Kernel_Agent
         {
             if (_isLoading) return;
             if (sender is ToggleSwitch toggle)
+            {
                 _settings.VoiceEnabled = toggle.IsOn;
+                DebouncedSaveLocalSettings();
+            }
         }
 
         private void SilenceThresholdSlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
@@ -206,7 +234,10 @@ namespace Kernel_Agent
             if (GetControl<TextBlock>("SilenceThresholdValue") is TextBlock txt)
                 txt.Text = $"{value}";
             if (!_isLoading)
+            {
                 _settings.SilenceThreshold = value;
+                DebouncedSaveLocalSettings();
+            }
         }
 
         private void SilenceDurationSlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
@@ -215,14 +246,20 @@ namespace Kernel_Agent
             if (GetControl<TextBlock>("SilenceDurationValue") is TextBlock txt)
                 txt.Text = $"{value}ms";
             if (!_isLoading)
+            {
                 _settings.SilenceDurationMs = value;
+                DebouncedSaveLocalSettings();
+            }
         }
 
         private void VoiceLanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isLoading) return;
             if (sender is ComboBox combo && combo.SelectedItem is ComboBoxItem item && item.Tag != null)
+            {
                 _settings.VoiceLanguage = item.Tag.ToString()!;
+                DebouncedSaveLocalSettings();
+            }
         }
 
         #endregion

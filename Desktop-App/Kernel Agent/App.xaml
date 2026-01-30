@@ -25,6 +25,29 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="LayerOnFluentOverlayFillColorDefaultBrush" Color="#111111"/>
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#8E75FF"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppPageBackgroundBrush" Color="#0A0A0E"/>
+                    <SolidColorBrush x:Key="AppCardBackgroundBrush" Color="#111116"/>
+                    <SolidColorBrush x:Key="AppCardBorderBrush" Color="#2A2A33"/>
+                    <SolidColorBrush x:Key="AppTextPrimaryBrush" Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="AppTextSecondaryBrush" Color="#888888"/>
+                    <SolidColorBrush x:Key="AppTextMutedBrush" Color="#666666"/>
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#8E75FF"/>
+                    <SolidColorBrush x:Key="AppDangerBrush" Color="#FF5555"/>
+                    <SolidColorBrush x:Key="AppDangerBackgroundBrush" Color="#331111"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppPageBackgroundBrush" Color="#F6F7FB"/>
+                    <SolidColorBrush x:Key="AppCardBackgroundBrush" Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="AppCardBorderBrush" Color="#DADCE6"/>
+                    <SolidColorBrush x:Key="AppTextPrimaryBrush" Color="#111111"/>
+                    <SolidColorBrush x:Key="AppTextSecondaryBrush" Color="#444444"/>
+                    <SolidColorBrush x:Key="AppTextMutedBrush" Color="#666666"/>
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#5D45FF"/>
+                    <SolidColorBrush x:Key="AppDangerBrush" Color="#D93025"/>
+                    <SolidColorBrush x:Key="AppDangerBackgroundBrush" Color="#FFF0F0"/>
                 </ResourceDictionary>
                 <!-- Optionally specify Light/Dark entries -->
             </ResourceDictionary.ThemeDictionaries>

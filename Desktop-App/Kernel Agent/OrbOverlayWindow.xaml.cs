@@ -77,18 +77,24 @@ namespace Kernel_Agent
 
             // Set window size
             _appWindow.Resize(new SizeInt32(80, 80));
-            
-            // Position in bottom-right corner
-            var displayArea = DisplayArea.Primary;
-            if (displayArea != null)
-            {
-                int x = displayArea.WorkArea.Width - 100;
-                int y = displayArea.WorkArea.Height - 100;
-                _appWindow.Move(new PointInt32(x, y));
-            }
+
+            MoveToTopCenter();
             
             // Apply Win32 transparency
             MakeWindowTransparent();
+        }
+
+        public void MoveToTopCenter(int topMargin = 10)
+        {
+            if (_appWindow == null) return;
+
+            var displayArea = DisplayArea.Primary;
+            if (displayArea == null) return;
+
+            var workArea = displayArea.WorkArea;
+            int x = Math.Max(0, (workArea.Width / 2) - 40);
+            int y = Math.Max(0, topMargin);
+            _appWindow.Move(new PointInt32(x, y));
         }
         
         // Additional Win32 for composition/blur
@@ -121,16 +127,17 @@ namespace Kernel_Agent
         {
             try
             {
-                // Method 1: Extended style for layered + toolwindow
+                // Method 1: Extended style for layered + toolwindow (no click-through)
                 int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);
                 exStyle |= WS_EX_TOOLWINDOW | WS_EX_LAYERED;
+                // IMPORTANT: Do NOT add WS_EX_TRANSPARENT so orb remains clickable
                 SetWindowLong(_hwnd, GWL_EXSTYLE, exStyle);
                 
                 // Method 2: DWM extend frame for glass effect
                 MARGINS margins = new MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
                 DwmExtendFrameIntoClientArea(_hwnd, ref margins);
                 
-                // Method 3: Set window composition for transparency
+                // Method 3: Set window composition for full transparency
                 var accent = new AccentPolicy
                 {
                     AccentState = ACCENT_ENABLE_TRANSPARENTGRADIENT,
@@ -155,7 +162,7 @@ namespace Kernel_Agent
                 // Method 4: Set layered window with 0 color key for black = transparent
                 SetLayeredWindowAttributes(_hwnd, 0x00000000, 0, LWA_COLORKEY);
                 
-                System.Diagnostics.Debug.WriteLine("[ORB] Transparency applied with composition");
+                System.Diagnostics.Debug.WriteLine("[ORB] Full transparency applied (clickable)");
             }
             catch (Exception ex)
             {

@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="#0A0A0E"
+    Background="{ThemeResource AppPageBackgroundBrush}"
     Loaded="Page_Loaded">
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="24">
@@ -14,24 +14,24 @@
 
             <!-- Header -->
             <StackPanel Spacing="4" Margin="0,0,0,16">
-                <TextBlock Text="SETTINGS" FontSize="28" FontWeight="Bold" Foreground="#8E75FF"/>
-                <TextBlock Text="Configure your Kernel Agent experience." Foreground="#888888" FontSize="14"/>
+                <TextBlock Text="SETTINGS" FontSize="28" FontWeight="Bold" Foreground="{ThemeResource AppAccentBrush}"/>
+                <TextBlock Text="Configure your Kernel Agent experience." Foreground="{ThemeResource AppTextSecondaryBrush}" FontSize="14"/>
             </StackPanel>
 
             <!-- Sync Status -->
-            <Border x:Name="SyncStatusBorder" Background="#1A8E75FF" CornerRadius="8" Padding="12" Visibility="Collapsed">
+            <Border x:Name="SyncStatusBorder" Background="{ThemeResource AppCardBackgroundBrush}" CornerRadius="8" Padding="12" Visibility="Collapsed" BorderThickness="1" BorderBrush="{ThemeResource AppCardBorderBrush}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <ProgressRing x:Name="SyncProgress" IsActive="True" Width="16" Height="16"/>
-                    <TextBlock x:Name="SyncStatusText" Text="Syncing settings..." Foreground="White" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SyncStatusText" Text="Syncing settings..." Foreground="{ThemeResource AppTextPrimaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
             <!-- Appearance Settings -->
-            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+            <Border Background="{ThemeResource AppCardBackgroundBrush}" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="{ThemeResource AppCardBorderBrush}">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE790;" Foreground="#8E75FF"/>
-                        <TextBlock Text="Appearance" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        <FontIcon Glyph="&#xE790;" Foreground="{ThemeResource AppAccentBrush}"/>
+                        <TextBlock Text="Appearance" FontWeight="Bold" FontSize="16" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                     </StackPanel>
 
                     <ComboBox x:Name="ThemeCombo" Header="Theme" HorizontalAlignment="Stretch"
@@ -52,11 +52,11 @@
             </Border>
 
             <!-- Execution Settings -->
-            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+            <Border Background="{ThemeResource AppCardBackgroundBrush}" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="{ThemeResource AppCardBorderBrush}">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <FontIcon Glyph="&#xE768;" Foreground="#00CAFF"/>
-                        <TextBlock Text="Execution" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        <TextBlock Text="Execution" FontWeight="Bold" FontSize="16" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                     </StackPanel>
 
                     <ComboBox x:Name="ExecutionModeCombo" Header="Execution Mode" HorizontalAlignment="Stretch"
@@ -66,7 +66,7 @@
                     </ComboBox>
                     
                     <TextBlock Text="Mock mode previews actions without executing them. Live mode performs real actions on your computer." 
-                               FontSize="12" Foreground="#666666" TextWrapping="Wrap"/>
+                               FontSize="12" Foreground="{ThemeResource AppTextMutedBrush}" TextWrapping="Wrap"/>
                     
                     <ToggleSwitch x:Name="ConfirmActionsToggle" Header="Confirm before executing actions"
                                   OnContent="On" OffContent="Off" Toggled="ConfirmActionsToggle_Toggled"/>
@@ -77,18 +77,18 @@
             </Border>
 
             <!-- Voice Recognition Settings -->
-            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+            <Border Background="{ThemeResource AppCardBackgroundBrush}" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="{ThemeResource AppCardBorderBrush}">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <FontIcon Glyph="&#xE720;" Foreground="#00FF9D"/>
-                        <TextBlock Text="Voice Recognition" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        <TextBlock Text="Voice Recognition" FontWeight="Bold" FontSize="16" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                     </StackPanel>
 
                     <ToggleSwitch x:Name="VoiceEnabledToggle" Header="Enable voice commands"
                                   OnContent="On" OffContent="Off" Toggled="VoiceEnabledToggle_Toggled"/>
                     
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Silence Detection Sensitivity" FontSize="13" Foreground="#AAAAAA"/>
+                        <TextBlock Text="Silence Detection Sensitivity" FontSize="13" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -97,12 +97,12 @@
                             <Slider x:Name="SilenceThresholdSlider" Minimum="200" Maximum="1000" StepFrequency="50"
                                     ValueChanged="SilenceThresholdSlider_ValueChanged"/>
                             <TextBlock x:Name="SilenceThresholdValue" Grid.Column="1" VerticalAlignment="Center" 
-                                       HorizontalAlignment="Right" Foreground="#888888"/>
+                                       HorizontalAlignment="Right" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                         </Grid>
                     </StackPanel>
 
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Pause Duration to End Sentence (ms)" FontSize="13" Foreground="#AAAAAA"/>
+                        <TextBlock Text="Pause Duration to End Sentence (ms)" FontSize="13" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -111,7 +111,7 @@
                             <Slider x:Name="SilenceDurationSlider" Minimum="500" Maximum="3000" StepFrequency="100"
                                     ValueChanged="SilenceDurationSlider_ValueChanged"/>
                             <TextBlock x:Name="SilenceDurationValue" Grid.Column="1" VerticalAlignment="Center" 
-                                       HorizontalAlignment="Right" Foreground="#888888"/>
+                                       HorizontalAlignment="Right" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                         </Grid>
                     </StackPanel>
                     
@@ -127,11 +127,11 @@
             </Border>
 
             <!-- Notifications -->
-            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+            <Border Background="{ThemeResource AppCardBackgroundBrush}" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="{ThemeResource AppCardBorderBrush}">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <FontIcon Glyph="&#xE7E7;" Foreground="#FFAA00"/>
-                        <TextBlock Text="Notifications" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        <TextBlock Text="Notifications" FontWeight="Bold" FontSize="16" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                     </StackPanel>
 
                     <ToggleSwitch x:Name="NotificationsToggle" Header="Enable desktop notifications"
@@ -140,11 +140,11 @@
             </Border>
 
             <!-- About Section -->
-            <Border Background="#111116" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#1AFFFFFF">
+            <Border Background="{ThemeResource AppCardBackgroundBrush}" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="{ThemeResource AppCardBorderBrush}">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE946;" Foreground="#8E75FF"/>
-                        <TextBlock Text="About" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        <FontIcon Glyph="&#xE946;" Foreground="{ThemeResource AppAccentBrush}"/>
+                        <TextBlock Text="About" FontWeight="Bold" FontSize="16" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                     </StackPanel>
 
                     <Grid>
@@ -157,35 +157,35 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="Version:" Foreground="#888888"/>
-                        <TextBlock Grid.Column="1" Text="1.0.0" Foreground="White"/>
-                        <TextBlock Grid.Row="1" Text="Build:" Foreground="#888888"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="2026.01.23" Foreground="White"/>
-                        <TextBlock Grid.Row="2" Text="Platform:" Foreground="#888888"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Windows 10/11 (WinUI 3)" Foreground="White"/>
+                        <TextBlock Text="Version:" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
+                        <TextBlock Grid.Column="1" Text="1.0.0" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
+                        <TextBlock Grid.Row="1" Text="Build:" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="2026.01.23" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
+                        <TextBlock Grid.Row="2" Text="Platform:" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Windows 10/11 (WinUI 3)" Foreground="{ThemeResource AppTextPrimaryBrush}"/>
                     </Grid>
                     
                     <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,8,0,0">
-                        <HyperlinkButton Content="Website" NavigateUri="https://kernalagent.vercel.app" Foreground="#8E75FF"/>
-                        <HyperlinkButton Content="Documentation" NavigateUri="https://kernalagent.vercel.app/docs" Foreground="#8E75FF"/>
+                        <HyperlinkButton Content="Website" NavigateUri="https://kernalagent.vercel.app" Foreground="{ThemeResource AppAccentBrush}"/>
+                        <HyperlinkButton Content="Documentation" NavigateUri="https://kernalagent.vercel.app/docs" Foreground="{ThemeResource AppAccentBrush}"/>
                     </StackPanel>
                     
                     <Button Content="Sync Settings from Cloud" Click="SyncFromCloudButton_Click" 
-                            Background="#1A8E75FF" Foreground="#8E75FF" Padding="12,8" CornerRadius="6"/>
+                            Background="{ThemeResource AppCardBackgroundBrush}" Foreground="{ThemeResource AppAccentBrush}" Padding="12,8" CornerRadius="6" BorderBrush="{ThemeResource AppAccentBrush}" BorderThickness="1"/>
                 </StackPanel>
             </Border>
 
             <!-- Danger Zone -->
-            <Border Background="#1AFF5555" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="#FF5555">
+            <Border Background="{ThemeResource AppDangerBackgroundBrush}" CornerRadius="12" Padding="24" BorderThickness="1" BorderBrush="{ThemeResource AppDangerBrush}">
                 <StackPanel Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE7BA;" Foreground="#FF5555"/>
-                        <TextBlock Text="Danger Zone" FontWeight="Bold" FontSize="16" Foreground="#FF5555"/>
+                        <FontIcon Glyph="&#xE7BA;" Foreground="{ThemeResource AppDangerBrush}"/>
+                        <TextBlock Text="Danger Zone" FontWeight="Bold" FontSize="16" Foreground="{ThemeResource AppDangerBrush}"/>
                     </StackPanel>
                     
-                    <TextBlock Text="Reset all settings to their default values." FontSize="13" Foreground="#888888"/>
+                    <TextBlock Text="Reset all settings to their default values." FontSize="13" Foreground="{ThemeResource AppTextSecondaryBrush}"/>
                     
-                    <Button Content="RESET ALL SETTINGS" Background="#FF5555" Foreground="White" 
+                    <Button Content="RESET ALL SETTINGS" Background="{ThemeResource AppDangerBrush}" Foreground="White" 
                             HorizontalAlignment="Stretch" Click="ResetAllSettingsButton_Click" 
                             Padding="12,10" CornerRadius="6" Margin="0,8,0,0"/>
                 </StackPanel>

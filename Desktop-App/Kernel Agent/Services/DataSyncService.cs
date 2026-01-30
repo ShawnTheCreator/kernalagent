@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
+using Kernel_Agent.DTOs;
 
 namespace Kernel_Agent.Services
 {
@@ -300,24 +301,5 @@ namespace Kernel_Agent.Services
             }
             return Stats;
         }
-    }
-
-    // DTO for Activities
-    public class ActivityDto
-    {
-        public string? Id { get; set; }
-        public string? State { get; set; }
-        public string? Title { get; set; }
-        public string? Description { get; set; }
-        public DateTime Timestamp { get; set; }
-        public bool IsNew { get; set; }
-    }
-
-    // DTO for Metrics
-    public class MetricsDto
-    {
-        public int[]? TasksPerHour { get; set; }
-        public int[]? LatencyMs { get; set; }
-        public int[]? SuccessRate { get; set; }
     }
 }

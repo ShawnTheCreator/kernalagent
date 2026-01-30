@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
+using Kernel_Agent.DTOs;
 
 namespace Kernel_Agent.Services
 {
@@ -22,8 +23,8 @@ namespace Kernel_Agent.Services
         private static HttpClient? _httpClient;
         private static ApiService? _instance;
         
-        // Persistent session ID for memory continuity (shared with VoiceToActionService)
-        private static readonly string _persistentSessionId = Guid.NewGuid().ToString();
+        // Persistent session ID for memory continuity (stored via SettingsService)
+        private static string? _persistentSessionId;
 
         public static ApiService Instance
         {
@@ -45,7 +46,16 @@ namespace Kernel_Agent.Services
                 Timeout = TimeSpan.FromSeconds(30)
             };
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            
+
+            try
+            {
+                _persistentSessionId = SettingsService.Instance.SessionId;
+            }
+            catch
+            {
+                _persistentSessionId ??= Guid.NewGuid().ToString();
+            }
+
             System.Diagnostics.Debug.WriteLine($"[API_SERVICE] Using persistent session_id: {_persistentSessionId}");
         }
         // Thread-safe in-memory token cache (ApplicationData throws from background threads)
@@ -464,7 +474,19 @@ namespace Kernel_Agent.Services
                 
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);
-                
+
+                if (string.IsNullOrWhiteSpace(_persistentSessionId))
+                {
+                    try
+                    {
+                        _persistentSessionId = SettingsService.Instance.SessionId;
+                    }
+                    catch
+                    {
+                        _persistentSessionId = Guid.NewGuid().ToString();
+                    }
+                }
+
                 var requestBody = new { command = commandText, session_id = _persistentSessionId };
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -782,6 +804,58 @@ namespace Kernel_Agent.Services
                 return false;
             }
         }
+
+        /// <summary>
+        /// Generate speech from text using Google Cloud Text-to-Speech API
+        /// </summary>
+        public async Task<byte[]> GenerateSpeechAsync(string text)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(text))
+                {
+                    System.Diagnostics.Debug.WriteLine("[TTS] No text provided for speech generation");
+                    return Array.Empty<byte>();
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[TTS] Requesting speech for: {text.Substring(0, Math.Min(50, text.Length))}...");
+
+                var payload = new
+                {
+                    text,
+                    voice = "en-US-GuyNeural",
+                    rate = "+0%",
+                    volume = "+0%",
+                    pitch = "+0Hz"
+                };
+
+                using var client = new HttpClient
+                {
+                    Timeout = TimeSpan.FromSeconds(30)
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                using var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Edge TTS microservice endpoint returns streaming MP3 (audio/mpeg)
+                using var response = await client.PostAsync($"{MICROSERVICE_URL}/api/tts/speak", httpContent);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var err = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[TTS] TTS request failed: {(int)response.StatusCode} {response.ReasonPhrase} :: {err}");
+                    return Array.Empty<byte>();
+                }
+
+                var audioBytes = await response.Content.ReadAsByteArrayAsync();
+                System.Diagnostics.Debug.WriteLine($"[TTS] Received {audioBytes.Length} bytes of audio");
+                return audioBytes;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TTS] Speech generation error: {ex.Message}");
+                return Array.Empty<byte>();
+            }
+        }
     }
 
     public class AuthResponse
@@ -806,131 +880,4 @@ namespace Kernel_Agent.Services
         [System.Text.Json.Serialization.JsonPropertyName("created_at")]
         public DateTime? CreatedAt { get; set; }
     }
-
-    // =====================================================
-    // DTOs for Real Backend Data
-    // =====================================================
-
-    public class SkillDto
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        
-        [System.Text.Json.Serialization.JsonPropertyName("intent_signature")]
-        public string IntentSignature { get; set; } = string.Empty;
-        
-        public string? Description { get; set; }
-        public float Confidence { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("success_count")]
-        public int SuccessCount { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("last_used_at")]
-        public string? LastUsedAt { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("created_at")]
-        public string? CreatedAt { get; set; }
-    }
-
-    public class SessionDto
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("session_id")]
-        public string SessionId { get; set; } = string.Empty;
-        
-        public string Intent { get; set; } = string.Empty;
-        
-        [System.Text.Json.Serialization.JsonPropertyName("started_at")]
-        public string StartedAt { get; set; } = string.Empty;
-        
-        [System.Text.Json.Serialization.JsonPropertyName("ended_at")]
-        public string? EndedAt { get; set; }
-        
-        public string Status { get; set; } = string.Empty;
-        public float Confidence { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("step_count")]
-        public int StepCount { get; set; }
-    }
-
-    public class MemoryDto
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("frequent_skills")]
-        public List<string> FrequentSkills { get; set; } = new();
-        
-        [System.Text.Json.Serialization.JsonPropertyName("failure_patterns")]
-        public List<string> FailurePatterns { get; set; } = new();
-        
-        [System.Text.Json.Serialization.JsonPropertyName("success_patterns")]
-        public List<string> SuccessPatterns { get; set; } = new();
-        
-        [System.Text.Json.Serialization.JsonPropertyName("updated_at")]
-        public string? UpdatedAt { get; set; }
-    }
-
-    public class DashboardStatsDto
-    {
-        public int TotalTasks { get; set; }
-        public double SuccessRate { get; set; }
-        public int AverageLatency { get; set; }
-        public string Uptime { get; set; } = string.Empty;
-        public int ActiveSkills { get; set; }
-    }
-
-    public class TimelineResponse
-    {
-        public List<TimelineEventDto> Events { get; set; } = new();
-        public int Count { get; set; }
-    }
-
-    public class TimelineEventDto
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty; // chat_user, chat_agent, action_tool, memory_thought
-        public string Content { get; set; } = string.Empty;
-        public Dictionary<string, object>? Metadata { get; set; }
-        public string Timestamp { get; set; } = string.Empty;
-        
-        [System.Text.Json.Serialization.JsonIgnore]
-        public DateTime TimestampDt
-        {
-            get
-            {
-                if (DateTime.TryParse(Timestamp, out var dt)) return dt;
-                return DateTime.MinValue;
-            }
-        }
-
-        [System.Text.Json.Serialization.JsonIgnore]
-        public string FormattedTime => TimestampDt.ToString("HH:mm");
-        
-        [System.Text.Json.Serialization.JsonIgnore]
-        public SolidColorBrush DisplayColor
-        {
-            get
-            {
-                // Simple color mapping logic
-                byte a = 255; byte r = 255; byte g = 255; byte b = 255;
-                
-                switch (Type)
-                {
-                    case "chat_agent": // #FF34A853 (Green)
-                        r = 52; g = 168; b = 83;
-                        break;
-                    case "action_tool": // #FF4285F4 (Blue)
-                        r = 66; g = 133; b = 244;
-                        break;
-                    case "memory_thought": // #FFAAAAAA (Gray)
-                        r = 170; g = 170; b = 170;
-                        break;
-                    case "chat_user": // White
-                    default: 
-                        r = 255; g = 255; b = 255;
-                        break;
-                }
-                
-                return new SolidColorBrush(Color.FromArgb(a, r, g, b));
-            }
-        }
-    }
 }
-

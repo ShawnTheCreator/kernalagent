@@ -27,6 +27,16 @@ namespace Kernel_Agent.Services
         private const int BASE_DELAY_MS = 100;
         private string _currentGoal = "";  // Track original command for recovery
         private string _lastOpenedApp = ""; // Track last opened app for focus before typing
+
+        private enum VisionMode
+        {
+            All,
+            Off,
+            BrowserOnly,
+            NonBrowserOnly
+        }
+
+        private static VisionMode? _visionMode;
         
         // Actions that may trigger dialogs and need proactive checking
         private static readonly System.Collections.Generic.HashSet<string> RiskyActions = new() {
@@ -49,6 +59,52 @@ namespace Kernel_Agent.Services
         public void SetOriginalGoal(string goal)
         {
             _currentGoal = goal;
+        }
+
+        private static VisionMode GetVisionMode()
+        {
+            if (_visionMode.HasValue)
+            {
+                return _visionMode.Value;
+            }
+
+            var raw = Environment.GetEnvironmentVariable("VISION_MODE")?.Trim();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                _visionMode = VisionMode.All;
+                return _visionMode.Value;
+            }
+
+            raw = raw.ToLowerInvariant();
+            _visionMode = raw switch
+            {
+                "off" => VisionMode.Off,
+                "browser_only" => VisionMode.BrowserOnly,
+                "non_browser_only" => VisionMode.NonBrowserOnly,
+                "all" => VisionMode.All,
+                _ => VisionMode.All
+            };
+            return _visionMode.Value;
+        }
+
+        private bool IsVisionAllowed()
+        {
+            try
+            {
+                _context.RefreshContext();
+                var mode = GetVisionMode();
+                return mode switch
+                {
+                    VisionMode.Off => false,
+                    VisionMode.BrowserOnly => _context.ActiveAppType == ContextManager.AppType.Browser,
+                    VisionMode.NonBrowserOnly => _context.ActiveAppType != ContextManager.AppType.Browser,
+                    _ => true,
+                };
+            }
+            catch
+            {
+                return false;
+            }
         }
         
         /// <summary>
@@ -151,6 +207,14 @@ namespace Kernel_Agent.Services
         /// </summary>
         public async Task<PlanExecutionResult> ExecutePlanAsync(JsonElement stepsElement)
         {
+            return await ExecutePlanAsync(stepsElement, null);
+        }
+
+        public async Task<PlanExecutionResult> ExecutePlanAsync(
+            JsonElement stepsElement,
+            Action<int, int, string, string>? onStepProgress
+        )
+        {
             var result = new PlanExecutionResult();
             var stopwatch = Stopwatch.StartNew();
             int stepIndex = 0;
@@ -162,7 +226,38 @@ namespace Kernel_Agent.Services
 
             foreach (var step in stepsElement.EnumerateArray())
             {
+                // ===== SECURITY VAULT GUARDRAILS (active window checks) =====
+                try
+                {
+                    var decision = SecurityPolicyService.Instance.EvaluateCurrentContext(_context);
+                    if (!decision.IsAllowed)
+                    {
+                        Debug.WriteLine($"[SECURITY] Blocked plan execution: {decision.Reason}");
+                        result.Success = false;
+                        result.Error = decision.Reason ?? "Blocked by Security Vault";
+                        break;
+                    }
+                }
+                catch
+                {
+                }
+
                 stepIndex++;
+
+                try
+                {
+                    string stepAction = step.TryGetProperty("action", out var sa) ? (sa.GetString() ?? "") : "";
+                    string stepTarget = "";
+                    if (step.TryGetProperty("target", out var st))
+                        stepTarget = st.GetString() ?? "";
+                    if (string.IsNullOrWhiteSpace(stepTarget) && step.TryGetProperty("content", out var sc))
+                        stepTarget = sc.GetString() ?? "";
+                    onStepProgress?.Invoke(stepIndex, totalSteps, stepAction, stepTarget);
+                }
+                catch
+                {
+                }
+
                 var actionResult = await ExecuteActionAsync(step);
                 result.ActionResults.Add(actionResult);
                 
@@ -200,7 +295,7 @@ namespace Kernel_Agent.Services
                             // Unknown dialog - call vision recovery
                             Debug.WriteLine($"[EXECUTOR] Unknown dialog, calling vision recovery...");
                             
-                            if (!string.IsNullOrEmpty(_currentGoal))
+                            if (!string.IsNullOrEmpty(_currentGoal) && IsVisionAllowed())
                             {
                                 var recoveryResult = await _visionRecovery.AttemptRecoveryAsync(
                                     _currentGoal,
@@ -232,7 +327,7 @@ namespace Kernel_Agent.Services
                     Debug.WriteLine($"[EXECUTOR] Action failed: {actionResult.Action}, attempting vision recovery...");
                     
                     // Attempt vision-based recovery
-                    if (!string.IsNullOrEmpty(_currentGoal))
+                    if (!string.IsNullOrEmpty(_currentGoal) && IsVisionAllowed())
                     {
                         var recoveryResult = await _visionRecovery.AttemptRecoveryAsync(
                             _currentGoal, 
@@ -418,6 +513,20 @@ namespace Kernel_Agent.Services
                     if (step.TryGetProperty("target", out JsonElement targetEl))
                     {
                         string target = targetEl.GetString() ?? "";
+
+                        try
+                        {
+                            if (SecurityPolicyService.Instance.IsBlockedTargetApp(target))
+                            {
+                                result.Success = false;
+                                result.Error = $"Security Vault blocked opening restricted app: {target}";
+                                break;
+                            }
+                        }
+                        catch
+                        {
+                        }
+
                         result.Success = _automation.OpenApplication(target);
                         if (result.Success)
                         {
@@ -883,9 +992,8 @@ namespace Kernel_Agent.Services
                             result.Success = _uiFinder.ClickElement(element);
                             result.Details = "UIElementFinder (accessibility-based)";
                         }
-                        else if (requiresVision)
+                        else if (IsVisionAllowed())
                         {
-                            // UIElementFinder failed, use vision API for ambiguous targets
                             Debug.WriteLine($"[EXECUTOR] UIElementFinder failed, using vision for: '{description}'");
                             var visionResult = await _visionRecovery.FindClickTargetAsync(description, _currentGoal);
                             
@@ -898,6 +1006,37 @@ namespace Kernel_Agent.Services
                             }
                             else
                             {
+                                // Vision recovery: ask for a corrective action, execute it,
+                                // then retry vision targeting once.
+                                Debug.WriteLine($"[EXECUTOR] Vision targeting failed, attempting recovery for: '{description}'");
+
+                                if (!string.IsNullOrEmpty(_currentGoal))
+                                {
+                                    var recoveryResult = await _visionRecovery.AttemptRecoveryAsync(
+                                        _currentGoal,
+                                        "click_element",
+                                        $"Element not found: {description}"
+                                    );
+
+                                    if (recoveryResult.Success && recoveryResult.RecoveryAction != null)
+                                    {
+                                        var recoveryExec = await ExecuteRecoveryAction(recoveryResult.RecoveryAction);
+                                        if (recoveryExec.Success)
+                                        {
+                                            await Task.Delay(400);
+                                            var retry = await _visionRecovery.FindClickTargetAsync(description, _currentGoal);
+                                            if (retry != null && retry.Success && retry.X > 0 && retry.Y > 0)
+                                            {
+                                                Debug.WriteLine($"[EXECUTOR] Vision retry found target at ({retry.X}, {retry.Y})");
+                                                _automation.Click(retry.X, retry.Y);
+                                                result.Success = true;
+                                                result.Details = $"Vision click after recovery at ({retry.X}, {retry.Y}): {retry.Element}";
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 result.Error = $"Both UIElementFinder and Vision failed to find: {description}";
                             }
                         }
@@ -934,6 +1073,12 @@ namespace Kernel_Agent.Services
                         string goal = step.TryGetProperty("goal", out var goalEl) ? goalEl.GetString() ?? "" : _currentGoal;
                         Debug.WriteLine($"[EXECUTOR] Vision-guided execution for goal: '{goal}'");
                         
+                        if (!IsVisionAllowed())
+                        {
+                            result.Error = "Vision-guided execution is disabled for browser context";
+                            break;
+                        }
+
                         // Use vision recovery to analyze screen and get next action
                         var recovery = await _visionRecovery.AttemptRecoveryAsync(
                             goal, "vision_guided", "LLM planning failed");

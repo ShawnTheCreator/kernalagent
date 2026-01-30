@@ -68,6 +68,8 @@ namespace Kernel_Agent.Services
         private const string KEY_MIN_SPEECH_DURATION_MS = "minSpeechDurationMs";
         private const string KEY_VOICE_LANGUAGE = "voiceLanguage";
 
+        private const string KEY_SESSION_ID = "sessionId";
+
         public static SettingsService Instance
         {
             get
@@ -167,6 +169,25 @@ namespace Kernel_Agent.Services
         }
 
         #endregion
+
+        public string SessionId
+        {
+            get
+            {
+                var existing = GetSetting(KEY_SESSION_ID, "");
+                if (!string.IsNullOrWhiteSpace(existing))
+                    return existing;
+
+                var created = Guid.NewGuid().ToString();
+                SetSetting(KEY_SESSION_ID, created);
+                return created;
+            }
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    SetSetting(KEY_SESSION_ID, value);
+            }
+        }
 
         #region Backend Sync Methods
 

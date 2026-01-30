@@ -25,3 +25,6 @@ requests
 numpy
 pywin32
 wmi
+
+# TTS
+edge-tts

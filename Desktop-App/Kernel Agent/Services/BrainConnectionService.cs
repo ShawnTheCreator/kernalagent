@@ -34,6 +34,7 @@ namespace Kernel_Agent.Services
         public event Action<string>? OnAgentOutput;
         public event Action<string>? OnAgentPrompt;
         public event Action<string, string>? OnAuthSuccess;
+        public event Action<string?, string>? OnActionPlanReceived;
         
         public static BrainConnectionService Instance
         {
@@ -74,7 +75,14 @@ namespace Kernel_Agent.Services
         
         private BrainConnectionService()
         {
-            _sessionId = GetOrCreateSessionId();
+            try
+            {
+                _sessionId = SettingsService.Instance.SessionId;
+            }
+            catch
+            {
+                _sessionId = Guid.NewGuid().ToString();
+            }
             var baseUrl = Environment.GetEnvironmentVariable("BRAIN_WS_URL") ?? "ws://localhost:8000/ws/stream";
             _wsUrl = AppendQuery(baseUrl, $"client_type=csharp&session_id={Uri.EscapeDataString(_sessionId)}");
         }
@@ -251,6 +259,22 @@ namespace Kernel_Agent.Services
 
                     case "action_plan":
                         OnAgentOutput?.Invoke(FormatActionPlan(json.RootElement));
+                        try
+                        {
+                            if (json.RootElement.TryGetProperty("payload", out var payload) &&
+                                payload.TryGetProperty("steps", out var stepsEl))
+                            {
+                                var original = payload.TryGetProperty("original_command", out var oc) ? oc.GetString() : null;
+                                var stepsJson = stepsEl.GetRawText();
+                                if (!string.IsNullOrWhiteSpace(stepsJson))
+                                {
+                                    OnActionPlanReceived?.Invoke(original, stepsJson);
+                                }
+                            }
+                        }
+                        catch
+                        {
+                        }
                         break;
                         
                     case "action":
@@ -351,25 +375,6 @@ namespace Kernel_Agent.Services
             return baseUrl + "?" + query;
         }
 
-        private static string GetOrCreateSessionId()
-        {
-            // Best-effort persistence; LocalSettings may throw depending on thread.
-            try
-            {
-                var settings = ApplicationData.Current.LocalSettings;
-                if (settings.Values.TryGetValue("BrainSessionId", out var existing) && existing is string s && !string.IsNullOrWhiteSpace(s))
-                    return s;
-
-                var created = Guid.NewGuid().ToString();
-                settings.Values["BrainSessionId"] = created;
-                return created;
-            }
-            catch
-            {
-                return Guid.NewGuid().ToString();
-            }
-        }
-        
         /// <summary>
         /// Disconnect from the WebSocket server.
         /// </summary>

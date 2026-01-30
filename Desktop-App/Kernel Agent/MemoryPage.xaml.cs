@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kernel_Agent.Services;
+using Kernel_Agent.DTOs;
 
 namespace Kernel_Agent
 {
