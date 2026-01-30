@@ -177,9 +177,28 @@ Users may have spelling mistakes, typos, or voice recognition errors. You MUST:
       "tool": "tool_name",
       "action": "action_type",
       ...other params
+      "expected": {{
+        "window_title_contains": "string (optional)",
+        "window_title_not_contains": "string (optional)",
+        "element_present": "element name to be findable via UI automation (optional)",
+        "element_not_present": "element name that should disappear (optional)",
+        "textbox_value_contains": "expected text substring after typing (optional)",
+        "focused_element_name_contains": "name/label of the focused control after click/focus (optional)",
+        "timeout_ms": 4000
+      }}
     }}
   ]
 }}
+
+## VERIFICATION (CRITICAL FOR HANDS-FREE ACCURACY)
+- For every action, include an `expected` object whenever possible.
+- Prefer simple, checkable expectations.
+  Examples:
+  - app_launcher/open chrome.exe -> expected.window_title_contains: "chrome"
+  - ui_automation/click_button Save -> expected.element_present: "Save" (or element_not_present if it disappears)
+  - text_input/type "hello" -> expected.textbox_value_contains: "hello"
+  - ui_automation/type_in_element "Search" -> expected.focused_element_name_contains: "search" and expected.textbox_value_contains: "..." (when possible)
+- If you cannot safely predict an expectation, omit `expected`.
 
 ## CRITICAL PARSING RULES:
 1. The word "and" is a SEPARATOR between actions

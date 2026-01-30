@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Net.Http;
 using System.Text;
 using System.Linq;
+using System.Windows.Automation;
 
 namespace Kernel_Agent.Services
 {
@@ -27,6 +28,8 @@ namespace Kernel_Agent.Services
         private const int BASE_DELAY_MS = 100;
         private string _currentGoal = "";  // Track original command for recovery
         private string _lastOpenedApp = ""; // Track last opened app for focus before typing
+
+        private const int DEFAULT_EXPECT_TIMEOUT_MS = 4000;
 
         private enum VisionMode
         {
@@ -260,6 +263,36 @@ namespace Kernel_Agent.Services
 
                 var actionResult = await ExecuteActionAsync(step);
                 result.ActionResults.Add(actionResult);
+
+                // ===== EXPECTED OUTCOME VERIFICATION (Option B) =====
+                if (actionResult.Success)
+                {
+                    var verified = await VerifyExpectedAsync(step, actionResult.Action);
+                    if (!verified)
+                    {
+                        Debug.WriteLine($"[EXECUTOR] Expected outcome verification failed for: {actionResult.Action} - retrying once...");
+
+                        // Retry once (same step) before considering recovery/abort
+                        var retryResult = await ExecuteActionAsync(step);
+                        result.ActionResults.Add(retryResult);
+
+                        if (retryResult.Success)
+                        {
+                            var verifiedRetry = await VerifyExpectedAsync(step, retryResult.Action);
+                            if (!verifiedRetry)
+                            {
+                                Debug.WriteLine($"[EXECUTOR] Verification failed after retry: {retryResult.Action}");
+                                retryResult.Success = false;
+                                retryResult.Error = "Expected outcome not met";
+                                actionResult = retryResult;
+                            }
+                        }
+                        else
+                        {
+                            actionResult = retryResult;
+                        }
+                    }
+                }
                 
                 // Get action details for dialog checking
                 string actionName = "";
@@ -373,6 +406,132 @@ namespace Kernel_Agent.Services
 
             Debug.WriteLine($"[EXECUTOR] Plan completed: {result.ActionResults.Count} actions in {result.TotalExecutionTimeMs}ms");
             return result;
+        }
+
+        private async Task<bool> VerifyExpectedAsync(JsonElement step, string actionName)
+        {
+            try
+            {
+                if (!step.TryGetProperty("expected", out var expectedEl) || expectedEl.ValueKind != JsonValueKind.Object)
+                {
+                    return true; // Backward compatible: no expected -> no verification
+                }
+
+                int timeoutMs = DEFAULT_EXPECT_TIMEOUT_MS;
+                if (expectedEl.TryGetProperty("timeout_ms", out var toEl) && toEl.ValueKind == JsonValueKind.Number)
+                {
+                    try { timeoutMs = toEl.GetInt32(); } catch { }
+                }
+
+                var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+                while (DateTime.UtcNow < deadline)
+                {
+                    if (CheckExpectedOnce(expectedEl))
+                        return true;
+
+                    await Task.Delay(200);
+                }
+
+                return CheckExpectedOnce(expectedEl);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[EXECUTOR] VerifyExpectedAsync error: {ex.Message}");
+                return true; // Do not hard-fail execution due to verifier exceptions
+            }
+        }
+
+        private bool CheckExpectedOnce(JsonElement expectedEl)
+        {
+            try
+            {
+                // 1) Window title expectations
+                if (expectedEl.TryGetProperty("window_title_contains", out var wtEl) && wtEl.ValueKind == JsonValueKind.String)
+                {
+                    var expected = wtEl.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(expected))
+                    {
+                        var current = _visionRecovery.GetForegroundWindowTitle() ?? "";
+                        if (!current.ToLowerInvariant().Contains(expected.ToLowerInvariant()))
+                            return false;
+                    }
+                }
+
+                if (expectedEl.TryGetProperty("window_title_not_contains", out var wtnEl) && wtnEl.ValueKind == JsonValueKind.String)
+                {
+                    var notExpected = wtnEl.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(notExpected))
+                    {
+                        var current = _visionRecovery.GetForegroundWindowTitle() ?? "";
+                        if (current.ToLowerInvariant().Contains(notExpected.ToLowerInvariant()))
+                            return false;
+                    }
+                }
+
+                // 2) Element expectations (UIA)
+                if (expectedEl.TryGetProperty("element_present", out var epEl) && epEl.ValueKind == JsonValueKind.String)
+                {
+                    var name = epEl.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        var elem = _uiFinder.FindElement(name);
+                        if (elem == null)
+                            return false;
+                    }
+                }
+
+                if (expectedEl.TryGetProperty("element_not_present", out var enpEl) && enpEl.ValueKind == JsonValueKind.String)
+                {
+                    var name = enpEl.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        var elem = _uiFinder.FindElement(name);
+                        if (elem != null)
+                            return false;
+                    }
+                }
+
+                // 3) Textbox value expectation (best-effort)
+                if (expectedEl.TryGetProperty("textbox_value_contains", out var tvEl) && tvEl.ValueKind == JsonValueKind.String)
+                {
+                    var expectedText = tvEl.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(expectedText))
+                    {
+                        var focused = AutomationElement.FocusedElement;
+                        if (focused != null && focused.TryGetCurrentPattern(ValuePattern.Pattern, out object vp))
+                        {
+                            var actual = ((ValuePattern)vp).Current.Value ?? "";
+                            if (!actual.ToLowerInvariant().Contains(expectedText.ToLowerInvariant()))
+                                return false;
+                        }
+                        else
+                        {
+                            // Can't read value -> treat as not verifiable right now
+                            return true;
+                        }
+                    }
+                }
+
+                // 4) Focus expectation (best-effort)
+                if (expectedEl.TryGetProperty("focused_element_name_contains", out var fnEl) && fnEl.ValueKind == JsonValueKind.String)
+                {
+                    var expectedName = fnEl.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(expectedName))
+                    {
+                        var focused = AutomationElement.FocusedElement;
+                        var actualName = focused != null ? (focused.Current.Name ?? "") : "";
+                        if (!actualName.ToLowerInvariant().Contains(expectedName.ToLowerInvariant()))
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
         }
         
         /// <summary>

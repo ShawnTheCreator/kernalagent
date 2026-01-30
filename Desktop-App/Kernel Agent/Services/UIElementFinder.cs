@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Automation;
 
@@ -18,6 +19,9 @@ namespace Kernel_Agent.Services
     public class UIElementFinder
     {
         private const int SEARCH_TIMEOUT_MS = 5000;
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
         
         /// <summary>
         /// Find a button by its name/text in the active window.
@@ -106,6 +110,15 @@ namespace Kernel_Agent.Services
                         );
                         current = window.FindFirst(TreeScope.Descendants, menuCondition);
                     }
+
+                    if (current == null)
+                    {
+                        current = FindElementContaining(window, ControlType.MenuItem, part);
+                    }
+                    if (current == null)
+                    {
+                        current = FindElementContaining(window, ControlType.Menu, part);
+                    }
                 }
                 else
                 {
@@ -116,6 +129,15 @@ namespace Kernel_Agent.Services
                     // Find child menu item
                     var childCondition = new PropertyCondition(AutomationElement.NameProperty, part);
                     current = current.FindFirst(TreeScope.Descendants, childCondition);
+
+                    if (current == null)
+                    {
+                        current = FindElementContaining(current, ControlType.MenuItem, part);
+                    }
+                    if (current == null)
+                    {
+                        current = FindElementContaining(current, ControlType.Menu, part);
+                    }
                 }
                 
                 if (current == null)
@@ -377,13 +399,28 @@ namespace Kernel_Agent.Services
         {
             try
             {
+                var hwnd = GetForegroundWindow();
+                if (hwnd != IntPtr.Zero)
+                {
+                    try
+                    {
+                        var win = AutomationElement.FromHandle(hwnd);
+                        if (win != null)
+                        {
+                            return win;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 var focused = AutomationElement.FocusedElement;
                 if (focused == null) return null;
-                
-                // Walk up to find the window
+
                 var walker = TreeWalker.ControlViewWalker;
                 var current = focused;
-                
+
                 while (current != null && current != AutomationElement.RootElement)
                 {
                     if (current.Current.ControlType == ControlType.Window)
@@ -392,16 +429,74 @@ namespace Kernel_Agent.Services
                     }
                     current = walker.GetParent(current);
                 }
-                
-                // Fallback: get foreground window by handle
-                return AutomationElement.RootElement;
+
+                return null;
             }
             catch
             {
                 return null;
             }
         }
-        
+
+        private static string NormalizeText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+            var trimmed = value.Trim().ToLowerInvariant();
+            while (trimmed.Contains("  "))
+            {
+                trimmed = trimmed.Replace("  ", " ");
+            }
+            return trimmed;
+        }
+
+        private static int ScoreCandidate(AutomationElement elem, string query)
+        {
+            try
+            {
+                if (elem == null) return int.MinValue;
+
+                var name = NormalizeText(elem.Current.Name);
+                if (string.IsNullOrEmpty(name)) return int.MinValue;
+
+                var q = NormalizeText(query);
+                if (string.IsNullOrEmpty(q)) return int.MinValue;
+
+                int score = 0;
+
+                if (!elem.Current.IsEnabled)
+                    score -= 200;
+                if (elem.Current.IsOffscreen)
+                    score -= 150;
+
+                if (name == q)
+                    score += 1000;
+                else if (name.StartsWith(q))
+                    score += 700;
+                else if (name.Contains(q))
+                    score += 400;
+                else
+                    return int.MinValue;
+
+                score -= Math.Min(100, Math.Abs(name.Length - q.Length));
+
+                var rect = elem.Current.BoundingRectangle;
+                if (!rect.IsEmpty)
+                {
+                    var area = rect.Width * rect.Height;
+                    if (area > 0)
+                    {
+                        score += (int)Math.Min(50, area / 5000);
+                    }
+                }
+
+                return score;
+            }
+            catch
+            {
+                return int.MinValue;
+            }
+        }
+
         private AutomationElement? FindElementContaining(AutomationElement parent, ControlType? type, string nameContains)
         {
             try
@@ -417,14 +512,23 @@ namespace Kernel_Agent.Services
                 }
                 
                 var elements = parent.FindAll(TreeScope.Descendants, condition);
-                
+
+                AutomationElement? best = null;
+                int bestScore = int.MinValue;
+
                 foreach (AutomationElement elem in elements)
                 {
-                    var name = elem.Current.Name?.ToLower() ?? "";
-                    if (name.Contains(nameContains.ToLower()))
+                    var score = ScoreCandidate(elem, nameContains);
+                    if (score > bestScore)
                     {
-                        return elem;
+                        bestScore = score;
+                        best = elem;
                     }
+                }
+
+                if (best != null && bestScore > int.MinValue)
+                {
+                    return best;
                 }
             }
             catch { }

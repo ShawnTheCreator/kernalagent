@@ -285,6 +285,74 @@ def convert_to_executor_action(llm_action: Dict[str, Any]) -> Dict[str, Any]:
     # UI Automation: map path parameter for click_menu
     if "path" in llm_action:
         executor_action["path"] = llm_action["path"]
+
+    # Verification: pass through expected outcomes if provided
+    if "expected" in llm_action and isinstance(llm_action.get("expected"), dict):
+        executor_action["expected"] = llm_action["expected"]
+
+    # ===== AUTO-EXPECTED DEFAULTS (hands-free accuracy) =====
+    # If LLM didn't provide expected, add safe defaults for common actions.
+    if "expected" not in executor_action:
+        try:
+            expected: Dict[str, Any] = {}
+
+            # open_app: expect foreground title contains a stable substring
+            if executor_action.get("action") == "open_app":
+                tgt = (executor_action.get("target") or "").lower().strip()
+                base = tgt.replace(".exe", "")
+                # Keep this conservative: only a small set of known stable substrings
+                stable = {
+                    "chrome": "chrome",
+                    "msedge": "edge",
+                    "firefox": "firefox",
+                    "notepad": "notepad",
+                    "explorer": "file explorer",
+                    "code": "visual studio code",
+                    "wt": "terminal",
+                    "cmd": "command prompt",
+                    "powershell": "powershell",
+                    "calc": "calculator",
+                    "mspaint": "paint",
+                }.get(base)
+
+                if stable:
+                    expected["window_title_contains"] = stable
+                    expected["timeout_ms"] = 7000
+
+            # navigate: expect domain keyword in title (best-effort)
+            if executor_action.get("action") == "navigate":
+                url = (executor_action.get("url") or "").strip().lower()
+                # Extract host-ish token for simple expectations
+                host_token = ""
+                if url.startswith("http"):
+                    try:
+                        from urllib.parse import urlparse
+                        host = urlparse(url).hostname or ""
+                        host = host.replace("www.", "")
+                        host_token = host.split(".")[0] if host else ""
+                    except Exception:
+                        host_token = ""
+                else:
+                    # if url is partial, just take first token
+                    host_token = url.replace("www.", "").split(".")[0]
+
+                if host_token and len(host_token) >= 3:
+                    expected["window_title_contains"] = host_token
+                    expected["timeout_ms"] = 8000
+
+            # search_web: often updates title with query token; too brittle -> skip
+
+            # type_in_element: best-effort focus verification
+            if executor_action.get("action") == "type_in_element":
+                tgt = (executor_action.get("target") or "").strip()
+                if tgt:
+                    expected["focused_element_name_contains"] = tgt
+                    expected["timeout_ms"] = max(expected.get("timeout_ms", 0), 3000)
+
+            if expected:
+                executor_action["expected"] = expected
+        except Exception:
+            pass
     
     return executor_action
 
