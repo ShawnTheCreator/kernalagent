@@ -116,6 +116,12 @@ IMPORTANT: If command matches agent keywords, use agent_task instead of generic 
     - "stop learning" → skill_management, action: stop_recording
     - "do the login thing" → skill_management, action: play_skill, target: "login"
     - "what skills do I have" → skill_management, action: list_skills
+
+18. system_toggle (Hands-free system toggles)
+    - action: "wifi" | "bluetooth" | "airplane_mode"
+    - state: "on" | "off"
+    IMPORTANT: Use this for "turn on/off wifi", "enable bluetooth", "airplane mode on".
+    This should be executed via Quick Settings UI automation on Windows.
 """
 
 # ===== THE CORE PROMPT =====
@@ -184,6 +190,8 @@ Users may have spelling mistakes, typos, or voice recognition errors. You MUST:
         "element_not_present": "element name that should disappear (optional)",
         "textbox_value_contains": "expected text substring after typing (optional)",
         "focused_element_name_contains": "name/label of the focused control after click/focus (optional)",
+        "toggle_target": "toggle name/label for quick settings (optional)",
+        "toggle_state": "on|off expected final toggle state (optional)",
         "timeout_ms": 4000
       }}
     }}

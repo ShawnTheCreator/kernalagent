@@ -526,6 +526,34 @@ namespace Kernel_Agent.Services
                     }
                 }
 
+                // 5) Toggle state expectation (Quick Settings)
+                if (expectedEl.TryGetProperty("toggle_state", out var tsEl) && tsEl.ValueKind == JsonValueKind.String)
+                {
+                    var desired = (tsEl.GetString() ?? "").Trim().ToLowerInvariant();
+                    if (desired == "on" || desired == "off")
+                    {
+                        var targetName = "";
+                        if (expectedEl.TryGetProperty("toggle_target", out var ttEl) && ttEl.ValueKind == JsonValueKind.String)
+                            targetName = ttEl.GetString() ?? "";
+
+                        if (string.IsNullOrWhiteSpace(targetName))
+                            return true; // can't locate target
+
+                        var toggle = _uiFinder.FindButton(targetName) ?? _uiFinder.FindElement(targetName);
+                        if (toggle == null)
+                            return false;
+
+                        var state = _uiFinder.GetToggleState(toggle);
+                        if (state.HasValue)
+                        {
+                            bool isOn = state.Value == ToggleState.On;
+                            bool wantOn = desired == "on";
+                            if (isOn != wantOn)
+                                return false;
+                        }
+                    }
+                }
+
                 return true;
             }
             catch
@@ -1034,6 +1062,79 @@ namespace Kernel_Agent.Services
                     _automation.Scroll(dir);
                     result.Success = true;
                     break;
+
+                // ===== SYSTEM TOGGLES (Quick Settings) =====
+                case "toggle_quick_setting":
+                    {
+                        string settingName = step.TryGetProperty("target", out var snEl) ? (snEl.GetString() ?? "") : "";
+                        string desired = step.TryGetProperty("state", out var stEl) ? (stEl.GetString() ?? "") : "";
+                        desired = desired.Trim().ToLowerInvariant();
+
+                        if (string.IsNullOrWhiteSpace(settingName))
+                        {
+                            result.Success = false;
+                            result.Error = "Missing target for toggle_quick_setting";
+                            break;
+                        }
+
+                        // Open Quick Settings
+                        _automation.Hotkey("win+a");
+                        await Task.Delay(600);
+
+                        // Find the toggle button
+                        var toggle = _uiFinder.FindButton(settingName);
+                        if (toggle == null)
+                        {
+                            // Some builds expose these as non-Button elements; try generic search
+                            toggle = _uiFinder.FindElement(settingName);
+                        }
+
+                        if (toggle == null)
+                        {
+                            result.Success = false;
+                            result.Error = $"Quick Setting not found: {settingName}";
+                            _automation.PressKey("esc");
+                            break;
+                        }
+
+                        // If we can read toggle state and have a desired state, enforce it
+                        var before = _uiFinder.GetToggleState(toggle);
+                        bool hasDesired = desired == "on" || desired == "off";
+
+                        if (hasDesired && before.HasValue)
+                        {
+                            bool isOn = before.Value == ToggleState.On;
+                            bool wantOn = desired == "on";
+                            if (isOn == wantOn)
+                            {
+                                result.Success = true;
+                                _automation.PressKey("esc");
+                                break;
+                            }
+                        }
+
+                        // Toggle
+                        result.Success = _uiFinder.ClickElement(toggle);
+                        await Task.Delay(500);
+
+                        if (result.Success && hasDesired)
+                        {
+                            var after = _uiFinder.GetToggleState(toggle);
+                            if (after.HasValue)
+                            {
+                                bool isOnAfter = after.Value == ToggleState.On;
+                                bool wantOnAfter = desired == "on";
+                                if (isOnAfter != wantOnAfter)
+                                {
+                                    result.Success = false;
+                                    result.Error = $"Toggle did not reach desired state: {desired}";
+                                }
+                            }
+                        }
+
+                        _automation.PressKey("esc");
+                        break;
+                    }
 
                 // ===== VIRTUAL DESKTOP =====
                 case "switch_desktop_left":

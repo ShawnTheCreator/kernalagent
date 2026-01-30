@@ -25,6 +25,7 @@ class ActionSchema(BaseModel):
     x: Optional[int] = None
     y: Optional[int] = None
     direction: Optional[str] = None
+    state: Optional[str] = None
 
 
 # ===== APP NAME ALIASES =====
@@ -223,6 +224,13 @@ TOOL_TO_ACTION_MAP: Dict[str, Dict[str, str]] = {
         "play_skill": "play_skill",
         "list_skills": "list_skills",
     },
+
+    # System toggles (Quick Settings)
+    "system_toggle": {
+        "wifi": "toggle_quick_setting",
+        "bluetooth": "toggle_quick_setting",
+        "airplane_mode": "toggle_quick_setting",
+    },
 }
 
 
@@ -247,6 +255,18 @@ def convert_to_executor_action(llm_action: Dict[str, Any]) -> Dict[str, Any]:
     executor_action = {
         "action": action_name
     }
+
+    # System toggles: derive a stable UI label for Quick Settings
+    if tool == "system_toggle":
+        try:
+            label_map = {
+                "wifi": "Wi-Fi",
+                "bluetooth": "Bluetooth",
+                "airplane_mode": "Airplane mode",
+            }
+            executor_action["target"] = label_map.get(action, action)
+        except Exception:
+            executor_action["target"] = action
     
     # Map parameters
     if "target" in llm_action:
@@ -281,6 +301,9 @@ def convert_to_executor_action(llm_action: Dict[str, Any]) -> Dict[str, Any]:
     
     if "direction" in llm_action:
         executor_action["target"] = llm_action["direction"]  # Map direction to target for scroll
+
+    if "state" in llm_action:
+        executor_action["state"] = llm_action["state"]
     
     # UI Automation: map path parameter for click_menu
     if "path" in llm_action:
@@ -348,6 +371,16 @@ def convert_to_executor_action(llm_action: Dict[str, Any]) -> Dict[str, Any]:
                 if tgt:
                     expected["focused_element_name_contains"] = tgt
                     expected["timeout_ms"] = max(expected.get("timeout_ms", 0), 3000)
+
+            # toggle_quick_setting: verify toggle state when desired state is provided
+            if executor_action.get("action") == "toggle_quick_setting":
+                tgt = (executor_action.get("target") or "").strip()
+                desired = (executor_action.get("state") or "").strip().lower()
+                if tgt:
+                    expected["toggle_target"] = tgt
+                    if desired in ("on", "off"):
+                        expected["toggle_state"] = desired
+                    expected["timeout_ms"] = max(expected.get("timeout_ms", 0), 7000)
 
             if expected:
                 executor_action["expected"] = expected

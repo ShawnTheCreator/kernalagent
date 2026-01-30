@@ -274,6 +274,24 @@ namespace Kernel_Agent.Services
                 return false;
             }
         }
+
+        public ToggleState? GetToggleState(AutomationElement element)
+        {
+            if (element == null) return null;
+
+            try
+            {
+                if (element.TryGetCurrentPattern(TogglePattern.Pattern, out object togglePattern))
+                {
+                    return ((TogglePattern)togglePattern).Current.ToggleState;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
         
         /// <summary>
         /// Type text into an element (if it's a text field).
