@@ -154,6 +154,224 @@ def _try_build_browser_settings_steps(
     return steps
 
 
+def _extract_message_parts(command: str) -> Optional[Dict[str, str]]:
+    cmd = (command or "").strip()
+    if not cmd:
+        return None
+
+    lower = cmd.lower()
+    if not any(term in lower for term in ["send", "message", "text", "dm"]):
+        return None
+
+    patterns = [
+        r"\b(?:send|message|text|dm)\s+(?P<body>.+?)\s+to\s+(?P<recipient>.+)$",
+        r"\b(?:send|message|text|dm)\s+(?P<recipient>.+?)\s+(?:saying|message|text)\s+(?P<body>.+)$",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, cmd, flags=re.IGNORECASE)
+        if match:
+            recipient = (match.group("recipient") or "").strip()
+            body = (match.group("body") or "").strip()
+            if recipient and body:
+                return {"recipient": recipient, "body": body}
+
+    return None
+
+
+def _try_build_messaging_steps(command: str) -> Optional[List[Dict[str, Any]]]:
+    cmd = (command or "").strip()
+    if not cmd:
+        return None
+
+    lower = cmd.lower()
+    platform = None
+    for name in ["whatsapp", "telegram", "discord", "slack"]:
+        if name in lower:
+            platform = name
+            break
+
+    if not platform:
+        return None
+
+    parts = _extract_message_parts(cmd)
+    if not parts:
+        return None
+
+    config = {
+        "whatsapp": {
+            "exe": "whatsapp.exe",
+            "fallback": "https://web.whatsapp.com",
+            "search": None,
+        },
+        "telegram": {
+            "exe": "telegram.exe",
+            "fallback": "https://web.telegram.org",
+            "search": "ctrl+f",
+        },
+        "discord": {
+            "exe": "discord.exe",
+            "fallback": "https://discord.com/app",
+            "search": "ctrl+k",
+        },
+        "slack": {
+            "exe": "slack.exe",
+            "fallback": "https://app.slack.com/client",
+            "search": "ctrl+k",
+        },
+    }
+
+    cfg = config.get(platform)
+    if not cfg:
+        return None
+
+    steps: List[Dict[str, Any]] = [
+        {
+            "action": "open_app",
+            "target": cfg["exe"],
+            "fallback_url": cfg["fallback"],
+        },
+        {"action": "wait", "ms": 2000},
+    ]
+
+    if cfg.get("search"):
+        steps.append({"action": "hotkey", "content": cfg["search"]})
+    else:
+        steps.append({
+            "action": "click_element",
+            "target": "Search",
+            "requires_vision_targeting": True,
+        })
+
+    steps.extend([
+        {"action": "type_text", "content": parts["recipient"]},
+        {"action": "press_key", "content": "enter"},
+        {"action": "wait", "ms": 700},
+        {"action": "type_text", "content": parts["body"]},
+        {"action": "press_key", "content": "enter"},
+    ])
+
+    return steps
+
+
+def _try_build_email_steps(command: str) -> Optional[List[Dict[str, Any]]]:
+    cmd = (command or "").strip()
+    if not cmd:
+        return None
+
+    lower = cmd.lower()
+    if "email" not in lower and "mail" not in lower:
+        return None
+
+    if not any(term in lower for term in ["send", "compose", "draft"]):
+        return None
+
+    to_match = re.search(r"\bto\s+(.+?)(?:\s+subject\b|\s+body\b|$)", cmd, flags=re.IGNORECASE)
+    subject_match = re.search(r"\bsubject\s+(.+?)(?:\s+body\b|$)", cmd, flags=re.IGNORECASE)
+    body_match = re.search(r"\bbody\s+(.+)$", cmd, flags=re.IGNORECASE)
+
+    recipient = (to_match.group(1).strip() if to_match else "")
+    subject = (subject_match.group(1).strip() if subject_match else "")
+    body = (body_match.group(1).strip() if body_match else "")
+
+    if not recipient or not body:
+        return None
+
+    uses_outlook = "outlook" in lower
+    uses_gmail = "gmail" in lower
+
+    steps: List[Dict[str, Any]] = []
+
+    if uses_outlook:
+        steps.extend([
+            {
+                "action": "open_app",
+                "target": "outlook.exe",
+                "fallback_url": "https://outlook.office.com/mail/",
+            },
+            {"action": "wait", "ms": 2000},
+            {"action": "hotkey", "content": "ctrl+n"},
+            {"action": "wait", "ms": 700},
+            {"action": "type_text", "content": recipient},
+            {"action": "press_key", "content": "tab"},
+            {"action": "type_text", "content": subject},
+            {"action": "press_key", "content": "tab"},
+            {"action": "press_key", "content": "tab"},
+            {"action": "type_text", "content": body},
+            {"action": "hotkey", "content": "ctrl+enter"},
+        ])
+    else:
+        gmail_url = "https://mail.google.com/" if uses_gmail or "mail" in lower else "https://mail.google.com/"
+        steps.extend([
+            {"action": "open_app", "target": "chrome.exe"},
+            {"action": "navigate", "url": gmail_url},
+            {"action": "wait", "ms": 2200},
+            {
+                "action": "click_element",
+                "target": "Compose",
+                "requires_vision_targeting": True,
+            },
+            {"action": "wait", "ms": 600},
+            {"action": "type_text", "content": recipient},
+            {"action": "press_key", "content": "tab"},
+            {"action": "type_text", "content": subject},
+            {"action": "press_key", "content": "tab"},
+            {"action": "type_text", "content": body},
+            {"action": "hotkey", "content": "ctrl+enter"},
+        ])
+
+    return steps
+
+
+def _try_build_login_steps(command: str) -> Optional[List[Dict[str, Any]]]:
+    cmd = (command or "").strip()
+    if not cmd:
+        return None
+
+    lower = cmd.lower()
+    if "login" not in lower and "sign in" not in lower:
+        return None
+
+    platform = None
+    for name in ["whatsapp", "telegram", "discord", "slack", "outlook", "gmail", "email"]:
+        if name in lower:
+            platform = "email" if name in ("email", "gmail", "outlook") else name
+            break
+
+    if not platform:
+        return None
+
+    try:
+        from app.core.user_credentials import load_user_credentials
+    except Exception:
+        return None
+
+    credentials = load_user_credentials()
+    creds = credentials.get(platform)
+    if not creds:
+        return None
+
+    login_targets = {
+        "whatsapp": ("whatsapp.exe", "https://web.whatsapp.com"),
+        "telegram": ("telegram.exe", "https://web.telegram.org"),
+        "discord": ("discord.exe", "https://discord.com/login"),
+        "slack": ("slack.exe", "https://slack.com/signin"),
+        "email": ("outlook.exe", "https://outlook.office.com/mail/"),
+    }
+
+    exe, fallback = login_targets.get(platform, ("chrome.exe", ""))
+
+    return [
+        {"action": "open_app", "target": exe, "fallback_url": fallback},
+        {"action": "wait", "ms": 2000},
+        {"action": "click_element", "target": "Email", "requires_vision_targeting": True},
+        {"action": "type_text", "content": creds.get("email", "")},
+        {"action": "press_key", "content": "tab"},
+        {"action": "type_text", "content": creds.get("password", "")},
+        {"action": "press_key", "content": "enter"},
+    ]
+
+
 async def plan_command(
     command: str,
     session_id: str,
@@ -214,6 +432,33 @@ async def plan_command(
             return browser_settings
     except Exception as e:
         logger.warning(f"[PLANNER] Browser settings shortcut failed: {e}, continuing with LLM...")
+
+    try:
+        login_steps = _try_build_login_steps(command)
+        if login_steps:
+            logger.info(f"[PLANNER] Using deterministic login plan ({len(login_steps)} steps)")
+            update_session(session_id, command, login_steps[0])
+            return login_steps
+    except Exception as e:
+        logger.warning(f"[PLANNER] Login planner failed: {e}, continuing with LLM...")
+
+    try:
+        messaging_steps = _try_build_messaging_steps(command)
+        if messaging_steps:
+            logger.info(f"[PLANNER] Using deterministic messaging plan ({len(messaging_steps)} steps)")
+            update_session(session_id, command, messaging_steps[0])
+            return messaging_steps
+    except Exception as e:
+        logger.warning(f"[PLANNER] Messaging planner failed: {e}, continuing with LLM...")
+
+    try:
+        email_steps = _try_build_email_steps(command)
+        if email_steps:
+            logger.info(f"[PLANNER] Using deterministic email plan ({len(email_steps)} steps)")
+            update_session(session_id, command, email_steps[0])
+            return email_steps
+    except Exception as e:
+        logger.warning(f"[PLANNER] Email planner failed: {e}, continuing with LLM...")
     
     # ===== Step 1: Check Contextual Commands =====
     if is_contextual_command(command):

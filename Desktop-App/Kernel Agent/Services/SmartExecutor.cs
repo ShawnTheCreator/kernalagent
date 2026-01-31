@@ -753,6 +753,24 @@ namespace Kernel_Agent.Services
                             // Wait for app window to be ready
                             await Task.Delay(500);
                         }
+                        else if (step.TryGetProperty("fallback_url", out var fallbackEl) && fallbackEl.ValueKind == JsonValueKind.String)
+                        {
+                            var fallbackUrl = fallbackEl.GetString() ?? "";
+                            if (!string.IsNullOrWhiteSpace(fallbackUrl))
+                            {
+                                Debug.WriteLine($"[EXECUTOR] App open failed, falling back to web: {fallbackUrl}");
+                                if (_automation.OpenApplication("chrome.exe"))
+                                {
+                                    await Task.Delay(800);
+                                    _automation.Hotkey("ctrl+l");
+                                    await Task.Delay(120);
+                                    _automation.TypeIntoApp(fallbackUrl);
+                                    _automation.PressKey("enter");
+                                    result.Success = true;
+                                    result.Details = "Fallback to web";
+                                }
+                            }
+                        }
                     }
                     break;
 

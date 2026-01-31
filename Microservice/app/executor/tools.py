@@ -63,6 +63,12 @@ APP_ALIASES: Dict[str, str] = {
     # Media
     "spotify": "spotify",
     "vlc": "vlc",
+
+    # Messaging
+    "whatsapp": "whatsapp",
+    "telegram": "telegram",
+    "discord": "discord",
+    "slack": "slack",
 }
 
 
