@@ -7,6 +7,7 @@ import websockets
 import base64
 import json
 import os
+import pytest
 
 # Create a simple test image if it doesn't exist
 TEST_IMAGE_PATH = os.path.join(os.path.dirname(__file__), "..", "test_screenshot.png")
@@ -27,28 +28,33 @@ def get_test_image() -> str:
 
 async def test_brain():
     """Test the WebSocket connection and AI response."""
-    uri = "wss://kernalagent.onrender.com/ws/stream"
+    uri = os.getenv("KERNAL_WS_URL")
+    if not uri:
+        pytest.skip("KERNAL_WS_URL not set; skipping external WebSocket integration test")
     
     print("[TEST] Connecting to Kernal Agent Brain...")
-    async with websockets.connect(uri) as websocket:
+    try:
+        async with websockets.connect(uri) as websocket:
         
-        # Send intent
-        print("[TEST] Sending Intent...")
-        await websocket.send(json.dumps({
-            "type": "intent_update",
-            "payload": "Find the File menu and click it."
-        }))
+            # Send intent
+            print("[TEST] Sending Intent...")
+            await websocket.send(json.dumps({
+                "type": "intent_update",
+                "payload": "Find the File menu and click it."
+            }))
 
-        # Send mock frame
-        print("[TEST] Sending Mock Frame...")
-        await websocket.send(json.dumps({
-            "type": "frame",
-            "image": get_test_image()
-        }))
+            # Send mock frame
+            print("[TEST] Sending Mock Frame...")
+            await websocket.send(json.dumps({
+                "type": "frame",
+                "image": get_test_image()
+            }))
 
-        # Wait for response
-        response = await websocket.recv()
-        print(f"[RESPONSE] Brain Responded: {response}")
+            # Wait for response
+            response = await websocket.recv()
+            print(f"[RESPONSE] Brain Responded: {response}")
+    except Exception as e:
+        pytest.skip(f"WebSocket endpoint unavailable: {e}")
 
 
 if __name__ == "__main__":

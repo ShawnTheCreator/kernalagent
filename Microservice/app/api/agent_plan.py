@@ -944,8 +944,25 @@ async def get_action_plan_v2(request: PlanRequest):
     source = "conversational_brain"
     
     logger.info(f"📥 [v2] Command: '{request.command}'")
-    
+
     try:
+        if request.context:
+            try:
+                from app.memory.context import get_session
+
+                session = get_session(session_id)
+                focused_window = request.context.get("focused_window") or request.context.get("active_window")
+                focused_process = request.context.get("focused_process") or request.context.get("active_app")
+
+                if focused_window or focused_process:
+                    session.update_focused_window(focused_window or "", focused_process or "")
+
+                active_app = request.context.get("active_app")
+                if isinstance(active_app, str) and active_app:
+                    session.active_app = active_app.replace(".exe", "")
+            except Exception as e:
+                logger.warning(f"[v2] Context sync failed: {e}")
+
         # Step 1: Call Conversational Brain first
         from app.brain.conversational_brain import ConversationalBrain, BrainOutputType
         

@@ -12,6 +12,7 @@ import re
 import logging
 import sys
 from typing import List, Dict, Any, Optional
+from urllib.parse import quote_plus
 
 # Setup logger for this module
 logger = logging.getLogger(__name__)
@@ -28,9 +29,9 @@ def preprocess_command(command: str) -> str:
     """
     if " and " not in command.lower():
         return command
-    
+
     original = command
-    
+
     # Pattern: "type X and [verb]" → "type X. Then [verb]"
     command = re.sub(
         r'\btype\s+([^a]+?)\s+and\s+(press|click|save|open)',
@@ -38,11 +39,119 @@ def preprocess_command(command: str) -> str:
         command,
         flags=re.IGNORECASE
     )
-    
+
     if command != original:
         logger.info(f"[PREPROCESSOR] '{original}' → '{command}'")
-    
+
     return command
+
+
+def _try_build_entertainment_steps(command: str) -> Optional[List[Dict[str, Any]]]:
+    cmd = (command or "").strip()
+    if not cmd:
+        return None
+
+    lower = cmd.lower().strip()
+
+    media_only_map = {
+        "pause": "media_play_pause",
+        "play": "media_play_pause",
+        "play pause": "media_play_pause",
+        "play/pause": "media_play_pause",
+        "resume": "media_play_pause",
+        "next": "media_next",
+        "next song": "media_next",
+        "next track": "media_next",
+        "previous": "media_previous",
+        "previous song": "media_previous",
+        "previous track": "media_previous",
+        "stop": "media_stop",
+        "stop music": "media_stop",
+    }
+    if lower in media_only_map:
+        return [{"action": media_only_map[lower]}]
+
+    is_spotify = "spotify" in lower
+    is_yt_music = any(k in lower for k in ["yt music", "youtube music", "youtubemusic", "music.youtube", "music youtube"])
+    is_yt = "youtube" in lower or "yt " in (lower + " ")
+
+    if not lower.startswith("play "):
+        return None
+
+    if not (is_spotify or is_yt_music or is_yt):
+        return None
+
+    query = re.sub(r"^play\s+", "", cmd, flags=re.IGNORECASE).strip()
+
+    query = re.sub(r"\b(on|in|from)\s+(youtube\s+music|yt\s+music|youtube|spotify)\b", "", query, flags=re.IGNORECASE).strip()
+    query = re.sub(r"\b(youtube\s+music|yt\s+music|youtube|spotify)\b", "", query, flags=re.IGNORECASE).strip()
+    query = query.strip(" -–—:")
+
+    if not query:
+        return None
+
+    if is_spotify:
+        search_url = f"https://open.spotify.com/search/{quote_plus(query)}"
+        click_target = "first result"
+    else:
+        search_url = f"https://music.youtube.com/search?q={quote_plus(query)}"
+        click_target = "first song" if ("song" in lower or "music" in lower or is_yt_music) else "first result"
+
+    return [
+        {"action": "open_app", "target": "chrome.exe"},
+        {"action": "navigate", "url": search_url},
+        {"action": "wait", "ms": 2200},
+        {
+            "action": "click_element",
+            "target": click_target,
+            "requires_vision_targeting": True,
+        },
+        {"action": "wait", "ms": 1200},
+    ]
+
+
+def _try_build_browser_settings_steps(
+    command: str,
+    context: Optional[Dict[str, Any]] = None,
+) -> Optional[List[Dict[str, Any]]]:
+    cmd = (command or "").strip()
+    if not cmd:
+        return None
+
+    lower = cmd.lower().strip()
+    if "settings" not in lower:
+        return None
+
+    browser = None
+    if any(term in lower for term in ["chrome", "google chrome", "chrome browser"]):
+        browser = "chrome"
+    elif any(term in lower for term in ["edge", "microsoft edge", "msedge"]):
+        browser = "msedge"
+    elif "browser" in lower:
+        pref = ((context or {}).get("preferences") or {}).get("default_browser")
+        if pref in ("chrome", "edge", "msedge", "firefox"):
+            browser = "msedge" if pref == "edge" else pref
+
+    if not browser:
+        return None
+
+    focused = ((context or {}).get("focused_process") or "").lower()
+    active_app = ((context or {}).get("active_app") or "").lower()
+    has_browser_focus = browser in focused or browser in active_app
+
+    steps: List[Dict[str, Any]] = []
+    if not has_browser_focus:
+        steps.append({"action": "open_app", "target": f"{browser}.exe"})
+        steps.append({"action": "wait", "ms": 700})
+
+    steps.extend([
+        {"action": "hotkey", "content": "ctrl+l"},
+        {"action": "type_text", "content": f"{browser}://settings"},
+        {"action": "press_key", "content": "enter"},
+        {"action": "wait", "ms": 1500},
+    ])
+
+    return steps
 
 
 async def plan_command(
@@ -85,6 +194,26 @@ async def plan_command(
     
     # ===== Step 0: Preprocess Command =====
     command = preprocess_command(command)
+
+    context = get_context_for_llm(session_id)
+
+    try:
+        entertainment = _try_build_entertainment_steps(command)
+        if entertainment:
+            logger.info(f"[PLANNER] Using deterministic entertainment plan ({len(entertainment)} steps)")
+            update_session(session_id, command, entertainment[0])
+            return entertainment
+    except Exception as e:
+        logger.warning(f"[PLANNER] Entertainment planner failed: {e}, continuing with LLM...")
+
+    try:
+        browser_settings = _try_build_browser_settings_steps(command, context)
+        if browser_settings:
+            logger.info(f"[PLANNER] Using browser settings shortcut ({len(browser_settings)} steps)")
+            update_session(session_id, command, browser_settings[0])
+            return browser_settings
+    except Exception as e:
+        logger.warning(f"[PLANNER] Browser settings shortcut failed: {e}, continuing with LLM...")
     
     # ===== Step 1: Check Contextual Commands =====
     if is_contextual_command(command):
@@ -253,10 +382,7 @@ async def plan_command(
         logger.info(f"[PLANNER] Returning {len(cached_plan)} cached steps")
         return cached_plan
     
-    # ===== Step 3: Get Context for LLM =====
-    context = get_context_for_llm(session_id)
-    
-    # ===== Step 4: Analyze Intent with LLM =====
+    # ===== Step 3: Analyze Intent with LLM =====
     logger.info(f"[PLANNER] Cache miss - calling LLM to analyze intent...")
     plan = await analyze_command(command, context)
     

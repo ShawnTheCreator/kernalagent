@@ -487,7 +487,19 @@ namespace Kernel_Agent.Services
                     }
                 }
 
-                var requestBody = new { command = commandText, session_id = _persistentSessionId };
+                Dictionary<string, object>? contextPayload = null;
+                try
+                {
+                    var contextManager = ContextManager.Instance;
+                    contextManager.RefreshContext();
+                    contextPayload = contextManager.GetContextDict();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[CONTEXT] Failed to build context payload: {ex.Message}");
+                }
+
+                var requestBody = new { command = commandText, session_id = _persistentSessionId, context = contextPayload };
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
