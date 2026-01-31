@@ -39,6 +39,18 @@ namespace Kernel_Agent.Services
             NonBrowserOnly
         }
 
+        private string GetSessionId()
+        {
+            try
+            {
+                return SettingsService.Instance.SessionId;
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
         private static VisionMode? _visionMode;
         
         // Actions that may trigger dialogs and need proactive checking
@@ -330,17 +342,20 @@ namespace Kernel_Agent.Services
                             
                             if (!string.IsNullOrEmpty(_currentGoal) && IsVisionAllowed())
                             {
+                                _context.RefreshContext();
+                                var openedApps = string.IsNullOrEmpty(_lastOpenedApp) ? Array.Empty<string>() : new[] { _lastOpenedApp };
                                 var recoveryResult = await _visionRecovery.AttemptRecoveryAsync(
                                     _currentGoal,
                                     actionName,
                                     $"Dialog appeared: {dialogInfo.Title}",
                                     dialogInfo.Title,
-                                    "",
-                                    null,
+                                    _context.ActiveProcessName,
+                                    openedApps,
                                     stepIndex,
                                     totalSteps,
                                     actionName,
-                                    true
+                                    true,
+                                    GetSessionId()
                                 );
                                 
                                 if (recoveryResult.Success && recoveryResult.RecoveryAction != null)
@@ -362,10 +377,20 @@ namespace Kernel_Agent.Services
                     // Attempt vision-based recovery
                     if (!string.IsNullOrEmpty(_currentGoal) && IsVisionAllowed())
                     {
+                        _context.RefreshContext();
+                        var openedApps = string.IsNullOrEmpty(_lastOpenedApp) ? Array.Empty<string>() : new[] { _lastOpenedApp };
                         var recoveryResult = await _visionRecovery.AttemptRecoveryAsync(
-                            _currentGoal, 
-                            actionResult.Action, 
-                            actionResult.Error ?? "unknown"
+                            _currentGoal,
+                            actionResult.Action,
+                            actionResult.Error ?? "unknown",
+                            _context.ActiveWindowTitle,
+                            _context.ActiveProcessName,
+                            openedApps,
+                            stepIndex,
+                            totalSteps,
+                            actionResult.Action,
+                            false,
+                            GetSessionId()
                         );
                         
                         if (recoveryResult.Success && recoveryResult.RecoveryAction != null)
@@ -674,6 +699,11 @@ namespace Kernel_Agent.Services
                     case "wait":
                         await Task.Delay(1000);
                         result.Success = true;
+                        break;
+
+                    case "none":
+                        result.Success = true;
+                        result.Details = "Recovery not needed";
                         break;
                         
                     default:
@@ -1340,8 +1370,21 @@ namespace Kernel_Agent.Services
                         }
 
                         // Use vision recovery to analyze screen and get next action
+                        _context.RefreshContext();
+                        var openedApps = string.IsNullOrEmpty(_lastOpenedApp) ? Array.Empty<string>() : new[] { _lastOpenedApp };
                         var recovery = await _visionRecovery.AttemptRecoveryAsync(
-                            goal, "vision_guided", "LLM planning failed");
+                            goal,
+                            "vision_guided",
+                            "LLM planning failed",
+                            _context.ActiveWindowTitle,
+                            _context.ActiveProcessName,
+                            openedApps,
+                            0,
+                            0,
+                            "vision_guided",
+                            false,
+                            GetSessionId()
+                        );
                         
                         if (recovery.Success && recovery.RecoveryAction != null)
                         {
@@ -1593,7 +1636,8 @@ namespace Kernel_Agent.Services
             int stepNumber = 0,
             int totalSteps = 0,
             string lastAction = "",
-            bool lastResult = true)
+            bool lastResult = true,
+            string? sessionId = null)
         {
             try
             {
@@ -1612,6 +1656,7 @@ namespace Kernel_Agent.Services
                     original_command = originalCommand,
                     failed_action = failedAction,
                     error_reason = errorReason,
+                    session_id = sessionId,
                     // Context for Vision
                     focused_window = focusedWindow,
                     focused_process = focusedProcess,

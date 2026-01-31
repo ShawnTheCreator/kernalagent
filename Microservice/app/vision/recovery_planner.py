@@ -161,7 +161,8 @@ class RecoveryPlanner:
         analysis = self.vision.analyze_screen(
             screenshot_base64=screenshot,
             original_goal=original_goal,
-            failed_action=failed_action
+            failed_action=failed_action,
+            context_text=get_execution_context().to_prompt_context()
         )
         
         if not analysis.get("success"):
@@ -172,7 +173,20 @@ class RecoveryPlanner:
                 "message": analysis.get("error", "Vision analysis failed")
             }
         
-        # Step 3: Check confidence
+        # Step 3: Check if goal is already achieved
+        if analysis.get("goal_achieved") is True:
+            logger.info("[RECOVERY] Vision indicates goal already achieved")
+            return {
+                "success": True,
+                "recovery_possible": True,
+                "analysis": analysis,
+                "recovery_action": {"action": "none", "reasoning": "Goal already achieved"},
+                "confidence": analysis.get("confidence", 0),
+                "blocker": analysis.get("blocker"),
+                "current_state": analysis.get("current_state"),
+            }
+
+        # Step 4: Check confidence
         confidence = analysis.get("confidence", 0)
         if confidence < MIN_CONFIDENCE:
             logger.warning(f"[RECOVERY] Low confidence ({confidence}), asking user")
@@ -185,7 +199,7 @@ class RecoveryPlanner:
                 "message": "Unsure how to proceed. Please help."
             }
         
-        # Step 4: Get recovery action
+        # Step 5: Get recovery action
         recovery_action = self.vision.get_recovery_action(analysis, original_goal)
         
         if not recovery_action:

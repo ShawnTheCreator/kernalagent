@@ -58,7 +58,8 @@ class VisionAnalyzer:
         self, 
         screenshot_base64: str, 
         original_goal: str,
-        failed_action: Optional[str] = None
+        failed_action: Optional[str] = None,
+        context_text: str = ""
     ) -> Dict[str, Any]:
         """
         Analyze screenshot to understand current UI state.
@@ -79,7 +80,7 @@ class VisionAnalyzer:
             }
         
         # Build task-aware prompt
-        prompt = self._build_analysis_prompt(original_goal, failed_action)
+        prompt = self._build_analysis_prompt(original_goal, failed_action, context_text=context_text)
         
         # Retry logic for API rate limits
         import time
@@ -236,7 +237,7 @@ JSON ONLY, NO MARKDOWN:"""
             recovery["x"] = suggested.get("x", 0)
             recovery["y"] = suggested.get("y", 0)
         elif action == "type_text":
-            recovery["content"] = suggested.get("target", "")
+            recovery["content"] = suggested.get("content") or suggested.get("target", "")
         elif action == "open_app":
             recovery["target"] = suggested.get("target", "")
         elif action == "press_key":
