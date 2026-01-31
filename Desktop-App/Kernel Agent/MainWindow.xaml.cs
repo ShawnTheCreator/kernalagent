@@ -156,7 +156,7 @@ namespace Kernel_Agent
                         this.DispatcherQueue.TryEnqueue(() =>
                         {
                             if (!string.IsNullOrWhiteSpace(msg))
-                                AddToThoughtLogDedupe($"Agent: {msg}");
+                                AddToThoughtLogDedupe($"Agent: {SummarizeAgentText(msg)}");
                         });
                     };
 
@@ -1641,56 +1641,38 @@ namespace Kernel_Agent
             try
             {
                 AddToThoughtLog($"[Agent] Executing: {command}");
-                _ = Task.Run(async () =>
-                {
-                    try { await BrainConnectionService.Instance.SendIntentAsync(command); } catch { }
-                });
-                var result = await ApiService.Instance.SendCommandAsync(command);
-                if (!string.IsNullOrWhiteSpace(result))
-                {
-                    string? agentText = null;
-                    try
+                var kernelResult = await Kernel_Agent.Kernel.KernelOrchestrator.Instance.RunAsync(
+                    command,
+                    _smartExecutor,
+                    (current, total, action, target) =>
                     {
-                        using var doc = JsonDocument.Parse(result);
-                        var root = doc.RootElement;
-                        if (root.ValueKind == JsonValueKind.Object)
+                        var stepDisplay = string.IsNullOrWhiteSpace(target)
+                            ? action
+                            : $"{action} {target}";
+                        UpdateStepProgress(current, total, stepDisplay);
+                    }
+                );
+
+                var agentText = SummarizeAgentText(kernelResult.AgentText);
+                if (!string.IsNullOrWhiteSpace(agentText))
+                {
+                    AddToThoughtLogDedupe($"Agent: {agentText}");
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
                         {
-                            if (root.TryGetProperty("reply", out var replyEl))
+                            var audioBytes = await ApiService.Instance.GenerateSpeechAsync(agentText);
+                            if (audioBytes.Length > 0)
                             {
-                                agentText = replyEl.GetString();
-                            }
-                            else if (root.TryGetProperty("message", out var msgEl))
-                            {
-                                agentText = msgEl.GetString();
+                                await AudioPlaybackService.Instance.PlayAudioAsync(audioBytes);
                             }
                         }
-                    }
-                    catch
-                    {
-                    }
-
-                    agentText ??= result;
-                    if (!string.IsNullOrWhiteSpace(agentText))
-                    {
-                        AddToThoughtLogDedupe($"Agent: {agentText}");
-                        
-                        // ===== TTS: Speak agent reply =====
-                        _ = Task.Run(async () =>
+                        catch (Exception ex)
                         {
-                            try
-                            {
-                                var audioBytes = await ApiService.Instance.GenerateSpeechAsync(agentText);
-                                if (audioBytes.Length > 0)
-                                {
-                                    await AudioPlaybackService.Instance.PlayAudioAsync(audioBytes);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"[TTS] Playback error: {ex.Message}");
-                            }
-                        });
-                    }
+                            System.Diagnostics.Debug.WriteLine($"[TTS] Playback error: {ex.Message}");
+                        }
+                    });
                 }
             }
             catch (Exception ex)
@@ -1722,15 +1704,10 @@ namespace Kernel_Agent
             };
         }
 
-        #endregion
-
-        #region Theme Support
-
         private void InitializeTheme()
         {
             try
             {
-                // Init ThemeManager
                 var theme = ThemeManager.Instance.CurrentTheme;
                 ThemeManager.Instance.ApplyTheme(theme);
                 System.Diagnostics.Debug.WriteLine("[THEME] ✓ Theme initialized!");
@@ -1738,6 +1715,74 @@ namespace Kernel_Agent
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[THEME] ❌ Init failed: {ex.Message}");
+            }
+        }
+
+        private string SummarizeAgentText(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text ?? "";
+            }
+
+            var trimmed = text.Trim();
+            if (!trimmed.StartsWith("{") || !trimmed.Contains("\"steps\"", StringComparison.OrdinalIgnoreCase))
+            {
+                return text;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("steps", out var stepsEl) || stepsEl.ValueKind != JsonValueKind.Array)
+                {
+                    return text;
+                }
+
+                var count = stepsEl.GetArrayLength();
+                if (count <= 0)
+                {
+                    return "No actions to run.";
+                }
+
+                var first = stepsEl[0];
+                var action = first.TryGetProperty("action", out var actionEl) ? (actionEl.GetString() ?? "") : "";
+                var target = first.TryGetProperty("target", out var targetEl) ? (targetEl.GetString() ?? "") : "";
+                var content = first.TryGetProperty("content", out var contentEl) ? (contentEl.GetString() ?? "") : "";
+
+                if (string.Equals(action, "vision_analyze", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (string.Equals(target, "buttons", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return "Analyzing the screen for clickable buttons.";
+                    }
+
+                    return "Analyzing the current screen.";
+                }
+
+                if (count == 1)
+                {
+                    var nice = FormatActionName(action);
+                    if (!string.IsNullOrWhiteSpace(target))
+                    {
+                        return $"{nice}: {target}.";
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(content))
+                    {
+                        return $"{nice}: {content}.";
+                    }
+
+                    return $"{nice}.";
+                }
+
+                return $"Executing {count} actions.";
+            }
+            catch
+            {
+                return text;
             }
         }
 

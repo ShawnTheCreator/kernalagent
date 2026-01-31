@@ -10,6 +10,7 @@ Features:
 """
 import asyncio
 import uuid
+import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Optional
 
@@ -17,7 +18,11 @@ from app.engine.vision import analyze_frame
 from app.db.skills_repo import increment_skill_usage, get_skill_by_id
 from app.agent.memory import AgentMemory
 from app.api.ws_manager import manager
+from app.vision.frame_differ import FrameDiffer
+from app.core.smart_rate_limiter import get_rate_limiter
+from app.core.model_router import get_model_router, TaskType, TaskComplexity
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Global state
@@ -25,6 +30,11 @@ CURRENT_INTENT: str = "Waiting for command..."
 PREVIOUS_ACTION: Optional[dict] = None
 PREVIOUS_FRAME: Optional[str] = None
 AGENT_MEMORY: AgentMemory = AgentMemory()
+
+# Gemini 3 Upgrade Components
+FRAME_DIFFER: FrameDiffer = FrameDiffer(stability_threshold=0.95)
+RATE_LIMITER = get_rate_limiter()
+MODEL_ROUTER = get_model_router()
 
 
 @router.websocket("/ws/stream")
@@ -230,7 +240,27 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None, clien
                 if CURRENT_INTENT == "Waiting for command...":
                     continue 
                     
-                print(f"[VISION] Analyzing Frame for: {CURRENT_INTENT}")
+                current_frame = data.get("image")
+                
+                # === FRAME DIFFER: Skip stable frames to reduce API calls ===
+                is_significant, similarity = FRAME_DIFFER.is_significant_change(current_frame)
+                
+                if not is_significant:
+                    logger.info(f"[VISION] Frame stable (similarity: {similarity:.3f}), skipping API call")
+                    # Send no-change response to C#
+                    await websocket.send_json({
+                        "type": "action",
+                        "payload": {
+                            "action_type": "WAIT",
+                            "reason": "UI unchanged",
+                            "confidence": 1.0
+                        }
+                    })
+                    await asyncio.sleep(1.0)  # Short wait before next frame
+                    continue
+                
+                logger.info(f"[VISION] Significant UI change detected (similarity: {similarity:.3f})")
+                logger.info(f"[VISION] Analyzing Frame for: {CURRENT_INTENT}")
                 
                 # Broadcast analyzing state to frontends
                 await manager.broadcast_to_frontends({
@@ -239,17 +269,52 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None, clien
                     "title": "Analyzing Screen",
                     "description": f"Vision processing for: {CURRENT_INTENT}"
                 })
-
-                current_frame = data.get("image")
-
-                action_plan = await asyncio.to_thread(
-                    analyze_frame,
-                    current_frame,
-                    CURRENT_INTENT,
-                    PREVIOUS_ACTION,
-                    PREVIOUS_FRAME,
-                    AGENT_MEMORY
-                )
+                
+                # === RATE LIMITER: Prevent 429 errors ===
+                user_id = session_id or "anonymous"
+                if not await RATE_LIMITER.acquire(user_id, tier="free"):
+                    logger.warning(f"[RATE_LIMIT] User {user_id} rate limited")
+                    await websocket.send_json({
+                        "type": "error",
+                        "payload": {
+                            "message": "Rate limit exceeded. Please wait a moment.",
+                            "retry_after": 5
+                        }
+                    })
+                    await asyncio.sleep(5.0)
+                    continue
+                
+                # === VISION PROCESSING with rate limit tracking ===
+                try:
+                    action_plan = await asyncio.to_thread(
+                        analyze_frame,
+                        current_frame,
+                        CURRENT_INTENT,
+                        PREVIOUS_ACTION,
+                        PREVIOUS_FRAME,
+                        AGENT_MEMORY
+                    )
+                    
+                    # Report success to rate limiter
+                    RATE_LIMITER.report_success()
+                    
+                except Exception as e:
+                    # Check if it's a 429 error
+                    if "429" in str(e) or "rate" in str(e).lower():
+                        RATE_LIMITER.report_429()
+                        logger.error(f"[RATE_LIMIT] 429 error from Gemini API")
+                        await websocket.send_json({
+                            "type": "error",
+                            "payload": {
+                                "message": "API rate limit hit. Backing off.",
+                                "retry_after": 10
+                            }
+                        })
+                        await asyncio.sleep(10.0)
+                        continue
+                    else:
+                        logger.error(f"[VISION] Error: {e}")
+                        raise
 
                 # Track skill usage if skill was used
                 if action_plan.get("skill_id") and action_plan.get("strategy") == "REUSE_SKILL":

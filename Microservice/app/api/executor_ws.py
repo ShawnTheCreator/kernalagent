@@ -28,6 +28,9 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict, Optional, Any
 
 from app.executor import CommandGenerator, Target, Command, ActionType
+from app.core.smart_rate_limiter import get_rate_limiter
+from app.core.model_router import get_model_router, TaskType, TaskComplexity
+from app.reasoning.thinking_planner import get_thinking_planner
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -38,27 +41,73 @@ router = APIRouter()
 # Active sessions
 SESSIONS: Dict[str, dict] = {}
 
+# Gemini 3 Upgrade Components
+RATE_LIMITER = get_rate_limiter()
+MODEL_ROUTER = get_model_router()
+THINKING_PLANNER = get_thinking_planner()
 
-async def parse_command_llm(command: str, session_id: str) -> list:
+
+async def parse_command_llm(command: str, session_id: str, user_id: str = "anonymous") -> list:
     """
-    Parse command using LLM-first planner with fallback to deterministic.
-    This replaces the old simple parse_command function.
+    Parse command using LLM-first planner with model router and rate limiting.
+    Routes to thinking planner for complex tasks, fast planner for simple tasks.
     """
     logger.info(f"[WS/EXECUTOR] Parsing command with LLM: '{command}'")
     
+    # === RATE LIMITER: Check if we can make API call ===
+    if not await RATE_LIMITER.acquire(user_id, tier="free"):
+        logger.warning(f"[WS/EXECUTOR] Rate limited for user {user_id}")
+        return [{
+            "action": "error",
+            "message": "Rate limit exceeded. Please wait a moment.",
+            "retry_after": 5
+        }]
+    
     try:
-        from app.reasoning.llm_planner import plan_command_with_fallback
+        # === MODEL ROUTER: Determine task complexity ===
+        # Estimate complexity from command text
+        complexity = MODEL_ROUTER._estimate_complexity(command)
+        logger.info(f"[WS/EXECUTOR] Task complexity: {complexity.name}")
         
-        # Use the LLM planner
-        steps = await plan_command_with_fallback(command, session_id)
+        # === THINKING PLANNER for complex tasks ===
+        if complexity == TaskComplexity.COMPLEX:
+            logger.info(f"[WS/EXECUTOR] Using THINKING PLANNER for complex task")
+            
+            plan = await THINKING_PLANNER.plan_complex_workflow(
+                intent=command,
+                context={
+                    "session_id": session_id,
+                    "user_id": user_id
+                }
+            )
+            
+            if plan and "steps" in plan:
+                RATE_LIMITER.report_success()
+                logger.info(f"[WS/EXECUTOR] Thinking planner returned {len(plan['steps'])} steps")
+                return plan["steps"]
         
-        logger.info(f"[WS/EXECUTOR] LLM returned {len(steps)} steps")
-        for i, step in enumerate(steps):
-            logger.info(f"[WS/EXECUTOR]   Step {i+1}: {step}")
-        
-        return steps
+        # === STANDARD PLANNER for simple/medium tasks ===
+        else:
+            logger.info(f"[WS/EXECUTOR] Using STANDARD planner for {complexity.name} task")
+            from app.reasoning.llm_planner import plan_command_with_fallback
+            
+            steps = await plan_command_with_fallback(command, session_id)
+            RATE_LIMITER.report_success()
+            
+            logger.info(f"[WS/EXECUTOR] Standard planner returned {len(steps)} steps")
+            return steps
         
     except Exception as e:
+        # Check for 429 rate limit errors
+        if "429" in str(e) or "rate" in str(e).lower():
+            RATE_LIMITER.report_429()
+            logger.error(f"[WS/EXECUTOR] 429 error from Gemini API")
+            return [{
+                "action": "error",
+                "message": "API rate limit hit. Backing off.",
+                "retry_after": 10
+            }]
+        
         logger.error(f"[WS/EXECUTOR] LLM planner failed: {e}")
         import traceback
         traceback.print_exc()
@@ -168,10 +217,12 @@ async def executor_websocket(websocket: WebSocket):
             elif msg_type == "command":
                 command_text = data.get("payload", "")
                 command_id = data.get("command_id", str(uuid.uuid4())[:8])
+                user_id = data.get("user_id", session_id)  # Use session_id as fallback user_id
                 
                 logger.info(f"[WS/EXECUTOR] ========================================")
                 logger.info(f"[WS/EXECUTOR] 📥 COMMAND RECEIVED: '{command_text}'")
                 logger.info(f"[WS/EXECUTOR] Command ID: {command_id}")
+                logger.info(f"[WS/EXECUTOR] User ID: {user_id}")
                 logger.info(f"[WS/EXECUTOR] ========================================")
                 
                 # Send status update
@@ -181,8 +232,8 @@ async def executor_websocket(websocket: WebSocket):
                     "command_id": command_id
                 })
                 
-                # Parse command into steps using LLM planner
-                steps = await parse_command_llm(command_text, session_id)
+                # Parse command into steps using LLM planner with rate limiting and model routing
+                steps = await parse_command_llm(command_text, session_id, user_id)
                 
                 # Track in session
                 SESSIONS[session_id]["last_command"] = command_text

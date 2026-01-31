@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Microsoft.UI.Xaml.Media;
@@ -21,6 +22,7 @@ namespace Kernel_Agent.Services
         // Development: localhost, Production: kernalagent.onrender.com
         private static readonly string BASE_URL = "http://localhost:8000/";
         private static HttpClient? _httpClient;
+        private static HttpClient? _kernelHttpClient;
         private static ApiService? _instance;
         
         // Persistent session ID for memory continuity (stored via SettingsService)
@@ -47,6 +49,13 @@ namespace Kernel_Agent.Services
             };
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+            _kernelHttpClient = new HttpClient
+            {
+                BaseAddress = new Uri(BASE_URL),
+                Timeout = TimeSpan.FromSeconds(60)
+            };
+            _kernelHttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
             try
             {
                 _persistentSessionId = SettingsService.Instance.SessionId;
@@ -57,6 +66,72 @@ namespace Kernel_Agent.Services
             }
 
             System.Diagnostics.Debug.WriteLine($"[API_SERVICE] Using persistent session_id: {_persistentSessionId}");
+        }
+
+        private async Task<string?> PostKernelJsonWithRetryAsync(string relativeUrl, string primaryJson, string? fallbackJson, int timeoutSeconds, int maxRetries)
+        {
+            if (_kernelHttpClient == null)
+            {
+                return null;
+            }
+
+            Exception? lastEx = null;
+
+            for (var attempt = 0; attempt <= maxRetries; attempt++)
+            {
+                var useFallback = attempt > 0 && !string.IsNullOrWhiteSpace(fallbackJson);
+                var jsonToSend = useFallback ? (fallbackJson ?? primaryJson) : primaryJson;
+
+                try
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+                    using var content = new StringContent(jsonToSend, Encoding.UTF8, "application/json");
+
+                    var response = await _kernelHttpClient.PostAsync(relativeUrl, content, cts.Token);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var err = await response.Content.ReadAsStringAsync();
+                        System.Diagnostics.Debug.WriteLine($"[KERNEL] {relativeUrl} failed: {(int)response.StatusCode} {response.ReasonPhrase} :: {err}");
+
+                        if (attempt < maxRetries)
+                        {
+                            await Task.Delay(250 * (attempt + 1));
+                            continue;
+                        }
+
+                        return null;
+                    }
+
+                    return await response.Content.ReadAsStringAsync();
+                }
+                catch (TaskCanceledException ex)
+                {
+                    lastEx = ex;
+                    System.Diagnostics.Debug.WriteLine($"[KERNEL] {relativeUrl} timeout/canceled (attempt {attempt + 1}/{maxRetries + 1}): {ex.Message}");
+                }
+                catch (HttpRequestException ex)
+                {
+                    lastEx = ex;
+                    System.Diagnostics.Debug.WriteLine($"[KERNEL] {relativeUrl} http error (attempt {attempt + 1}/{maxRetries + 1}): {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    lastEx = ex;
+                    System.Diagnostics.Debug.WriteLine($"[KERNEL] {relativeUrl} exception (attempt {attempt + 1}/{maxRetries + 1}): {ex.Message}");
+                }
+
+                if (attempt < maxRetries)
+                {
+                    await Task.Delay(250 * (attempt + 1));
+                }
+            }
+
+            if (lastEx != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[KERNEL] {relativeUrl} final failure: {lastEx.Message}");
+            }
+
+            return null;
         }
         // Thread-safe in-memory token cache (ApplicationData throws from background threads)
         private static string? _cachedAuthToken = null;
@@ -466,12 +541,25 @@ namespace Kernel_Agent.Services
         {
             try
             {
+                return await GetPlanV2RawAsync(commandText);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[COMMAND] Error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<string?> GetPlanV2RawAsync(string commandText)
+        {
+            try
+            {
                 // ========================================
                 // Call Python Brain backend (LLM-First v2)
-                // Production: Render
+                // Returns plan JSON ONLY. Execution must be done by Kernel/SmartExecutor.
                 // ========================================
                 var pythonBackendUrl = "http://localhost:8000/api/agent/plan/v2";
-                
+
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(30);
 
@@ -502,71 +590,138 @@ namespace Kernel_Agent.Services
                 var requestBody = new { command = commandText, session_id = _persistentSessionId, context = contextPayload };
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-                
+
                 System.Diagnostics.Debug.WriteLine($"[COMMAND] Sending to Python: {commandText}");
-                
+
                 var response = await client.PostAsync(pythonBackendUrl, content);
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     System.Diagnostics.Debug.WriteLine($"[COMMAND] Error: {response.StatusCode}");
                     return null;
                 }
-                
+
                 var responseJson = await response.Content.ReadAsStringAsync();
                 System.Diagnostics.Debug.WriteLine($"[COMMAND] Full Response JSON: {responseJson}");
-                
-                // Parse and execute using SmartExecutor for reliable execution
-                using var doc = JsonDocument.Parse(responseJson);
-                var root = doc.RootElement;
-                
-                if (root.TryGetProperty("steps", out JsonElement stepsElement))
-                {
-                    var steps = stepsElement.EnumerateArray().ToList();
-                    System.Diagnostics.Debug.WriteLine($"[COMMAND] Found {steps.Count} steps");
-                    
-                    // Conversation brain: single "conversation" step → don't execute, surface message
-                    if (steps.Count == 1 && steps[0].TryGetProperty("action", out var aEl) &&
-                        string.Equals(aEl.GetString(), "conversation", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var conversationContent = steps[0].TryGetProperty("content", out var cEl) ? cEl.GetString() ?? "" : "";
-                        System.Diagnostics.Debug.WriteLine($"[COMMAND] DETECTED CONVERSATION: {conversationContent}");
-                        _ = Task.Run(async () => await BrainConnectionService.Instance.ReportActionAsync("conversation", "", conversationContent));
-                        return conversationContent;
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Not a conversation - steps count: {steps.Count}");
-                        if (steps.Count > 0 && steps[0].TryGetProperty("action", out var debugEl))
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[COMMAND] First step action: {debugEl.GetString()}");
-                        }
-                    }
-                    
-                    // Use SmartExecutor for retry logic, timing, and VISION RECOVERY
-                    var executor = new SmartExecutor();
-                    executor.SetOriginalGoal(commandText);  // Pass original command for vision recovery
-                    if (root.TryGetProperty("confidence", out var confEl) && confEl.ValueKind == JsonValueKind.Number)
-                    {
-                        executor.SetPlanConfidence(confEl.GetDouble());
-                    }
-                    var result = await executor.ExecutePlanAsync(stepsElement);
-                    
-                    if (!result.Success)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Plan execution failed: {result.Error}");
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[COMMAND] Plan completed: {result.ActionResults.Count} actions in {result.TotalExecutionTimeMs}ms");
-                    }
-                }
-                
                 return responseJson;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[COMMAND] Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[COMMAND] GetPlanV2RawAsync error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<string?> GetKernelInterpretationRawAsync(string commandText)
+        {
+            try
+            {
+                Dictionary<string, object>? contextPayload = null;
+                try
+                {
+                    var contextManager = ContextManager.Instance;
+                    contextManager.RefreshContext();
+                    contextPayload = contextManager.GetContextDict();
+                }
+                catch
+                {
+                }
+
+                string primaryJson;
+                string? fallbackJson = null;
+
+                try
+                {
+                    var requestBody = new { command = commandText, session_id = _persistentSessionId, context = contextPayload };
+                    primaryJson = JsonSerializer.Serialize(requestBody);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[KERNEL] Interpret serialize failed (with context): {ex.Message}");
+                    var requestBody = new { command = commandText, session_id = _persistentSessionId, context = (object?)null };
+                    primaryJson = JsonSerializer.Serialize(requestBody);
+                }
+
+                if (contextPayload != null)
+                {
+                    try
+                    {
+                        var requestBodyFallback = new { command = commandText, session_id = _persistentSessionId, context = (object?)null };
+                        fallbackJson = JsonSerializer.Serialize(requestBodyFallback);
+                    }
+                    catch
+                    {
+                        fallbackJson = null;
+                    }
+                }
+
+                return await PostKernelJsonWithRetryAsync("api/kernel/interpret", primaryJson, fallbackJson, timeoutSeconds: 15, maxRetries: 2);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[KERNEL] Interpret exception: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<string?> GetKernelPlanRawAsync(string commandText, string interpretationJson)
+        {
+            try
+            {
+                Dictionary<string, object>? contextPayload = null;
+                try
+                {
+                    var contextManager = ContextManager.Instance;
+                    contextManager.RefreshContext();
+                    contextPayload = contextManager.GetContextDict();
+                }
+                catch
+                {
+                }
+
+                JsonElement interpEl;
+                try
+                {
+                    interpEl = JsonSerializer.Deserialize<JsonElement>(interpretationJson);
+                }
+                catch
+                {
+                    interpEl = new JsonElement();
+                }
+
+                string primaryJson;
+                string? fallbackJson = null;
+
+                try
+                {
+                    var requestBody = new { command = commandText, interpretation = interpEl, session_id = _persistentSessionId, context = contextPayload };
+                    primaryJson = JsonSerializer.Serialize(requestBody);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[KERNEL] Plan serialize failed (with context): {ex.Message}");
+                    var requestBody = new { command = commandText, interpretation = interpEl, session_id = _persistentSessionId, context = (object?)null };
+                    primaryJson = JsonSerializer.Serialize(requestBody);
+                }
+
+                if (contextPayload != null)
+                {
+                    try
+                    {
+                        var requestBodyFallback = new { command = commandText, interpretation = interpEl, session_id = _persistentSessionId, context = (object?)null };
+                        fallbackJson = JsonSerializer.Serialize(requestBodyFallback);
+                    }
+                    catch
+                    {
+                        fallbackJson = null;
+                    }
+                }
+
+                return await PostKernelJsonWithRetryAsync("api/kernel/plan", primaryJson, fallbackJson, timeoutSeconds: 30, maxRetries: 2);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[KERNEL] Plan exception: {ex.Message}");
                 return null;
             }
         }
@@ -870,6 +1025,64 @@ namespace Kernel_Agent.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[TTS] Speech generation error: {ex.Message}");
                 return Array.Empty<byte>();
+            }
+        }
+
+        // Memory API methods
+        public async Task<string> GetMemoryPatternsAsync(string? intent = null, double minSuccessRate = 0.7, int minUsageCount = 2, int limit = 10)
+        {
+            try
+            {
+                var queryParams = new List<string>();
+                if (!string.IsNullOrEmpty(intent))
+                    queryParams.Add($"intent={Uri.EscapeDataString(intent)}");
+                queryParams.Add($"min_success_rate={minSuccessRate}");
+                queryParams.Add($"min_usage_count={minUsageCount}");
+                queryParams.Add($"limit={limit}");
+
+                var url = $"{MICROSERVICE_URL}/api/memory/patterns";
+                if (queryParams.Count > 0)
+                    url += "?" + string.Join("&", queryParams);
+
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                var response = await client.GetAsync(url);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var err = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[MEMORY] Failed to get patterns: {err}");
+                    return "{}";
+                }
+
+                return await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MEMORY] Error getting patterns: {ex.Message}");
+                return "{}";
+            }
+        }
+
+        public async Task<string> GetMemoryStatsAsync()
+        {
+            try
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                var response = await client.GetAsync($"{MICROSERVICE_URL}/api/memory/stats");
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var err = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[MEMORY] Failed to get stats: {err}");
+                    return "{}";
+                }
+
+                return await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MEMORY] Error getting stats: {ex.Message}");
+                return "{}";
             }
         }
     }

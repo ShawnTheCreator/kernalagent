@@ -244,7 +244,7 @@ namespace Kernel_Agent
 
             if (newX != pos.X || newY != pos.Y)
             {
-                _appWindow.Move(new PointInt32(newX, newY));
+                _appWindow?.Move(new PointInt32(newX, newY));
             }
         }
 

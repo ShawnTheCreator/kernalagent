@@ -10,6 +10,11 @@ Supports flexible/fuzzy command matching for typos.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
+import os
+import json
+import shlex
+import subprocess
+import requests
 import uuid
 import re
 import time
@@ -47,6 +52,9 @@ logger = logging.getLogger("agent")
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
+
+kernel_router = APIRouter(prefix="/api/kernel", tags=["kernel"])
+
 # ===== MODELS =====
 
 class PlanRequest(BaseModel):
@@ -57,11 +65,404 @@ class PlanRequest(BaseModel):
     context: Optional[Dict[str, Any]] = None
 
 
+class InterpretRequest(BaseModel):
+    """Request for local interpreter (Gemma) to produce strict JSON intent/entities/confidence."""
+    command: str
+    session_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+
+
+class BatchInterpretRequest(BaseModel):
+    commands: List[str]
+    context: Optional[Dict[str, Any]] = None
+
+
+class InterpretResponse(BaseModel):
+    intent: str
+    entities: Dict[str, Any] = {}
+    capabilities_needed: List[str] = []
+    confidence: float = 0.0
+    risk: str = "low"
+
+
+class BatchInterpretItem(BaseModel):
+    command: str
+    ok: bool
+    output: Optional[InterpretResponse] = None
+    error: Optional[str] = None
+
+
+class BatchInterpretResponse(BaseModel):
+    results: List[BatchInterpretItem]
+
+
+class KernelPlanRequest(BaseModel):
+    """Request for Gemini planner. Interpreter output is provided; planner must only return steps."""
+    command: str
+    interpretation: Dict[str, Any]
+    session_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+    available_capabilities: Optional[List[str]] = None
+
+
+class KernelPlanResponse(BaseModel):
+    steps: List[Dict[str, Any]]
+    confidence: Optional[float] = None
+
+
 class MemorySummaryRequest(BaseModel):
     """Request for memory summary."""
     session_id: str
     limit: int = 50
     include_types: Optional[List[str]] = None
+
+
+def _simple_local_interpret(command: str) -> InterpretResponse:
+    """Temporary local interpreter stub.
+
+    This establishes the strict contract (intent/entities/confidence) and keeps planning separate.
+    Replace internals with real Gemma invocation.
+    """
+    cmd = (command or "").strip()
+    lower = cmd.lower()
+
+    intent = "unknown"
+    entities: Dict[str, Any] = {}
+    caps: List[str] = []
+    confidence = 0.55
+    risk = "low"
+
+    if any(k in lower for k in ["shutdown", "delete", "format", "wipe"]):
+        risk = "high"
+
+    if any(k in lower for k in ["open", "launch", "start"]):
+        intent = "OPEN_APP"
+        caps = ["app_launcher"]
+    elif any(k in lower for k in ["click", "press"]):
+        intent = "CLICK_UI"
+        caps = ["ui_automation", "vision_targeting"]
+    elif "type" in lower:
+        intent = "TYPE_TEXT"
+        caps = ["text_input"]
+    elif any(k in lower for k in ["analyze", "scan", "find all"]):
+        intent = "SCREEN_ANALYZE"
+        caps = ["vision_analyze"]
+
+    return InterpretResponse(
+        intent=intent,
+        entities=entities,
+        capabilities_needed=caps,
+        confidence=confidence,
+        risk=risk,
+    )
+
+
+def _validate_interpretation_dict(obj: Any) -> Optional[InterpretResponse]:
+    if not isinstance(obj, dict):
+        return None
+
+    lowered_keys = {str(k).lower() for k in obj.keys()}
+    if "steps" in lowered_keys or "plan" in lowered_keys or "actions" in lowered_keys:
+        return None
+
+    intent = obj.get("intent")
+    if not isinstance(intent, str) or not intent.strip():
+        return None
+
+    entities = obj.get("entities")
+    if entities is None:
+        entities = {}
+    if not isinstance(entities, dict):
+        return None
+
+    caps = obj.get("capabilities_needed")
+    if caps is None:
+        caps = []
+    if not isinstance(caps, list):
+        return None
+    caps = [str(x) for x in caps if x is not None]
+
+    confidence = obj.get("confidence", 0.0)
+    try:
+        confidence = float(confidence)
+    except Exception:
+        confidence = 0.0
+    if confidence < 0:
+        confidence = 0.0
+    if confidence > 1:
+        confidence = 1.0
+
+    risk = obj.get("risk", "low")
+    if not isinstance(risk, str) or not risk.strip():
+        risk = "low"
+    risk = risk.strip().lower()
+    if risk not in ["low", "medium", "high"]:
+        risk = "low"
+
+    return InterpretResponse(
+        intent=intent.strip(),
+        entities=entities,
+        capabilities_needed=caps,
+        confidence=confidence,
+        risk=risk,
+    )
+
+
+def _load_gemma_examples(limit: int = 6) -> List[Dict[str, Any]]:
+    path = os.getenv("GEMMA_EXAMPLES_FILE", "logs/gemma_examples.jsonl")
+    if not path:
+        return []
+
+    try:
+        if not os.path.exists(path):
+            return []
+        with open(path, "r", encoding="utf-8") as f:
+            lines = [ln for ln in f.readlines() if ln.strip()]
+
+        examples: List[Dict[str, Any]] = []
+        for ln in reversed(lines):
+            try:
+                obj = json.loads(ln)
+            except Exception:
+                continue
+            if not isinstance(obj, dict):
+                continue
+            cmd = obj.get("command")
+            out = obj.get("output")
+            if not isinstance(cmd, str) or not cmd.strip():
+                continue
+            if not isinstance(out, dict):
+                continue
+            if not isinstance(out.get("intent"), str) or not str(out.get("intent") or "").strip():
+                continue
+            examples.append({"command": cmd.strip(), "output": out})
+            if len(examples) >= max(1, limit):
+                break
+        examples.reverse()
+        return examples
+    except Exception:
+        return []
+
+
+def _format_gemma_few_shot(examples: List[Dict[str, Any]]) -> str:
+    if not examples:
+        return ""
+
+    blocks: List[str] = []
+    for ex in examples:
+        cmd = ex.get("command")
+        out = ex.get("output")
+        if not isinstance(cmd, str) or not isinstance(out, dict):
+            continue
+        try:
+            out_json = json.dumps(out, ensure_ascii=False)
+        except Exception:
+            continue
+        blocks.append(f"Example Input: {cmd}\nExample Output: {out_json}")
+
+    if not blocks:
+        return ""
+    return "\n\n".join(blocks) + "\n\n"
+
+
+def _extract_first_json_object(text: str) -> Optional[Dict[str, Any]]:
+    if not text:
+        return None
+
+    s = text.strip()
+    start = s.find("{")
+    if start < 0:
+        return None
+
+    depth = 0
+    for i in range(start, len(s)):
+        ch = s[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = s[start : i + 1]
+                try:
+                    obj = json.loads(candidate)
+                    if isinstance(obj, dict):
+                        return obj
+                except Exception:
+                    return None
+    return None
+
+
+def _call_gemma_http(prompt: str) -> Optional[Dict[str, Any]]:
+    base_url = os.getenv("GEMMA_HTTP_URL", "").strip()
+    if not base_url:
+        return None
+
+    mode = (os.getenv("GEMMA_HTTP_MODE", "ollama") or "ollama").strip().lower()
+    timeout_s = float(os.getenv("GEMMA_TIMEOUT_SECONDS", "10") or "10")
+
+    try:
+        if mode == "ollama":
+            model = os.getenv("GEMMA_MODEL", "gemma")
+            url = base_url.rstrip("/") + "/api/generate"
+            resp = requests.post(
+                url,
+                json={"model": model, "prompt": prompt, "stream": False},
+                timeout=timeout_s,
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            text = data.get("response") if isinstance(data, dict) else None
+            if not isinstance(text, str):
+                return None
+            return _extract_first_json_object(text)
+
+        if mode == "openai":
+            url = base_url.rstrip("/")
+            resp = requests.post(
+                url,
+                json={"prompt": prompt},
+                timeout=timeout_s,
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            if isinstance(data, dict):
+                if "intent" in data:
+                    return data
+                msg = data.get("message")
+                if isinstance(msg, str):
+                    return _extract_first_json_object(msg)
+            return None
+    except Exception:
+        return None
+
+    return None
+
+
+def _call_gemma_cli(prompt: str) -> Optional[Dict[str, Any]]:
+    exe = (os.getenv("GEMMA_CLI_EXE", "") or "").strip()
+    if not exe:
+        return None
+
+    args_raw = os.getenv("GEMMA_CLI_ARGS", "") or ""
+    args = shlex.split(args_raw) if args_raw.strip() else []
+    timeout_s = float(os.getenv("GEMMA_TIMEOUT_SECONDS", "10") or "10")
+
+    try:
+        proc = subprocess.run(
+            [exe] + args,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+        )
+        if proc.returncode != 0:
+            return None
+        return _extract_first_json_object(proc.stdout)
+    except Exception:
+        return None
+
+
+def _gemma_interpret(command: str, context: Optional[Dict[str, Any]] = None) -> Optional[InterpretResponse]:
+    ctx = context or {}
+    active_window = ""
+    try:
+        active_window = str(ctx.get("active_window") or "")
+    except Exception:
+        active_window = ""
+
+    examples = _load_gemma_examples(limit=int(os.getenv("GEMMA_FEWSHOT_LIMIT", "6") or "6"))
+    few_shot = _format_gemma_few_shot(examples)
+
+    prompt = (
+        "Return ONLY valid JSON.\n"
+        "You are a local interpreter.\n"
+        "Do NOT plan. Do NOT output steps. Do NOT explain.\n"
+        "Learn from the examples. Match the schema exactly.\n"
+        "Output schema:\n"
+        "{\n"
+        "  \"intent\": \"...\",\n"
+        "  \"entities\": { ... },\n"
+        "  \"capabilities_needed\": [ ... ],\n"
+        "  \"confidence\": 0.0,\n"
+        "  \"risk\": \"low|medium|high\"\n"
+        "}\n"
+        + ("Examples:\n" + few_shot if few_shot else "")
+        + f"Active window: {active_window}\n"
+        + f"User command: {command}\n"
+    )
+
+    obj = _call_gemma_http(prompt)
+    if obj is None:
+        obj = _call_gemma_cli(prompt)
+    if obj is None:
+        return None
+
+    return _validate_interpretation_dict(obj)
+
+
+@kernel_router.post("/interpret", response_model=InterpretResponse)
+async def kernel_interpret(request: InterpretRequest):
+    """Local interpreter endpoint (Gemma).
+
+    STRICT RULES:
+    - Must return JSON only
+    - Must NOT return steps/plans
+    - Must NOT execute
+    """
+    try:
+        gemma_result = _gemma_interpret(request.command, request.context)
+        if gemma_result is not None:
+            return gemma_result
+        return _simple_local_interpret(request.command)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@kernel_router.post("/interpret/batch", response_model=BatchInterpretResponse)
+async def kernel_interpret_batch(request: BatchInterpretRequest):
+    results: List[BatchInterpretItem] = []
+
+    try:
+        for cmd in request.commands or []:
+            if not isinstance(cmd, str) or not cmd.strip():
+                results.append(BatchInterpretItem(command=str(cmd), ok=False, error="empty_command"))
+                continue
+
+            try:
+                gemma_result = _gemma_interpret(cmd, request.context)
+                if gemma_result is None:
+                    gemma_result = _simple_local_interpret(cmd)
+                results.append(BatchInterpretItem(command=cmd, ok=True, output=gemma_result))
+            except Exception as ex:
+                results.append(BatchInterpretItem(command=cmd, ok=False, error=str(ex)))
+
+        return BatchInterpretResponse(results=results)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@kernel_router.post("/plan", response_model=KernelPlanResponse)
+async def kernel_plan(request: KernelPlanRequest):
+    """Gemini planner endpoint.
+
+    Inputs:
+    - raw command
+    - interpreter output (intent/entities/confidence)
+    - available capabilities (optional)
+
+    Output:
+    - steps only (executor schema)
+    """
+    try:
+        from app.reasoning.llm_planner import plan_command_with_fallback
+
+        session_id = request.session_id or str(uuid.uuid4())
+        steps = await plan_command_with_fallback(request.command, session_id)
+        return KernelPlanResponse(steps=steps, confidence=request.interpretation.get("confidence"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class MemorySearchRequest(BaseModel):
@@ -1099,7 +1500,7 @@ async def find_click_target_vision(request: ClickTargetRequest) -> Dict[str, Any
         else:
             return {
                 "target_found": False,
-                "message": "Target not found with OpenCV, will fall back to Gemini"
+                "message": "Target not found with OpenCV"
             }
         
     except Exception as e:
@@ -1180,7 +1581,7 @@ async def get_action_plan_v2(request: PlanRequest):
             )
         
         # Step 3: Handle ACT responses (automation) WITH MEMORY LOGGING
-        elif brain_output.type == BrainOutputType.ACT and brain_output.confidence > 0.8:
+        elif brain_output.type == BrainOutputType.ACT:
             logger.info(f"[v2] ACT (conf={brain_output.confidence}), calling planner")
             
             from app.reasoning.llm_planner import plan_command_with_fallback
@@ -1206,9 +1607,9 @@ async def get_action_plan_v2(request: PlanRequest):
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
         
-        # Step 4: Low confidence ACT - ask for clarification
+        # Step 4: Low confidence non-ACT - ask for clarification
         else:
-            logger.info(f"[v2] Low confidence ACT ({brain_output.confidence}), asking for clarification")
+            logger.info(f"[v2] Non-ACT response ({brain_output.type}, conf={brain_output.confidence}), asking for clarification")
             return PlanResponse(
                 session_id=session_id,
                 steps=[
@@ -1302,23 +1703,11 @@ async def attempt_vision_recovery(request: RecoveryRequest) -> RecoveryResponse:
             error_reason=request.error_reason or "unknown"
         )
         
-        # BIDIRECTIONAL: Feed Vision observations back to LLM context
-        if result.get("success") and result.get("current_state"):
-            from app.memory.context import get_session
-            session = get_session(request.session_id or "default")
-            session.add_vision_observation(result.get("current_state", ""))
-            if request.focused_window:
-                session.update_focused_window(
-                    request.focused_window or "",
-                    request.focused_process or ""
-                )
-            logger.info(f"[RECOVERY] Vision→LLM: {result.get('current_state')}")
-        
         if result.get("success"):
             logger.info(f"✅ [RECOVERY] Suggested: {result.get('recovery_action', {}).get('action')}")
         else:
             logger.warning(f"⚠️ [RECOVERY] Failed: {result.get('message')}")
-        
+
         return RecoveryResponse(
             success=result.get("success", False),
             recovery_possible=result.get("recovery_possible", False),

@@ -16,37 +16,67 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Literal, Tuple
 import logging
 import uuid
-import torch
-import open_clip
-import torch.nn.functional as F
 
-from .firebase_client import get_firestore_client
+# Optional imports for embedding-based semantic search
+try:
+    import torch
+    import open_clip
+    import torch.nn.functional as F
+    _EMBEDDINGS_AVAILABLE = True
+except ImportError:
+    _EMBEDDINGS_AVAILABLE = False
+    torch = None
+    open_clip = None
+    F = None
+
+# Lazy import Firebase to avoid startup failures
+_firestore_client = None
+
+def _get_firestore():
+    """Lazy load Firestore client."""
+    global _firestore_client
+    if _firestore_client is None:
+        try:
+            from .firebase_client import get_firestore_client
+            _firestore_client = get_firestore_client()
+        except Exception as e:
+            logger.warning(f"[TIMELINE] Firestore not available: {e}")
+            _firestore_client = "unavailable"
+    return _firestore_client if _firestore_client != "unavailable" else None
 
 logger = logging.getLogger(__name__)
 
-_EMBEDDING_MODEL: Optional[torch.nn.Module] = None
+_EMBEDDING_MODEL: Optional[Any] = None
 _EMBEDDING_TOKENIZER = None
-_EMBEDDING_DEVICE: Optional[torch.device] = None
+_EMBEDDING_DEVICE: Optional[Any] = None
 
 
-def _get_embedding_model() -> Tuple[torch.nn.Module, Any, torch.device]:
+def _get_embedding_model() -> Tuple[Any, Any, Any]:
     """Lazy-load the embedding model for semantic memory search."""
     global _EMBEDDING_MODEL, _EMBEDDING_TOKENIZER, _EMBEDDING_DEVICE
+
+    if not _EMBEDDINGS_AVAILABLE:
+        logger.debug("[TIMELINE] Embeddings not available (torch/open_clip not installed)")
+        return None, None, None
 
     if _EMBEDDING_MODEL is not None and _EMBEDDING_TOKENIZER is not None and _EMBEDDING_DEVICE is not None:
         return _EMBEDDING_MODEL, _EMBEDDING_TOKENIZER, _EMBEDDING_DEVICE
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model, _, _ = open_clip.create_model_and_transforms("ViT-B-32", pretrained="openai")
-    tokenizer = open_clip.get_tokenizer("ViT-B-32")
-    model.eval().to(device)
+    try:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model, _, _ = open_clip.create_model_and_transforms("ViT-B-32", pretrained="openai")
+        tokenizer = open_clip.get_tokenizer("ViT-B-32")
+        model.eval().to(device)
 
-    _EMBEDDING_MODEL = model
-    _EMBEDDING_TOKENIZER = tokenizer
-    _EMBEDDING_DEVICE = device
-    logger.info("[TIMELINE] Loaded embedding model for semantic search")
+        _EMBEDDING_MODEL = model
+        _EMBEDDING_TOKENIZER = tokenizer
+        _EMBEDDING_DEVICE = device
+        logger.info("[TIMELINE] Loaded embedding model for semantic search")
 
-    return model, tokenizer, device
+        return model, tokenizer, device
+    except Exception as e:
+        logger.warning(f"[TIMELINE] Failed to load embedding model: {e}")
+        return None, None, None
 
 
 def _build_embedding_text(content: str, metadata: Optional[Dict[str, Any]]) -> str:
@@ -64,9 +94,14 @@ def _compute_embedding(text: str) -> List[float]:
     """Compute a normalized embedding vector for semantic search."""
     if not text:
         return []
+    
+    if not _EMBEDDINGS_AVAILABLE:
+        return []
 
     try:
         model, tokenizer, device = _get_embedding_model()
+        if model is None or tokenizer is None or device is None:
+            return []
         tokens = tokenizer([text]).to(device)
         with torch.no_grad():
             embedding = model.encode_text(tokens)
@@ -113,14 +148,33 @@ _LOCAL_TIMELINE = {}
 
 
 def list_local_session_ids() -> List[str]:
-    """Return session IDs stored in local in-memory timeline."""
-    return list(_LOCAL_TIMELINE.keys())
+    """Return session IDs stored in local storage (in-memory + SQLite)."""
+    session_ids = set(_LOCAL_TIMELINE.keys())
+    
+    # Also query SQLite for persisted session IDs
+    try:
+        from .local_episodic_memory import get_local_episodic_memory
+        import sqlite3
+        
+        local_mem = get_local_episodic_memory()
+        with sqlite3.connect(local_mem.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT DISTINCT user_id FROM timeline_events")
+            rows = cur.fetchall()
+            for row in rows:
+                session_ids.add(row[0])
+    except Exception as e:
+        logger.debug(f"[TIMELINE] Could not query SQLite for session IDs: {e}")
+    
+    return list(session_ids)
 
 def _get_timeline_collection(user_id: str):
     """Get the timeline collection for a user (or mock)."""
     try:
-        db = get_firestore_client()
-        return db.collection('users').document(user_id).collection('timeline')
+        db = _get_firestore()
+        if db:
+            return db.collection('users').document(user_id).collection('timeline')
+        return None
     except Exception:
         # Fallback to local in-memory mock
         logger.warning("[TIMELINE] Using in-memory mock (No Firebase)")

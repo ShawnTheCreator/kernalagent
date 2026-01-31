@@ -131,6 +131,12 @@ TOOL_TO_ACTION_MAP: Dict[str, Dict[str, str]] = {
         "mute": "volume_mute",
     },
     
+    # Vision Control
+    "vision_control": {
+        "analyze": "vision_analyze",
+        "guided": "vision_guided",
+    },
+    
     # Brightness Control
     "brightness_control": {
         "up": "brightness_up",

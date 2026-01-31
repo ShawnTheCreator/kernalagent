@@ -481,19 +481,36 @@ class IntentAnalyzer:
             "actions": []
         }
     
-    async def _call_gemini(self, prompt: str) -> Optional[str]:
-        """Call Gemini API."""
+    async def _call_gemini(self, prompt: str, use_structured_output: bool = True) -> Optional[str]:
+        """Call Gemini API with optional structured output."""
         if not self.gemini_client:
             return None
         
         try:
+            from app.core.config import settings
+            from app.core.model_router import get_model_router, TaskType, TaskComplexity
+            
+            # Use model router to select appropriate model
+            router = get_model_router()
+            complexity = router.estimate_complexity(prompt)
+            decision = router.route(TaskType.PLANNING, complexity)
+            
+            logger.info(f"[INTENT] Using {decision.model_id} (complexity: {complexity.value}, thinking: {decision.use_thinking})")
+            
+            config = {
+                "temperature": decision.temperature,
+                "max_output_tokens": decision.max_tokens,
+            }
+            
+            # Add structured output if enabled
+            if use_structured_output and settings.ENABLE_STRUCTURED_OUTPUT:
+                config["response_mime_type"] = "application/json"
+                # Schema will be inferred from prompt instructions
+            
             response = self.gemini_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=decision.model_id,
                 contents=[{"role": "user", "parts": [{"text": prompt}]}],
-                config={
-                    "temperature": 0.1,
-                    "max_output_tokens": 1024,
-                }
+                config=config
             )
             
             if response and response.text:

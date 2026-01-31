@@ -22,6 +22,8 @@ load_dotenv(env_path)
 
 logger = logging.getLogger(__name__)
 
+DISABLE_GEMINI_VISION = True
+
 # Import Google GenAI SDK (same as intent_analyzer)
 try:
     from google import genai
@@ -43,8 +45,12 @@ class VisionAnalyzer:
         
         logger.info(f"[VISION] GENAI_AVAILABLE = {GENAI_AVAILABLE}")
         logger.info(f"[VISION] API key present = {bool(self.api_key)}")
+        logger.info(f"[VISION] DISABLE_GEMINI_VISION = {DISABLE_GEMINI_VISION}")
         
-        if self.api_key and GENAI_AVAILABLE:
+        if DISABLE_GEMINI_VISION:
+            logger.warning("[VISION] Gemini Vision is disabled by DISABLE_GEMINI_VISION=true")
+            self.client = None
+        elif self.api_key and GENAI_AVAILABLE:
             try:
                 self.client = genai.Client()
                 logger.info(f"[VISION] VisionAnalyzer initialized with Gemini")

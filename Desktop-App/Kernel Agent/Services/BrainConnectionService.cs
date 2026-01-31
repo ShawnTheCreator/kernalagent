@@ -51,6 +51,19 @@ namespace Kernel_Agent.Services
             }
         }
 
+        private static bool LooksLikePlanPayload(string? message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return false;
+
+            var trimmed = message.TrimStart();
+            if (!trimmed.StartsWith("{", StringComparison.Ordinal))
+                return false;
+
+            return trimmed.Contains("\"steps\"", StringComparison.OrdinalIgnoreCase)
+                   && trimmed.Contains("\"session_id\"", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static string FormatActionPlan(JsonElement root)
         {
             try
@@ -242,11 +255,6 @@ namespace Kernel_Agent.Services
                         break;
 
                     case "chat_response":
-                        if (json.RootElement.TryGetProperty("payload", out var chatPayload) &&
-                            chatPayload.TryGetProperty("message", out var msgElem))
-                        {
-                            OnAgentOutput?.Invoke(msgElem.GetString() ?? string.Empty);
-                        }
                         break;
 
                     case "ask_question":
@@ -258,7 +266,6 @@ namespace Kernel_Agent.Services
                         break;
 
                     case "action_plan":
-                        OnAgentOutput?.Invoke(FormatActionPlan(json.RootElement));
                         try
                         {
                             if (json.RootElement.TryGetProperty("payload", out var payload) &&

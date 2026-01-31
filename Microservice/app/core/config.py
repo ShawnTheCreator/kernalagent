@@ -19,7 +19,18 @@ for env_path in env_paths:
 class Settings:
     """Application settings loaded from environment."""
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
-    MODEL_ID: str = "gemini-2.5-flash"  # Best available model with vision
+    
+    # Gemini 2.0 Models (latest)
+    MODEL_THINKING: str = "gemini-2.0-flash-thinking-exp-01-21"  # Complex reasoning
+    MODEL_FLASH: str = "gemini-2.0-flash-exp"                    # Fast standard tasks
+    MODEL_LEGACY: str = "gemini-1.5-flash-002"                   # Fallback
+    MODEL_ID: str = MODEL_FLASH  # Default model (backward compatibility)
+    
+    # Feature flags
+    ENABLE_STRUCTURED_OUTPUT: bool = True   # Use native JSON mode
+    ENABLE_THINKING_MODE: bool = True       # Use thinking model for complex tasks
+    ENABLE_VISION: bool = True              # Re-enable vision with Gemini 2.0
+    
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 

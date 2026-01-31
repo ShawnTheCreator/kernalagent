@@ -7,6 +7,8 @@ using KernalAgentBackend.Data;
 using KernalAgentBackend.Services;
 using DotNetEnv;
 using Google.Cloud.Firestore;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 
 // Load .env file (only if it exists - for Docker, use environment variables)
@@ -39,7 +41,7 @@ builder.Services.AddOpenApi();
 // Add CORS - Load allowed origins from environment variables
 var corsOriginsEnv = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
 var allowedOrigins = string.IsNullOrWhiteSpace(corsOriginsEnv)
-    ? new[] { "http://localhost:3000", "http://localhost:3001" }
+    ? ["http://localhost:3000", "http://localhost:3001"] // Collection expression (C# 12)
     : corsOriginsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(o => o.Trim())
                     .Where(o => !string.IsNullOrWhiteSpace(o))
@@ -101,6 +103,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// Add rate limiting for security
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User?.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 2
+            }));
+});
+
+// Add response caching for performance
+builder.Services.AddResponseCaching();
+builder.Services.AddMemoryCache();
+
+// Add health checks
+builder.Services.AddHealthChecks();
 
 // WebSocket manager for device auth (desktop login)
 builder.Services.AddSingleton<DeviceAuthWebSocketManager>();
@@ -179,6 +203,15 @@ if (app.Environment.IsDevelopment() &&
 
 // Use CORS
 app.UseCors("AllowFrontend");
+
+// Add rate limiting middleware
+app.UseRateLimiter();
+
+// Add response caching middleware
+app.UseResponseCaching();
+
+// Add health check endpoint
+app.MapHealthChecks("/health");
 
 // Enable WebSockets (for desktop auth realtime)
 app.UseWebSockets();

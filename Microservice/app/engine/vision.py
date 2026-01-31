@@ -14,10 +14,11 @@ import random
 from PIL import Image
 from typing import Optional
 
-from google.genai import types
+from app.core.config import settings
 
-from app.core.config import client, MODEL_ID
-from app.core.schemas import KernalAction
+# Vision now enabled with Gemini 2.0 Flash
+DISABLE_GEMINI_VISION = not settings.ENABLE_VISION
+VISION_MODEL_ID = settings.MODEL_FLASH
 from app.agent.decision_engine import decide_next_action, get_decision_for_gemini
 from app.agent.failure_detector import detect_failure, calculate_adjusted_confidence
 from app.agent.memory import AgentMemory
@@ -63,28 +64,6 @@ def call_gemini_with_retry(
     Returns:
         Gemini response object or None on failure
     """
-    for attempt in range(retries):
-        try:
-            response = client.models.generate_content(
-                model=model_id,
-                contents=[prompt, image],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=KernalAction
-                )
-            )
-            return response
-        except Exception as e:
-            error_str = str(e)
-            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                wait_time = (2 ** attempt) + random.uniform(0, 1)
-                print(f"Rate Limit hit. Retrying in {wait_time:.2f}s...")
-                time.sleep(wait_time)
-            else:
-                print(f"API Error: {e}")
-                return None
-            
-    print("Max retries reached. Gemini is busy.")
     return None
 
 
@@ -94,7 +73,7 @@ def analyze_frame(
     previous_action: Optional[dict] = None,
     previous_image: Optional[str] = None,
     memory: Optional[AgentMemory] = None
-) -> dict:
+):
     """
     Analyzes a screenshot and returns the next action to take.
     
@@ -115,6 +94,13 @@ def analyze_frame(
         Dictionary containing the action plan with confidence and strategy
     """
     try:
+        if DISABLE_GEMINI_VISION:
+            return {
+                "error": "Vision engine disabled",
+                "confidence": 0.0,
+                "strategy": "DISABLED"
+            }
+
         # Step 1: Decode the Base64 image
         image_data = base64.b64decode(base64_image)
         image = Image.open(io.BytesIO(image_data))

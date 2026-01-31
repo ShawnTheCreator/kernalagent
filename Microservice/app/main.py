@@ -40,11 +40,14 @@ from app.api.skills import router as skills_router
 from app.api.agent_routes import router as agent_router
 from app.api.protected_routes import router as protected_router  # Authenticated user APIs
 from app.api.agent_plan import router as agent_plan_router  # Desktop Agent HTTP API
+from app.api.agent_plan import kernel_router as kernel_router  # Kernel strict endpoints
 from app.api.executor_ws import router as executor_ws_router  # Hybrid WebSocket executor
 from app.api.speech_routes import router as speech_router  # Voice transcription API
 from app.api.voice_ws import router as voice_ws_router  # Continuous voice WebSocket
 from app.api.agent_hub_routes import router as agent_hub_router  # Agent Hub API
 from app.api.tts_routes import router as tts_router  # TTS API (/api/tts/*)
+from app.api.memory_api import router as memory_router  # Memory and patterns API
+from app.api.gemma_routes import router as gemma_router  # Fine-tuned Gemma API
 from app.core.config import settings
 from app.db.init_db import init_database
 
@@ -95,6 +98,61 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# ===== GEMINI 3 UPGRADE: INITIALIZE COMPONENTS =====
+@app.on_event("startup")
+async def startup_event():
+    """Initialize Gemini 3 upgrade components on startup."""
+    logger.info("🚀 Initializing Gemini 3 Upgrade Components...")
+    
+    try:
+        # Initialize model router
+        from app.core.model_router import get_model_router
+        router = get_model_router()
+        logger.info(f"✅ Model Router initialized: {router.models}")
+        
+        # Initialize thinking planner
+        from app.reasoning.thinking_planner import get_thinking_planner
+        planner = get_thinking_planner()
+        logger.info(f"✅ Thinking Planner initialized with model: {planner.model_id}")
+        
+        # Initialize rate limiter
+        from app.core.smart_rate_limiter import get_rate_limiter
+        limiter = get_rate_limiter()
+        logger.info(f"✅ Rate Limiter initialized")
+        
+        # Initialize frame differ
+        from app.vision.frame_differ import FrameDiffer
+        differ = FrameDiffer()
+        logger.info(f"✅ Frame Differ initialized (threshold: {differ.stability_threshold})")
+        
+        # Initialize fine-tuned Gemma model
+        try:
+            from app.brain.gemma_local import is_model_available, load_model
+            if is_model_available():
+                logger.info("🧠 Fine-tuned Gemma model found, loading...")
+                model, tokenizer = load_model()
+                if model is not None:
+                    logger.info("✅ Fine-tuned Gemma interpreter loaded!")
+                else:
+                    logger.warning("⚠️ Gemma model found but failed to load")
+            else:
+                logger.info("ℹ️ Fine-tuned Gemma model not found (optional)")
+        except Exception as e:
+            logger.warning(f"⚠️ Gemma model initialization skipped: {e}")
+        
+        logger.info("🎉 Gemini 3 Upgrade Components Ready!")
+        logger.info(f"   - Model Router: ✅")
+        logger.info(f"   - Thinking Planner: ✅")
+        logger.info(f"   - Rate Limiter: ✅")
+        logger.info(f"   - Frame Differ: ✅")
+        logger.info(f"   - Vision: {'✅ ENABLED' if settings.ENABLE_VISION else '❌ DISABLED'}")
+        logger.info(f"   - Structured Outputs: {'✅ ENABLED' if settings.ENABLE_STRUCTURED_OUTPUT else '❌ DISABLED'}")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Gemini 3 components: {e}")
+        import traceback
+        traceback.print_exc()
+
 # Add request logging middleware FIRST
 app.add_middleware(RequestLoggingMiddleware)
 
@@ -112,16 +170,106 @@ app.include_router(skills_router)
 app.include_router(agent_router)  # Agent preview APIs for frontend
 app.include_router(protected_router)  # Protected user APIs (/me/*)
 app.include_router(agent_plan_router)  # Desktop Agent HTTP API (/api/agent/plan)
+app.include_router(kernel_router)  # Kernel strict endpoints (/api/kernel/*)
 app.include_router(executor_ws_router)  # Hybrid WebSocket executor (/ws/executor)
 app.include_router(speech_router)  # Voice transcription API (/api/speech/*)
 app.include_router(voice_ws_router)  # Continuous voice WebSocket (/ws/voice)
 app.include_router(agent_hub_router)  # Agent Hub API (/api/agents/*)
 app.include_router(tts_router)  # TTS API (/api/tts/*)
+app.include_router(memory_router)  # Memory and patterns API (/api/memory/*)
+app.include_router(gemma_router)  # Fine-tuned Gemma API (/api/gemma/*)
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring."""
     return {"status": "alive", "model": settings.MODEL_ID}
+
+
+# ===== GEMINI 3 MONITORING ENDPOINTS =====
+@app.get("/api/gemini3/stats")
+async def get_gemini3_stats():
+    """Get statistics for all Gemini 3 upgrade components."""
+    try:
+        from app.core.model_router import get_model_router
+        from app.core.smart_rate_limiter import get_rate_limiter
+        from app.vision.frame_differ import FrameDiffer
+        from app.api.websocket import FRAME_DIFFER
+        
+        router = get_model_router()
+        limiter = get_rate_limiter()
+        
+        # Get model router stats
+        router_stats = router.get_stats()
+        
+        # Get rate limiter stats
+        limiter_stats = limiter.get_stats()
+        
+        # Get frame differ stats
+        frame_stats = FRAME_DIFFER.get_stats()
+        
+        return {
+            "success": True,
+            "timestamp": time.time(),
+            "components": {
+                "model_router": {
+                    "enabled": True,
+                    "models": router.models,
+                    "stats": router_stats
+                },
+                "rate_limiter": {
+                    "enabled": True,
+                    "stats": limiter_stats
+                },
+                "frame_differ": {
+                    "enabled": True,
+                    "threshold": FRAME_DIFFER.stability_threshold,
+                    "stats": frame_stats
+                },
+                "features": {
+                    "vision": settings.ENABLE_VISION,
+                    "structured_output": settings.ENABLE_STRUCTURED_OUTPUT,
+                    "thinking_mode": settings.ENABLE_THINKING_MODE
+                }
+            }
+        }
+    except Exception as e:
+        logger.error(f"[GEMINI3] Stats error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/gemini3/model-decisions")
+async def get_model_decisions():
+    """Get recent model routing decisions for analysis."""
+    try:
+        from app.core.model_router import get_model_router
+        router = get_model_router()
+        stats = router.get_stats()
+        
+        return {
+            "success": True,
+            "decisions": stats.get("decisions_by_type", {}),
+            "total_decisions": stats.get("total_decisions", 0),
+            "models_used": stats.get("models_used", {})
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/gemini3/reset-stats")
+async def reset_gemini3_stats():
+    """Reset statistics for monitoring (useful for testing)."""
+    try:
+        from app.core.model_router import get_model_router
+        from app.core.smart_rate_limiter import get_rate_limiter
+        from app.api.websocket import FRAME_DIFFER
+        
+        # Reset all stats
+        get_model_router()._reset_stats()
+        FRAME_DIFFER.reset()
+        
+        return {"success": True, "message": "All Gemini 3 stats reset"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 # ===== LOCAL AUTH SYNC (REAL-TIME WEBSOCKET) =====
@@ -261,6 +409,41 @@ async def startup_event():
             )
     except Exception as e:
         logger.warning(f"[MEMORY] Startup embedding rebuild skipped: {e}")
+
+    # Register all enhanced agents
+    try:
+        from app.agents.agent_registry import get_registry
+        from app.agents.janitor.janitor_agent import JanitorAgent
+        from app.agents.productivity.productivity_agent import ProductivityAgent
+        from app.agents.security.security_agent import SecurityAgent
+        from app.voice.enhanced_voice_control import get_voice_control
+        from app.notifications.notification_manager import get_notification_manager
+
+        logger.info("🤖 Registering enhanced agents...")
+        
+        registry = get_registry()
+        
+        # Register all new agents
+        registry.register(JanitorAgent())
+        registry.register(ProductivityAgent())
+        registry.register(SecurityAgent())
+        
+        # Start enhanced systems
+        voice_control = get_voice_control()
+        await voice_control.start_voice_control()
+        
+        notification_manager = get_notification_manager()
+        
+        logger.info(f"✅ Registered {len(registry.get_all())} agents")
+        logger.info("✅ Enhanced voice control started")
+        logger.info("✅ Notification system initialized")
+        
+        # Log registered agents
+        for agent in registry.get_all():
+            logger.info(f"   - {agent.name} ({agent.agent_type.value})")
+            
+    except Exception as e:
+        logger.error(f"❌ Agent registration failed: {e}")
 
     logger.info("=" * 60)
     logger.info("🚀 KERNEL AI BRAIN STARTING UP")

@@ -171,10 +171,43 @@ namespace Kernel_Agent.Services
         // ===== OPEN APPLICATION =====
         public bool OpenApplication(string exeName)
         {
+            const int maxRetries = 3;
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opening: {exeName} (attempt {attempt}/{maxRetries})");
+                    
+                    bool success = OpenApplicationInternal(exeName);
+                    if (success)
+                    {
+                        return true;
+                    }
+                    
+                    if (attempt < maxRetries)
+                    {
+                        int delayMs = 100 * (int)Math.Pow(2, attempt - 1); // Exponential backoff
+                        System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Retry after {delayMs}ms...");
+                        Thread.Sleep(delayMs);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Attempt {attempt} failed: {ex.Message}");
+                    if (attempt == maxRetries)
+                    {
+                        return false;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        private bool OpenApplicationInternal(string exeName)
+        {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opening: {exeName}");
-                
                 string processName = exeName.Replace(".exe", "").Replace(".EXE", "");
 
                 try
@@ -221,7 +254,7 @@ namespace Kernel_Agent.Services
                 // Special handling for Chrome - open with default profile to skip profile picker
                 if (exeName.ToLowerInvariant().Contains("chrome"))
                 {
-                    return OpenChromeWithProfile();
+                    return OpenChromeWithProfile("Default");
                 }
                 
                 // Method 1: Try shell execute
@@ -290,6 +323,8 @@ namespace Kernel_Agent.Services
                 // We'll try to find it leniently
                 
                 int maxRetries = 20; // Wait up to 10 seconds
+                int windowStableCount = 0;
+                IntPtr lastWindowHandle = IntPtr.Zero;
                 
                 for (int i = 0; i < maxRetries; i++)
                 {
@@ -300,16 +335,53 @@ namespace Kernel_Agent.Services
 
                     if (target != null && target.MainWindowHandle != IntPtr.Zero)
                     {
-                        target.WaitForInputIdle(500); // Wait for app to be idle
-                        SetForegroundWindow(target.MainWindowHandle); // Force focus
-                        Thread.Sleep(500); // Extra safety buffer
-                        System.Diagnostics.Debug.WriteLine($"[AUTOMATION] {processName} is ready and focused.");
-                        return true;
+                        // Check if window handle is stable (not changing)
+                        if (target.MainWindowHandle == lastWindowHandle)
+                        {
+                            windowStableCount++;
+                        }
+                        else
+                        {
+                            windowStableCount = 0;
+                            lastWindowHandle = target.MainWindowHandle;
+                        }
+                        
+                        // Wait for 2 consecutive stable checks (1 second)
+                        if (windowStableCount >= 2)
+                        {
+                            try
+                            {
+                                target.WaitForInputIdle(500); // Wait for app to be idle
+                            }
+                            catch
+                            {
+                                // Some apps don't support WaitForInputIdle, continue anyway
+                            }
+                            
+                            // Force focus and verify
+                            SetForegroundWindow(target.MainWindowHandle);
+                            Thread.Sleep(300);
+                            
+                            // Verify focus was successful
+                            var foregroundWindow = GetForegroundWindow();
+                            if (foregroundWindow == target.MainWindowHandle)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] {processName} is ready, focused, and stable.");
+                                Thread.Sleep(200); // Final safety buffer
+                                return true;
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Failed to focus {processName}, retrying...");
+                                windowStableCount = 0; // Reset and try again
+                            }
+                        }
                     }
                     else if (target != null)
                     {
                         // Found process but no window yet
                         System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Found {processName}, waiting for window...");
+                        windowStableCount = 0;
                     }
                     
                     Thread.Sleep(500);
@@ -335,7 +407,7 @@ namespace Kernel_Agent.Services
                 System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opening Chrome with profile: {profileName}");
                 
                 // Find Chrome executable
-                string chromePath = null;
+                string? chromePath = null;
                 var paths = new[]
                 {
                     @"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -354,9 +426,23 @@ namespace Kernel_Agent.Services
                 
                 if (chromePath == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("[AUTOMATION] Chrome not found, trying shell execute");
-                    Process.Start(new ProcessStartInfo { FileName = "chrome.exe", UseShellExecute = true });
-                    return WaitForAppReadyAndSelectProfile("chrome");
+                    System.Diagnostics.Debug.WriteLine("[AUTOMATION] Chrome not found at known paths, trying shell execute with profile arg");
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo 
+                        { 
+                            FileName = "chrome.exe",
+                            Arguments = $"--profile-directory=\"{profileName}\"",
+                            UseShellExecute = true 
+                        });
+                        return WaitForAppReady("chrome");
+                    }
+                    catch
+                    {
+                        // Last resort: try without profile arg
+                        Process.Start(new ProcessStartInfo { FileName = "chrome.exe", UseShellExecute = true });
+                        return WaitForAppReadyAndSelectProfile("chrome");
+                    }
                 }
                 
                 // Open Chrome with profile directory to skip profile picker
@@ -368,9 +454,24 @@ namespace Kernel_Agent.Services
                 };
                 
                 Process.Start(startInfo);
-                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Chrome started with profile: {profileName}");
+                System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Chrome started with --profile-directory={profileName}");
                 
-                return WaitForAppReady("chrome");
+                // Enhanced wait: verify Chrome is actually ready and focused
+                bool ready = WaitForAppReady("chrome");
+                if (ready)
+                {
+                    // Additional verification: ensure Chrome window is responsive
+                    Thread.Sleep(500);
+                    var processes = Process.GetProcessesByName("chrome");
+                    var chromeWithWindow = processes.FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
+                    if (chromeWithWindow != null)
+                    {
+                        SetForegroundWindow(chromeWithWindow.MainWindowHandle);
+                        System.Diagnostics.Debug.WriteLine("[AUTOMATION] Chrome window confirmed and focused");
+                    }
+                }
+                
+                return ready;
             }
             catch (Exception ex)
             {
@@ -529,7 +630,7 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                var bounds = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                var bounds = System.Windows.Forms.Screen.PrimaryScreen?.Bounds ?? Rectangle.Empty;
                 using var bitmap = new Bitmap(bounds.Width, bounds.Height);
                 using var g = Graphics.FromImage(bitmap);
                 g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);

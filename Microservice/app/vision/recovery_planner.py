@@ -14,7 +14,6 @@ import logging
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from .screen_capture import capture_screen_base64
-from .vision_analyzer import get_vision_analyzer
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +104,6 @@ class RecoveryPlanner:
     """
     
     def __init__(self):
-        self.vision = get_vision_analyzer()
         self.recovery_history: List[Dict[str, Any]] = []
     
     def attempt_recovery(
@@ -156,21 +154,21 @@ class RecoveryPlanner:
                 "message": "Could not capture screen"
             }
         
-        # Step 2: Analyze with vision
-        logger.info("[RECOVERY] Analyzing screen with Gemini Vision...")
-        analysis = self.vision.analyze_screen(
+        # Step 2: OpenCV/EasyOCR-based recovery (no Gemini Vision)
+        logger.info("[RECOVERY] Analyzing screen with OpenCV... (Gemini Vision disabled)")
+        analysis = _analyze_screen_opencv(
             screenshot_base64=screenshot,
             original_goal=original_goal,
             failed_action=failed_action,
             context_text=get_execution_context().to_prompt_context()
         )
-        
+ 
         if not analysis.get("success"):
             return {
                 "success": False,
                 "recovery_possible": False,
-                "reason": "vision_failed",
-                "message": analysis.get("error", "Vision analysis failed")
+                "reason": "opencv_failed",
+                "message": analysis.get("error", "OpenCV analysis failed")
             }
         
         # Step 3: Check if goal is already achieved
@@ -200,7 +198,7 @@ class RecoveryPlanner:
             }
         
         # Step 5: Get recovery action
-        recovery_action = self.vision.get_recovery_action(analysis, original_goal)
+        recovery_action = analysis.get("recovery_action")
         
         if not recovery_action:
             return {
@@ -267,3 +265,72 @@ def attempt_recovery(
     """
     planner = get_recovery_planner()
     return planner.attempt_recovery(original_goal, failed_action, error_reason)
+
+
+def _analyze_screen_opencv(
+    screenshot_base64: str,
+    original_goal: str,
+    failed_action: str,
+    context_text: str = ""
+) -> Dict[str, Any]:
+    try:
+        from app.vision.opencv_detector import base64_to_cv2, find_click_target_opencv, extract_text
+
+        img = base64_to_cv2(screenshot_base64)
+        if img is None:
+            return {"success": False, "error": "Failed to decode screenshot"}
+
+        # Quick OCR snapshot (helps debugging and basic state description)
+        texts = extract_text(img)
+        text_preview = ", ".join(texts[:20]) if texts else ""
+
+        # Common buttons that often unblock flows (profile pickers, save prompts, UAC-like dialogs, etc.)
+        candidates = [
+            "OK",
+            "Yes",
+            "Allow",
+            "Continue",
+            "Next",
+            "Open",
+            "Close",
+            "Not now",
+            "No thanks",
+            "Skip",
+            "Cancel"
+        ]
+
+        best = None
+        for label in candidates:
+            hit = find_click_target_opencv(screenshot_base64, label)
+            if hit and hit.get("found"):
+                best = hit
+                best["label"] = label
+                break
+
+        current_state = f"opencv_text: {text_preview}" if text_preview else "opencv_text: <none>"
+
+        if not best:
+            return {
+                "success": True,
+                "current_state": current_state,
+                "goal_achieved": False,
+                "blocker": "unknown",
+                "confidence": 0.0,
+                "recovery_action": None
+            }
+
+        return {
+            "success": True,
+            "current_state": current_state,
+            "goal_achieved": False,
+            "blocker": f"potential_dialog_button:{best.get('label')}",
+            "confidence": float(best.get("confidence", 0.6)),
+            "recovery_action": {
+                "action": "click",
+                "x": int(best["x"]),
+                "y": int(best["y"]),
+                "reasoning": f"OpenCV/EasyOCR found clickable '{best.get('label')}'"
+            }
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}

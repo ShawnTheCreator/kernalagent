@@ -1,11 +1,15 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Net.Http;
 using System.Text;
 using System.Linq;
 using System.Windows.Automation;
+using System.Drawing;
+using System.IO;
 
 namespace Kernel_Agent.Services
 {
@@ -30,8 +34,59 @@ namespace Kernel_Agent.Services
         private string _currentGoal = "";  // Track original command for recovery
         private string _lastOpenedApp = ""; // Track last opened app for focus before typing
         private double? _planConfidence = null;
+        private static readonly SemaphoreSlim _executionLock = new SemaphoreSlim(1, 1); // Prevent concurrent automation
 
         private const int DEFAULT_EXPECT_TIMEOUT_MS = 4000;
+
+        private int GetStepTimeoutMs(JsonElement step, string actionName)
+        {
+            try
+            {
+                if (step.TryGetProperty("timeout_ms", out var toMsEl) && toMsEl.ValueKind == JsonValueKind.Number)
+                {
+                    try
+                    {
+                        var ms = toMsEl.GetInt32();
+                        if (ms > 0)
+                            return ms;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (step.TryGetProperty("step_timeout_ms", out var stMsEl) && stMsEl.ValueKind == JsonValueKind.Number)
+                {
+                    try
+                    {
+                        var ms = stMsEl.GetInt32();
+                        if (ms > 0)
+                            return ms;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                var a = (actionName ?? "").Trim().ToLowerInvariant();
+
+                return a switch
+                {
+                    "open_app" => 20000,
+                    "search" or "search_web" => 20000,
+                    "click_element" or "find_and_click" => 25000,
+                    "click_button" or "click_menu" => 20000,
+                    "type" or "type_text" => 20000,
+                    "smart_wait" or "wait_for_ready" => 20000,
+                    "wait" => 60000,
+                    _ => 30000
+                };
+            }
+            catch
+            {
+                return 30000;
+            }
+        }
 
         private enum VisionMode
         {
@@ -259,6 +314,23 @@ namespace Kernel_Agent.Services
             Action<int, int, string, string>? onStepProgress
         )
         {
+            // Acquire lock to prevent concurrent automation
+            await _executionLock.WaitAsync();
+            try
+            {
+                return await ExecutePlanInternalAsync(stepsElement, onStepProgress);
+            }
+            finally
+            {
+                _executionLock.Release();
+            }
+        }
+
+        private async Task<PlanExecutionResult> ExecutePlanInternalAsync(
+            JsonElement stepsElement,
+            Action<int, int, string, string>? onStepProgress
+        )
+        {
             var result = new PlanExecutionResult();
             var stopwatch = Stopwatch.StartNew();
             int stepIndex = 0;
@@ -288,6 +360,16 @@ namespace Kernel_Agent.Services
 
                 stepIndex++;
 
+                string stepActionNameForTimeout = "";
+                try
+                {
+                    if (step.TryGetProperty("action", out var aEl))
+                        stepActionNameForTimeout = aEl.GetString() ?? "";
+                }
+                catch
+                {
+                }
+
                 try
                 {
                     string stepAction = step.TryGetProperty("action", out var sa) ? (sa.GetString() ?? "") : "";
@@ -302,7 +384,23 @@ namespace Kernel_Agent.Services
                 {
                 }
 
-                var actionResult = await ExecuteActionAsync(step);
+                ExecutionResult actionResult;
+                var stepTimeoutMs = GetStepTimeoutMs(step, stepActionNameForTimeout);
+                var actionTask = ExecuteActionAsync(step);
+                var completed = await Task.WhenAny(actionTask, Task.Delay(stepTimeoutMs));
+                if (completed != actionTask)
+                {
+                    actionResult = new ExecutionResult
+                    {
+                        Success = false,
+                        Action = stepActionNameForTimeout,
+                        Error = $"Step timeout after {stepTimeoutMs}ms"
+                    };
+                }
+                else
+                {
+                    actionResult = await actionTask;
+                }
                 result.ActionResults.Add(actionResult);
 
                 // ===== EXPECTED OUTCOME VERIFICATION (Option B) =====
@@ -779,8 +877,9 @@ namespace Kernel_Agent.Services
                             // Track the app for focusing before typing
                             _lastOpenedApp = target.Replace(".exe", "").Replace(".EXE", "");
                             Debug.WriteLine($"[EXECUTOR] Tracking last app: {_lastOpenedApp}");
-                            // Wait for app window to be ready
-                            await Task.Delay(500);
+                            
+                            // Verify app window is actually focused and ready for input
+                            await VerifyAppReadyForInput(_lastOpenedApp);
                         }
                         else if (step.TryGetProperty("fallback_url", out var fallbackEl) && fallbackEl.ValueKind == JsonValueKind.String)
                         {
@@ -1406,137 +1505,127 @@ namespace Kernel_Agent.Services
                     }
                     break;
                 
-                // Vision-guided execution (LLM planning fallback)
-                case "vision_guided":
+                // Vision analysis (OpenCV-powered UI analysis)
+                case "vision_analyze":
                     {
-                        string goal = step.TryGetProperty("goal", out var goalEl) ? goalEl.GetString() ?? "" : _currentGoal;
-                        Debug.WriteLine($"[EXECUTOR] Vision-guided execution for goal: '{goal}'");
-                        
-                        if (!IsVisionAllowed())
+                        string analysisType = "comprehensive";
+                        if (step.TryGetProperty("target", out var targetVar))
                         {
-                            result.Error = "Vision-guided execution is disabled for browser context";
-                            break;
+                            analysisType = targetVar.GetString() ?? "comprehensive";
                         }
-
-                        // Use vision recovery to analyze screen and get next action
-                        _context.RefreshContext();
-                        var openedApps = string.IsNullOrEmpty(_lastOpenedApp) ? Array.Empty<string>() : new[] { _lastOpenedApp };
-                        var recovery = await _visionRecovery.AttemptRecoveryAsync(
-                            goal,
-                            "vision_guided",
-                            "LLM planning failed",
-                            _context.ActiveWindowTitle,
-                            _context.ActiveProcessName,
-                            openedApps,
-                            0,
-                            0,
-                            "vision_guided",
-                            false,
-                            GetSessionId()
-                        );
                         
-                        if (recovery.Success && recovery.RecoveryAction != null)
+                        string content = "";
+                        if (step.TryGetProperty("content", out var contentVar))
                         {
-                            var recoveryStep = recovery.RecoveryAction;
-                            Debug.WriteLine($"[EXECUTOR] Vision suggests: {recoveryStep.Action} at ({recoveryStep.X}, {recoveryStep.Y})");
+                            content = contentVar.GetString() ?? "";
+                        }
+                        
+                        Debug.WriteLine($"[EXECUTOR] Vision analysis: {analysisType} for '{content}'");
+                        
+                        try
+                        {
+                            // Capture screenshot as base64
+                            var screenshotPath = _automation.TakeScreenshot();
+                            if (string.IsNullOrEmpty(screenshotPath))
+                            {
+                                result.Error = "Failed to capture screenshot";
+                                break;
+                            }
                             
-                            // Execute the vision-suggested action
-                            if (recoveryStep.Action == "click" && recoveryStep.X.HasValue && recoveryStep.Y.HasValue)
+                            // Convert screenshot to base64 with proper disposal
+                            string base64Image;
+                            using (var bitmap = new System.Drawing.Bitmap(screenshotPath))
+                            using (var ms = new System.IO.MemoryStream())
                             {
-                                _automation.Click(recoveryStep.X.Value, recoveryStep.Y.Value);
-                                result.Success = true;
-                                result.Details = $"Vision clicked at ({recoveryStep.X}, {recoveryStep.Y})";
+                                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                                base64Image = Convert.ToBase64String(ms.ToArray());
                             }
-                            else if (recoveryStep.Action == "type_text" && !string.IsNullOrEmpty(recoveryStep.Content))
+                            
+                            // Clean up screenshot file
+                            try { System.IO.File.Delete(screenshotPath); } catch { }
+                            
+                            // Call OpenCV vision API with proper HttpClient disposal
+                            using var client = new HttpClient();
+                            client.Timeout = TimeSpan.FromSeconds(10); // Add timeout
+                            
+                            var requestBody = new
                             {
-                                _automation.TypeIntoApp(recoveryStep.Content);
-                                result.Success = true;
-                            }
-                            else if (recoveryStep.Action == "none")
+                                image_b64 = base64Image,
+                                target_description = content,
+                                analysis_type = analysisType
+                            };
+                            
+                            var json = JsonSerializer.Serialize(requestBody);
+                            using var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+                            
+                            var response = await client.PostAsync("http://localhost:8000/api/agent/vision/analyze", httpContent);
+                            
+                            if (response.IsSuccessStatusCode)
                             {
-                                // Goal already achieved
-                                result.Success = true;
-                                result.Details = "Vision determined goal is already achieved";
+                                var responseJson = await response.Content.ReadAsStringAsync();
+                                Debug.WriteLine($"[EXECUTOR] Vision API response: {responseJson}");
+                                
+                                // Parse and surface results to user
+                                using var doc = JsonDocument.Parse(responseJson);
+                                var root = doc.RootElement;
+                                
+                                Debug.WriteLine($"[EXECUTOR] Response root properties: {string.Join(", ", root.EnumerateObject().Select(p => p.Name))}");
+                                
+                                if (root.TryGetProperty("buttons", out var buttonsEl) && buttonsEl.ValueKind == JsonValueKind.Array)
+                                {
+                                    var buttonsCount = buttonsEl.GetArrayLength();
+                                    result.Success = true;
+                                    result.Details = $"Found {buttonsCount} buttons on screen";
+                                    Debug.WriteLine($"[EXECUTOR] SUCCESS: Found {buttonsCount} buttons");
+                                    
+                                    // Log button details
+                                    for (int i = 0; i < Math.Min(buttonsCount, 5); i++)
+                                    {
+                                        var button = buttonsEl[i];
+                                        if (button.TryGetProperty("x", out var xPos) && button.TryGetProperty("y", out var yPos))
+                                        {
+                                            Debug.WriteLine($"[EXECUTOR] Button {i+1}: ({xPos.GetInt32()}, {yPos.GetInt32()})");
+                                        }
+                                    }
+                                }
+                                else if (root.TryGetProperty("summary", out var summaryEl))
+                                {
+                                    result.Success = true;
+                                    result.Details = summaryEl.GetString() ?? "Analysis complete";
+                                    Debug.WriteLine($"[EXECUTOR] SUCCESS: {result.Details}");
+                                }
+                                else
+                                {
+                                    result.Success = true;
+                                    result.Details = $"Vision analysis returned: {responseJson.Substring(0, Math.Min(200, responseJson.Length))}...";
+                                    Debug.WriteLine($"[EXECUTOR] FALLBACK: {result.Details}");
+                                }
                             }
                             else
                             {
-                                result.Error = $"Unsupported vision action: {recoveryStep.Action}";
+                                var errorContent = await response.Content.ReadAsStringAsync();
+                                result.Error = $"Vision API error: {response.StatusCode} - {errorContent}";
+                                Debug.WriteLine($"[EXECUTOR] ERROR: {result.Error}");
                             }
                         }
-                        else
+                        catch (HttpRequestException ex)
                         {
-                            result.Error = recovery.Message ?? "Vision-guided execution failed";
+                            result.Error = $"Vision API network error: {ex.Message}";
+                            Debug.WriteLine($"[EXECUTOR] NETWORK ERROR: {ex.Message}");
+                        }
+                        catch (TaskCanceledException ex)
+                        {
+                            result.Error = $"Vision API timeout: {ex.Message}";
+                            Debug.WriteLine($"[EXECUTOR] TIMEOUT ERROR: {ex.Message}");
+                        }
+                        catch (Exception ex)
+                        {
+                            result.Error = $"Vision analysis failed: {ex.Message}";
+                            Debug.WriteLine($"[EXECUTOR] GENERAL ERROR: {ex.Message}");
                         }
                     }
                     break;
-                    
-                case "get_ui_elements":
-                    // Debug action to list all available UI elements
-                    Debug.WriteLine("[EXECUTOR] Getting all UI elements...");
-                    var elements = _uiFinder.GetAllElements();
-                    foreach (var elem in elements.Take(20))
-                    {
-                        Debug.WriteLine($"[UI] {elem.Type}: '{elem.Name}' ({elem.AutomationId})");
-                    }
-                    result.Success = true;
-                    break;
-
-                // ===== SKILL RECORDING & PLAYBACK =====
-                case "start_recording":
-                    if (step.TryGetProperty("target", out var skillNameEl))
-                    {
-                        string skillName = skillNameEl.GetString() ?? "unnamed_skill";
-                        Debug.WriteLine($"[EXECUTOR] 🔴 Starting skill recording: {skillName}");
-                        SkillRecorder.Instance.StartRecording(skillName);
-                        result.Success = true;
-                    }
-                    else
-                    {
-                        SkillRecorder.Instance.StartRecording($"skill_{DateTime.Now:yyyyMMdd_HHmmss}");
-                        result.Success = true;
-                    }
-                    break;
-                    
-                case "stop_recording":
-                    Debug.WriteLine("[EXECUTOR] ⏹ Stopping skill recording");
-                    var savedSkill = SkillRecorder.Instance.StopRecording(true);
-                    result.Success = savedSkill != null;
-                    if (savedSkill != null)
-                    {
-                        Debug.WriteLine($"[EXECUTOR] Saved skill: {savedSkill.Name} with {savedSkill.Actions.Count} actions");
-                    }
-                    break;
-                    
-                case "play_skill":
-                    if (step.TryGetProperty("target", out var playSkillName))
-                    {
-                        string skillToPlay = playSkillName.GetString() ?? "";
-                        Debug.WriteLine($"[EXECUTOR] ▶ Playing skill: {skillToPlay}");
-                        var skill = SkillRecorder.Instance.FindSkill(skillToPlay);
-                        if (skill != null)
-                        {
-                            // Play the skill (async)
-                            await SkillRecorder.Instance.PlaySkillAsync(skill.Name);
-                            result.Success = true;
-                        }
-                        else
-                        {
-                            result.Error = $"Skill not found: {skillToPlay}";
-                            Debug.WriteLine($"[EXECUTOR] Skill not found: {skillToPlay}");
-                        }
-                    }
-                    break;
-                    
-                case "list_skills":
-                    Debug.WriteLine("[EXECUTOR] Listing all skills...");
-                    var allSkills = SkillRecorder.Instance.GetAllSkills();
-                    foreach (var s in allSkills)
-                    {
-                        Debug.WriteLine($"[SKILL] {s.Name}: {s.ActionCount} actions, used {s.UseCount}x");
-                    }
-                    result.Success = true;
-                    break;
-
+                
                 default:
                     result.Success = false;
                     result.Error = $"Unknown action: {action}";
@@ -1577,20 +1666,110 @@ namespace Kernel_Agent.Services
 
         /// <summary>
         /// Smart delay based on action type - ensures proper timing between actions.
+        /// Uses adaptive polling for critical actions instead of fixed delays.
         /// </summary>
         private async Task GetInterActionDelay(string action)
         {
-            int delayMs = action switch
+            switch (action)
             {
-                "open_app" => 1500,      // Apps need time to load
-                "navigate" => 1500,      // Page needs to load
-                "search" or "search_web" => 1500,
-                "type_text" => 200,      // Small delay after typing
-                "click" or "double_click" => 300,
-                _ => BASE_DELAY_MS       // Default delay
-            };
+                case "open_app":
+                    // App opening: wait with adaptive polling
+                    await AdaptiveDelayWithPolling(1500, 5000, () => IsSystemReady());
+                    break;
+                    
+                case "navigate":
+                case "search":
+                case "search_web":
+                    // Navigation: wait for browser to settle
+                    await AdaptiveDelayWithPolling(1000, 3000, () => IsSystemReady());
+                    break;
+                    
+                case "type_text":
+                    await Task.Delay(200);  // Small fixed delay after typing
+                    break;
+                    
+                case "click":
+                case "double_click":
+                    await Task.Delay(300);  // Small fixed delay after clicking
+                    break;
+                    
+                default:
+                    await Task.Delay(BASE_DELAY_MS);
+                    break;
+            }
+        }
 
-            await Task.Delay(delayMs);
+        /// <summary>
+        /// Adaptive delay with polling - waits minimum time, then polls for readiness up to max time.
+        /// </summary>
+        private async Task AdaptiveDelayWithPolling(int minDelayMs, int maxDelayMs, Func<bool> readinessCheck)
+        {
+            await Task.Delay(minDelayMs);
+            
+            var stopwatch = Stopwatch.StartNew();
+            while (stopwatch.ElapsedMilliseconds < (maxDelayMs - minDelayMs))
+            {
+                if (readinessCheck())
+                {
+                    Debug.WriteLine($"[EXECUTOR] System ready after {stopwatch.ElapsedMilliseconds + minDelayMs}ms");
+                    return;
+                }
+                await Task.Delay(100);
+            }
+            
+            Debug.WriteLine($"[EXECUTOR] Max delay reached: {maxDelayMs}ms");
+        }
+
+        /// <summary>
+        /// Check if system is ready for next action (CPU not busy, windows stable).
+        /// </summary>
+        private bool IsSystemReady()
+        {
+            try
+            {
+                // Simple heuristic: check if active window title is stable
+                var currentTitle = _context.ActiveWindowTitle;
+                return !string.IsNullOrEmpty(currentTitle);
+            }
+            catch
+            {
+                return true; // Assume ready if check fails
+            }
+        }
+
+        /// <summary>
+        /// Verify app window is focused and ready for input.
+        /// </summary>
+        private async Task VerifyAppReadyForInput(string processName)
+        {
+            int attempts = 0;
+            const int maxAttempts = 10;
+            
+            while (attempts < maxAttempts)
+            {
+                try
+                {
+                    _context.RefreshContext();
+                    var activeProcess = _context.ActiveProcessName;
+                    
+                    if (activeProcess.Contains(processName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.WriteLine($"[EXECUTOR] App '{processName}' is focused and ready");
+                        await Task.Delay(200); // Extra safety buffer
+                        return;
+                    }
+                    
+                    Debug.WriteLine($"[EXECUTOR] Waiting for '{processName}' to be focused (attempt {attempts + 1}/{maxAttempts})");
+                }
+                catch
+                {
+                }
+                
+                attempts++;
+                await Task.Delay(300);
+            }
+            
+            Debug.WriteLine($"[EXECUTOR] Warning: Could not verify '{processName}' is focused, proceeding anyway");
         }
     }
 
@@ -1845,7 +2024,7 @@ namespace Kernel_Agent.Services
         {
             try
             {
-                var bounds = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                var bounds = System.Windows.Forms.Screen.PrimaryScreen?.Bounds ?? Rectangle.Empty;
                 using var bitmap = new System.Drawing.Bitmap(bounds.Width, bounds.Height);
                 using var graphics = System.Drawing.Graphics.FromImage(bitmap);
                 graphics.CopyFromScreen(System.Drawing.Point.Empty, System.Drawing.Point.Empty, bounds.Size);

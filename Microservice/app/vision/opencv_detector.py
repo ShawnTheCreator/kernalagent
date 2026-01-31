@@ -42,27 +42,29 @@ def detect_buttons(image: np.ndarray) -> List[Dict[str, Any]]:
     """Detect button-like elements using enhanced contours and shape analysis."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edged = cv2.Canny(blurred, 50, 150)
+    edged = cv2.Canny(blurred, 30, 100)  # More lenient thresholds
 
     contours, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     buttons = []
+    
+    logger.info(f"[OPENCV] Found {len(contours)} total contours")
 
-    for cnt in contours:
+    for i, cnt in enumerate(contours):
         x, y, w, h = cv2.boundingRect(cnt)
         area = cv2.contourArea(cnt)
 
-        # Enhanced heuristics for buttons
-        if w < 30 or h < 20 or area < 500:
+        # More lenient heuristics for buttons
+        if w < 20 or h < 15 or area < 200:  # Reduced minimums
             continue
-        if w > image.shape[1] * 0.8 or h > image.shape[0] * 0.3:
+        if w > image.shape[1] * 0.9 or h > image.shape[0] * 0.4:  # Increased maximums
             continue
         aspect = w / h
-        if aspect < 0.3 or aspect > 5:
+        if aspect < 0.2 or aspect > 8:  # Wider aspect ratio range
             continue
 
         # Shape analysis
         perimeter = cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, 0.02 * perimeter, True)
+        approx = cv2.approxPolyDP(cnt, 0.03 * perimeter, True)  # More lenient approximation
         solidity = float(area) / cv2.contourArea(cv2.convexHull(cnt))
         
         # Determine button type based on shape
@@ -77,13 +79,15 @@ def detect_buttons(image: np.ndarray) -> List[Dict[str, Any]]:
         avg_color = np.mean(roi, axis=(0, 1))
         is_enabled = _is_element_enabled(roi)
 
+        logger.info(f"[OPENCV] Button {len(buttons)+1}: pos=({x+w//2},{y+h//2}) size=({w}x{h}) area={area} type={button_type}")
+
         buttons.append({
             "x": x + w // 2,
             "y": y + h // 2,
             "width": w,
             "height": h,
             "bounds": (x, y, x + w, y + h),
-            "confidence": min(1.0, area / 10000),
+            "confidence": min(1.0, area / 5000),  # Reduced area threshold
             "type": button_type,
             "shape": {
                 "vertices": len(approx),
@@ -92,11 +96,67 @@ def detect_buttons(image: np.ndarray) -> List[Dict[str, Any]]:
             },
             "color": {
                 "avg_bgr": avg_color.tolist(),
-                "is_enabled": is_enabled
+                "is_enabled": bool(is_enabled),
+                "has_focus": bool(_has_element_focus(roi)) if hasattr(roi, 'shape') else False
             }
         })
 
+    logger.info(f"[OPENCV] Detected {len(buttons)} buttons")
+    
+    # If no buttons found, try to detect any rectangular UI elements
+    if len(buttons) == 0:
+        logger.info("[OPENCV] No buttons found, trying fallback UI element detection")
+        buttons = _detect_ui_elements_fallback(image)
+    
     return sorted(buttons, key=lambda b: b["confidence"], reverse=True)
+
+
+def _detect_ui_elements_fallback(image: np.ndarray) -> List[Dict[str, Any]]:
+    """Fallback detection for any rectangular UI elements when no buttons are found."""
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    
+    # Use adaptive threshold for better detection
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    elements = []
+    
+    logger.info(f"[OPENCV] Fallback: Found {len(contours)} contours")
+    
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        area = cv2.contourArea(cnt)
+        
+        # Very lenient criteria for fallback
+        if w < 15 or h < 10 or area < 100:
+            continue
+        if w > image.shape[1] * 0.95 or h > image.shape[0] * 0.5:
+            continue
+            
+        elements.append({
+            "x": x + w // 2,
+            "y": y + h // 2,
+            "width": w,
+            "height": h,
+            "bounds": (x, y, x + w, y + h),
+            "confidence": min(1.0, area / 3000),
+            "type": "ui_element",
+            "shape": {
+                "vertices": 4,  # Assume rectangular
+                "aspect_ratio": w / h
+            },
+            "color": {
+                "avg_bgr": np.mean(image[y:y+h, x:x+w], axis=(0, 1)).tolist(),
+                "is_enabled": True
+            }
+        })
+        
+        if len(elements) >= 10:  # Limit to top 10 elements
+            break
+    
+    logger.info(f"[OPENCV] Fallback detected {len(elements)} UI elements")
+    return elements
 
 
 def detect_text_boxes(image: np.ndarray) -> List[Dict[str, Any]]:
@@ -508,7 +568,8 @@ def detect_contours_advanced(image: np.ndarray,
             },
             "color": {
                 "avg_bgr": avg_color.tolist(),
-                "is_enabled": is_enabled
+                "is_enabled": bool(is_enabled),
+                "has_focus": bool(_has_element_focus(roi)) if hasattr(roi, 'shape') else False
             },
             "hierarchy": {
                 "has_parent": has_parent,

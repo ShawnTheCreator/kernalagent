@@ -38,58 +38,8 @@ async def find_click_target(
     except Exception as e:
         logger.warning(f"[TARGETING] OpenCV detection failed: {e}")
 
-    # Fallback to Gemini vision
-    from app.vision.vision_analyzer import get_vision_analyzer
-    from app.core.retry import retry_with_backoff
-    
-    analyzer = get_vision_analyzer()
-    if not analyzer.client:
-        logger.error("[TARGETING] Vision analyzer not available")
-        return None
-    
-    # Build specialized prompt for target finding
-    prompt = _build_targeting_prompt(target_description, goal_context)
-    
-    # Get model from environment
-    import os
-    vision_model = os.getenv("VISION_MODEL", "gemma-3-27b-it")
-    
-    async def _call_vision():
-        """Inner function for retry wrapper."""
-        response = analyzer.client.models.generate_content(
-            model=vision_model,
-            contents=[
-                {"role": "user", "parts": [
-                    {"text": prompt},
-                    {"inline_data": {"mime_type": "image/png", "data": screenshot_base64}}
-                ]}
-            ],
-            config={"temperature": 0.2, "max_output_tokens": 512}
-        )
-        
-        if response and response.text:
-            result = _parse_targeting_response(response.text)
-            
-            if result and result.get("found"):
-                logger.info(f"[TARGETING] Gemini found '{target_description}' at ({result['x']}, {result['y']})")
-                result["method"] = "gemini"
-                return result
-            else:
-                logger.warning(f"[TARGETING] Gemini could not find: {target_description}")
-                return None
-        return None
-    
-    try:
-        # Use retry with exponential backoff for 429/503 errors
-        return await retry_with_backoff(
-            _call_vision,
-            max_retries=3,
-            base_delay=2.0,
-            max_delay=30.0
-        )
-    except Exception as e:
-        logger.error(f"[TARGETING] Gemini error after retries: {e}")
-        return None
+    logger.info(f"[TARGETING] No OpenCV match for '{target_description}'. Returning None (no Gemini fallback).")
+    return None
 
 
 def _build_targeting_prompt(target: str, goal: str = "") -> str:

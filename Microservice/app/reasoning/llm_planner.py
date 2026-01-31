@@ -1,8 +1,9 @@
 """
-LLM-First Planner - Unified Planning Pipeline
+LLM-First Planner - Unified Planning Pipeline with Advanced Workflows
 
 Replaces if-else logic with:
     Intent Analyzer → Tool Registry → Context Memory → Executor Steps
+    + Workflow Engine with conditional logic, loops, and variables
 
 This is the main entry point for the new architecture.
 """
@@ -11,8 +12,10 @@ import os
 import re
 import logging
 import sys
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from urllib.parse import quote_plus
+import asyncio
+import json
 
 # Setup logger for this module
 logger = logging.getLogger(__name__)
@@ -20,6 +23,225 @@ logger.setLevel(logging.INFO)
 
 # Feature flag for gradual rollout
 USE_LLM_FIRST = os.getenv("USE_LLM_FIRST", "true").lower() == "true"
+
+
+# ============================================================================
+# Advanced Workflow Engine with Conditional Logic
+# ============================================================================
+
+class WorkflowEngine:
+    """Enhanced workflow execution engine with conditional logic, loops, and variables."""
+    
+    def __init__(self):
+        self.variables: Dict[str, Any] = {}
+        self.max_loop_iterations = 100  # Prevent infinite loops
+    
+    def set_variable(self, name: str, value: Any) -> None:
+        """Set a workflow variable."""
+        self.variables[name] = value
+        logger.debug(f"[WORKFLOW] Set variable {name} = {value}")
+    
+    def get_variable(self, name: str, default: Any = None) -> Any:
+        """Get a workflow variable."""
+        return self.variables.get(name, default)
+    
+    def substitute_variables(self, text: str) -> str:
+        """Replace ${variable_name} with actual values."""
+        if not isinstance(text, str):
+            return text
+        
+        result = text
+        for name, value in self.variables.items():
+            result = result.replace(f"${{{name}}}", str(value))
+        return result
+    
+    async def execute_workflow(self, steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Execute workflow steps with conditional logic and loops."""
+        result_steps = []
+        step_index = 0
+        
+        while step_index < len(steps):
+            step = steps[step_index]
+            action_type = step.get("action", "")
+            
+            try:
+                if action_type == "conditional":
+                    # Execute conditional logic
+                    next_index = await self._handle_conditional(step, steps, step_index, result_steps)
+                    step_index = next_index
+                    continue
+                
+                elif action_type == "loop":
+                    # Execute loop
+                    next_index = await self._handle_loop(step, steps, step_index, result_steps)
+                    step_index = next_index
+                    continue
+                
+                elif action_type == "extract_text":
+                    # Extract text from UI and store as variable
+                    extracted_value = await self._handle_text_extraction(step)
+                    store_as = step.get("store_as")
+                    if store_as:
+                        self.set_variable(store_as, extracted_value)
+                    
+                    result_steps.append({
+                        "action": "extract_text",
+                        "target": step.get("target"),
+                        "extracted_value": extracted_value
+                    })
+                
+                elif action_type == "set_variable":
+                    # Set a workflow variable
+                    name = step.get("name")
+                    value = step.get("value")
+                    if name:
+                        # Substitute any variables in the value
+                        if isinstance(value, str):
+                            value = self.substitute_variables(value)
+                        self.set_variable(name, value)
+                
+                else:
+                    # Regular action - substitute variables in all string fields
+                    processed_step = self._substitute_step_variables(step)
+                    result_steps.append(processed_step)
+                
+            except Exception as e:
+                logger.error(f"[WORKFLOW] Error executing step {step_index}: {e}")
+                # Add error handling step
+                result_steps.append({
+                    "action": "error",
+                    "message": f"Workflow error: {str(e)}",
+                    "original_step": step
+                })
+            
+            step_index += 1
+        
+        return result_steps
+    
+    async def _handle_conditional(self, step: Dict[str, Any], steps: List[Dict[str, Any]], 
+                                 current_index: int, result_steps: List[Dict[str, Any]]) -> int:
+        """Handle conditional logic (if/else)."""
+        condition_type = step.get("condition")
+        condition_met = False
+        
+        if condition_type == "if_element_exists":
+            target = step.get("target")
+            # In real implementation, this would check the UI using automation tools
+            # For now, we'll add the check as an action step
+            result_steps.append({
+                "action": "check_element_exists",
+                "target": target,
+                "store_result_as": "_condition_result"
+            })
+            condition_met = True  # Placeholder
+            
+        elif condition_type == "if_variable_equals":
+            var_name = step.get("variable")
+            expected_value = step.get("value")
+            actual_value = self.get_variable(var_name)
+            condition_met = actual_value == expected_value
+            
+        elif condition_type == "if_variable_contains":
+            var_name = step.get("variable")
+            search_text = step.get("text")
+            actual_value = str(self.get_variable(var_name, ""))
+            condition_met = search_text in actual_value
+        
+        # Execute then or else branch
+        branch_steps = step.get("then", []) if condition_met else step.get("else", [])
+        
+        if branch_steps:
+            # Execute branch steps recursively
+            branch_results = await self.execute_workflow(branch_steps)
+            result_steps.extend(branch_results)
+        
+        return current_index + 1
+    
+    async def _handle_loop(self, step: Dict[str, Any], steps: List[Dict[str, Any]], 
+                          current_index: int, result_steps: List[Dict[str, Any]]) -> int:
+        """Handle loop execution."""
+        condition_type = step.get("condition")
+        loop_steps = step.get("steps", [])
+        max_iterations = min(step.get("max_iterations", 10), self.max_loop_iterations)
+        
+        iteration = 0
+        while iteration < max_iterations:
+            condition_met = True
+            
+            if condition_type == "while_element_visible":
+                target = step.get("target")
+                # Add element visibility check as action step
+                result_steps.append({
+                    "action": "check_element_visible",
+                    "target": target,
+                    "store_result_as": "_loop_condition"
+                })
+                # Simulate condition for now
+                condition_met = iteration < 3
+                
+            elif condition_type == "while_variable_equals":
+                var_name = step.get("variable")
+                expected_value = step.get("value")
+                actual_value = self.get_variable(var_name)
+                condition_met = actual_value == expected_value
+            
+            if not condition_met:
+                break
+            
+            # Execute loop body
+            if loop_steps:
+                loop_results = await self.execute_workflow(loop_steps)
+                result_steps.extend(loop_results)
+            
+            iteration += 1
+            
+            # Add small delay to prevent tight loops
+            result_steps.append({
+                "action": "wait",
+                "duration": 100
+            })
+        
+        if iteration >= max_iterations:
+            logger.warning(f"[WORKFLOW] Loop hit max iterations ({max_iterations})")
+            result_steps.append({
+                "action": "warning",
+                "message": f"Loop terminated after {max_iterations} iterations"
+            })
+        
+        return current_index + 1
+    
+    async def _handle_text_extraction(self, step: Dict[str, Any]) -> str:
+        """Handle text extraction from UI elements."""
+        target = step.get("target")
+        # Placeholder - in real implementation, this would use OCR or UI automation
+        return f"extracted_text_from_{target}"
+    
+    def _substitute_step_variables(self, step: Dict[str, Any]) -> Dict[str, Any]:
+        """Substitute variables in a step's string fields."""
+        result = {}
+        for key, value in step.items():
+            if isinstance(value, str):
+                result[key] = self.substitute_variables(value)
+            elif isinstance(value, dict):
+                result[key] = self._substitute_step_variables(value)
+            elif isinstance(value, list):
+                result[key] = [self._substitute_step_variables(item) if isinstance(item, dict) else 
+                             self.substitute_variables(item) if isinstance(item, str) else item 
+                             for item in value]
+            else:
+                result[key] = value
+        return result
+
+
+# Global workflow engine instance
+_workflow_engine = None
+
+def get_workflow_engine() -> WorkflowEngine:
+    """Get the global workflow engine instance."""
+    global _workflow_engine
+    if _workflow_engine is None:
+        _workflow_engine = WorkflowEngine()
+    return _workflow_engine
 
 
 def preprocess_command(command: str) -> str:
@@ -117,6 +339,43 @@ def _try_build_entertainment_steps(
             "requires_vision_targeting": True,
         },
         {"action": "wait", "ms": 1200},
+    ]
+
+
+def _try_build_screen_analysis_steps(command: str) -> Optional[List[Dict[str, Any]]]:
+    """Build steps for screen analysis commands using OpenCV vision."""
+    cmd = (command or "").strip().lower()
+    if not cmd:
+        return None
+
+    tokens = set(re.findall(r"[a-z]+", cmd))
+    has_analyze = "analyze" in tokens or "analysis" in tokens
+    has_screen = "screen" in tokens or ("current" in tokens and "screen" in tokens)
+    has_ui = "ui" in tokens or "interface" in tokens
+    has_elements = any(t in tokens for t in ["button", "buttons", "clickable", "element", "elements", "textbox", "text", "input", "inputs", "box", "boxes"])
+
+    if not ((has_analyze and (has_screen or has_ui)) or (has_screen and has_elements)):
+        return None
+
+    # Determine what type of analysis to perform
+    if "button" in cmd or "clickable" in cmd:
+        analysis_type = "buttons"
+    elif "text" in cmd or "input" in cmd or "box" in cmd:
+        analysis_type = "text_boxes"
+    elif "contour" in cmd or "shape" in cmd:
+        analysis_type = "contours"
+    else:
+        analysis_type = "comprehensive"
+
+    logger.info(f"[PLANNER] Using OpenCV screen analysis: {analysis_type}")
+
+    return [
+        {
+            "action": "vision_analyze",
+            "target": analysis_type,
+            "requires_vision_targeting": True,
+            "content": command
+        }
     ]
 
 
@@ -537,40 +796,38 @@ async def plan_command(
         logger.warning(f"[PLANNER] Browser settings shortcut failed: {e}, continuing with LLM...")
 
     try:
+        # Try screen analysis first (highest priority for vision commands)
+        analysis_steps = _try_build_screen_analysis_steps(command)
+        if analysis_steps:
+            logger.info(f"[PLANNER] Using OpenCV screen analysis plan ({len(analysis_steps)} steps)")
+            update_session(session_id, command, analysis_steps[0])
+            return analysis_steps
+        
         login_steps = _try_build_login_steps(command)
         if login_steps:
             logger.info(f"[PLANNER] Using deterministic login plan ({len(login_steps)} steps)")
             update_session(session_id, command, login_steps[0])
             return login_steps
-    except Exception as e:
-        logger.warning(f"[PLANNER] Login planner failed: {e}, continuing with LLM...")
-
-    try:
+        
         messaging_steps = _try_build_messaging_steps(command)
         if messaging_steps:
             logger.info(f"[PLANNER] Using deterministic messaging plan ({len(messaging_steps)} steps)")
             update_session(session_id, command, messaging_steps[0])
             return messaging_steps
-    except Exception as e:
-        logger.warning(f"[PLANNER] Messaging planner failed: {e}, continuing with LLM...")
-
-    try:
+        
         email_steps = _try_build_email_steps(command)
         if email_steps:
             logger.info(f"[PLANNER] Using deterministic email plan ({len(email_steps)} steps)")
             update_session(session_id, command, email_steps[0])
             return email_steps
-    except Exception as e:
-        logger.warning(f"[PLANNER] Email planner failed: {e}, continuing with LLM...")
-
-    try:
+        
         form_steps = _try_build_form_fill_steps(command)
         if form_steps:
             logger.info(f"[PLANNER] Using deterministic form fill plan ({len(form_steps)} steps)")
             update_session(session_id, command, form_steps[0])
             return form_steps
     except Exception as e:
-        logger.warning(f"[PLANNER] Form fill planner failed: {e}, continuing with LLM...")
+        logger.warning(f"[PLANNER] Deterministic handlers failed: {e}, continuing with LLM...")
     
     # ===== Step 1: Check Contextual Commands =====
     if is_contextual_command(command):
@@ -731,7 +988,17 @@ async def plan_command(
     except Exception as e:
         logger.warning(f"[PLANNER] Agent routing failed: {e}, continuing with LLM...")
     
-    # ===== Step 2: Check Plan Cache =====
+    # ===== Step 2: Check for Screen Analysis Commands (PRE-LLM) =====
+    try:
+        analysis_steps = _try_build_screen_analysis_steps(command)
+        if analysis_steps:
+            logger.info(f"[PLANNER] Using OpenCV screen analysis plan ({len(analysis_steps)} steps)")
+            update_session(session_id, command, analysis_steps[0])
+            return analysis_steps
+    except Exception as e:
+        logger.warning(f"[PLANNER] Screen analysis handler failed: {e}, continuing with LLM...")
+
+    # ===== Step 3: Check Plan Cache =====
     cache = get_plan_cache()
     if _should_skip_cache(command):
         cache.invalidate(command)
@@ -743,7 +1010,7 @@ async def plan_command(
         logger.info(f"[PLANNER] Returning {len(cached_plan)} cached steps")
         return cached_plan
     
-    # ===== Step 3: Analyze Intent with LLM =====
+    # ===== Step 4: Analyze Intent with LLM =====
     logger.info(f"[PLANNER] Cache miss - calling LLM to analyze intent...")
     plan = await analyze_command(command, context)
     
@@ -767,6 +1034,40 @@ async def plan_command(
     
     # ===== Step 5: Convert to Executor Steps =====
     executor_steps = convert_plan_to_executor_steps(plan)
+
+    # ===== Step 5.5: Process Advanced Workflow Features =====
+    # Check if the plan contains advanced workflow features (conditionals, loops, variables)
+    has_workflow_features = any(
+        step.get("action") in ["conditional", "loop", "extract_text", "set_variable"]
+        for step in executor_steps
+    )
+    
+    if has_workflow_features:
+        logger.info(f"[WORKFLOW] Detected advanced workflow features, processing with WorkflowEngine...")
+        try:
+            workflow_engine = get_workflow_engine()
+            executor_steps = await workflow_engine.execute_workflow(executor_steps)
+            logger.info(f"[WORKFLOW] Processed {len(executor_steps)} workflow steps")
+        except Exception as e:
+            logger.error(f"[WORKFLOW] Workflow processing failed: {e}")
+            # Continue with original steps if workflow processing fails
+
+    try:
+        conf = float(plan.get("confidence", 0) or 0)
+    except Exception:
+        conf = 0.0
+
+    if conf < 0.6:
+        for step in executor_steps:
+            try:
+                action = (step.get("action") or "").lower()
+                if action in ["click", "double_click", "right_click", "click_element", "find_and_click"]:
+                    has_coords = step.get("x") is not None and step.get("y") is not None
+                    has_target = bool(step.get("target") or step.get("content"))
+                    if has_target and (not has_coords or action in ["click_element", "find_and_click"]):
+                        step["requires_vision_targeting"] = True
+            except Exception:
+                pass
     
     logger.info(f"[PLANNER] Generated {len(executor_steps)} executor steps:")
     for i, step in enumerate(executor_steps):

@@ -12,26 +12,18 @@ using DbUser = KernalAgentBackend.Models.User;
 using BCrypt.Net;
 using Google.Cloud.Firestore;
 
+using Microsoft.AspNetCore.RateLimiting;
+
 namespace KernalAgentBackend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(ApplicationDbContext context, IConfiguration configuration, FirestoreDb firestoreDb, DeviceAuthWebSocketManager deviceAuthWebSocketManager) : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IConfiguration _configuration;
-
-    private readonly DeviceAuthWebSocketManager _deviceAuthWebSocketManager;
-
-    private readonly FirestoreDb _firestoreDb;
-
-    public AuthController(ApplicationDbContext context, IConfiguration configuration, FirestoreDb firestoreDb, DeviceAuthWebSocketManager deviceAuthWebSocketManager)
-    {
-        _context = context;
-        _configuration = configuration;
-        _firestoreDb = firestoreDb;
-        _deviceAuthWebSocketManager = deviceAuthWebSocketManager;
-    }
+    private readonly ApplicationDbContext _context = context;
+    private readonly IConfiguration _configuration = configuration;
+    private readonly DeviceAuthWebSocketManager _deviceAuthWebSocketManager = deviceAuthWebSocketManager;
+    private readonly FirestoreDb _firestoreDb = firestoreDb;
 
     [HttpPost("signup")]
     public async Task<ActionResult<AuthResponse>> Signup([FromBody] SignupRequest request)
