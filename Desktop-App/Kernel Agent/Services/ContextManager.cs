@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -59,6 +60,9 @@ namespace Kernel_Agent.Services
         
         /// <summary>Timestamp of last context update</summary>
         public DateTime LastUpdated { get; private set; } = DateTime.MinValue;
+
+        /// <summary>Open app process names (best-effort)</summary>
+        public System.Collections.Generic.List<string> OpenApps { get; private set; } = new();
         
         // ===== APP TYPE CLASSIFICATION =====
         
@@ -194,6 +198,20 @@ namespace Kernel_Agent.Services
                 }
                 
                 LastUpdated = DateTime.Now;
+
+                try
+                {
+                    OpenApps = Process.GetProcesses()
+                        .Where(p => p.MainWindowHandle != IntPtr.Zero)
+                        .Select(p => p.ProcessName.ToLowerInvariant())
+                        .Distinct()
+                        .Take(25)
+                        .ToList();
+                }
+                catch
+                {
+                    OpenApps = new System.Collections.Generic.List<string>();
+                }
                 
                 Debug.WriteLine($"[CONTEXT] Window: '{ActiveWindowTitle}'");
                 Debug.WriteLine($"[CONTEXT] Process: {ActiveProcessName} ({ActiveAppType})");
@@ -260,6 +278,7 @@ namespace Kernel_Agent.Services
         /// </summary>
         public System.Collections.Generic.Dictionary<string, object> GetContextDict()
         {
+            var uiElements = GetUiElementsSnapshot();
             return new System.Collections.Generic.Dictionary<string, object>
             {
                 { "active_window", ActiveWindowTitle },
@@ -269,7 +288,27 @@ namespace Kernel_Agent.Services
                 { "selected_text", SelectedText },
                 { "last_action", LastAction },
                 { "last_target", LastTarget },
+                { "open_apps", OpenApps },
+                { "ui_elements", uiElements },
             };
+        }
+
+        public System.Collections.Generic.List<string> GetUiElementsSnapshot(int limit = 20)
+        {
+            try
+            {
+                var finder = new UIElementFinder();
+                return finder.GetAllElements()
+                    .Select(e => $"{e.Type}: {e.Name}".Trim())
+                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                    .Distinct()
+                    .Take(limit)
+                    .ToList();
+            }
+            catch
+            {
+                return new System.Collections.Generic.List<string>();
+            }
         }
         
         /// <summary>

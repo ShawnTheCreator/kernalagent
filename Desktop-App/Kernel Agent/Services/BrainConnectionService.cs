@@ -34,7 +34,7 @@ namespace Kernel_Agent.Services
         public event Action<string>? OnAgentOutput;
         public event Action<string>? OnAgentPrompt;
         public event Action<string, string>? OnAuthSuccess;
-        public event Action<string?, string>? OnActionPlanReceived;
+        public event Action<string?, string, double?>? OnActionPlanReceived;
         
         public static BrainConnectionService Instance
         {
@@ -265,10 +265,17 @@ namespace Kernel_Agent.Services
                                 payload.TryGetProperty("steps", out var stepsEl))
                             {
                                 var original = payload.TryGetProperty("original_command", out var oc) ? oc.GetString() : null;
+                                double? confidence = null;
+                                if (payload.TryGetProperty("confidence", out var confEl) &&
+                                    confEl.ValueKind == JsonValueKind.Number &&
+                                    confEl.TryGetDouble(out var confVal))
+                                {
+                                    confidence = confVal;
+                                }
                                 var stepsJson = stepsEl.GetRawText();
                                 if (!string.IsNullOrWhiteSpace(stepsJson))
                                 {
-                                    OnActionPlanReceived?.Invoke(original, stepsJson);
+                                    OnActionPlanReceived?.Invoke(original, stepsJson, confidence);
                                 }
                             }
                         }

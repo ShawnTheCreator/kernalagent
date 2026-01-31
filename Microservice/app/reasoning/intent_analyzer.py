@@ -133,11 +133,13 @@ Your job is to convert natural language commands into structured action plans.
 
 ## Rules:
 1. ALWAYS output valid JSON only - no explanations, no markdown
-2. Understand implicit intent (e.g., "make it quieter" = volume down)
-3. Handle multi-step commands (e.g., "open chrome and go to youtube")
-4. Infer missing details from context
-5. Use confidence score (0.0 to 1.0) to indicate certainty
-6. CRITICAL: For AMBIGUOUS VISUAL TARGETS like "any video", "first result", "a thumbnail", 
+2. Output a single JSON object with no trailing text
+3. Do not include raw newlines inside string values
+4. Understand implicit intent (e.g., "make it quieter" = volume down)
+5. Handle multi-step commands (e.g., "open chrome and go to youtube")
+6. Infer missing details from context
+7. Use confidence score (0.0 to 1.0) to indicate certainty
+8. CRITICAL: For AMBIGUOUS VISUAL TARGETS like "any video", "first result", "a thumbnail", 
    "the video", etc. - use ui_automation with action="click_element" and target=description.
    DO NOT use tab+enter for these - keyboard navigation won't work for visual content!
    Examples:
@@ -534,31 +536,44 @@ class IntentAnalyzer:
             return None
         
         text = response.strip()
-        
-        # Remove markdown code blocks if present
-        if text.startswith("```json"):
-            text = text[7:]
-        elif text.startswith("```"):
-            text = text[3:]
-        
-        if text.endswith("```"):
-            text = text[:-3]
-        
-        text = text.strip()
-        
-        try:
-            result = json.loads(text)
-            
-            # Validate required fields
-            if "actions" in result and isinstance(result["actions"], list):
-                return result
-            
+
+        def _strip_code_fences(value: str) -> str:
+            stripped = value.strip()
+            if stripped.startswith("```json"):
+                stripped = stripped[7:]
+            elif stripped.startswith("```"):
+                stripped = stripped[3:]
+            if stripped.endswith("```"):
+                stripped = stripped[:-3]
+            return stripped.strip()
+
+        def _parse_json(value: str) -> Optional[Dict[str, Any]]:
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError:
+                return None
+            if "actions" in parsed and isinstance(parsed["actions"], list):
+                return parsed
             return None
-            
-        except json.JSONDecodeError as e:
-            logger.error(f"[INTENT] JSON parse error: {e}")
-            logger.error(f"[INTENT] Raw: {text[:200]}")
-            return None
+
+        text = _strip_code_fences(text)
+
+        parsed = _parse_json(text)
+        if parsed:
+            return parsed
+
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            recovered = text[start:end + 1].strip()
+            parsed = _parse_json(recovered)
+            if parsed:
+                logger.warning("[INTENT] Recovered JSON substring from LLM response")
+                return parsed
+
+        logger.error("[INTENT] JSON parse error: failed to parse response")
+        logger.error(f"[INTENT] Raw: {text[:200]}")
+        return None
 
 
 # Singleton instance

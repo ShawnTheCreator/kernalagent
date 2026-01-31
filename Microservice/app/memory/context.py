@@ -40,6 +40,8 @@ class SessionContext:
         self.vision_observations: List[str] = []
         self.focused_window: Optional[str] = None
         self.focused_process: Optional[str] = None
+        self.open_apps: List[str] = []
+        self.ui_elements: List[str] = []
         
         # Action history (circular buffer)
         self.history: deque = deque(maxlen=max_history)
@@ -99,6 +101,8 @@ class SessionContext:
             "active_app": self.active_app,
             "focused_window": self.focused_window,
             "focused_process": self.focused_process,
+            "open_apps": self.open_apps,
+            "ui_elements": self.ui_elements,
             "vision_observations": self.vision_observations[-3:] if self.vision_observations else [],
             "preferences": self.preferences,
         }

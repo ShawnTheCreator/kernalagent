@@ -46,7 +46,10 @@ def preprocess_command(command: str) -> str:
     return command
 
 
-def _try_build_entertainment_steps(command: str) -> Optional[List[Dict[str, Any]]]:
+def _try_build_entertainment_steps(
+    command: str,
+    context: Optional[Dict[str, Any]] = None,
+) -> Optional[List[Dict[str, Any]]]:
     cmd = (command or "").strip()
     if not cmd:
         return None
@@ -97,8 +100,15 @@ def _try_build_entertainment_steps(command: str) -> Optional[List[Dict[str, Any]
         search_url = f"https://music.youtube.com/search?q={quote_plus(query)}"
         click_target = "first song" if ("song" in lower or "music" in lower or is_yt_music) else "first result"
 
+    pref = ((context or {}).get("preferences") or {}).get("default_browser")
+    browser = "chrome"
+    if pref in ("edge", "msedge"):
+        browser = "msedge"
+    elif pref in ("chrome", "firefox"):
+        browser = pref
+
     return [
-        {"action": "open_app", "target": "chrome.exe"},
+        {"action": "open_app", "target": f"{browser}.exe"},
         {"action": "navigate", "url": search_url},
         {"action": "wait", "ms": 2200},
         {
@@ -108,6 +118,51 @@ def _try_build_entertainment_steps(command: str) -> Optional[List[Dict[str, Any]
         },
         {"action": "wait", "ms": 1200},
     ]
+
+
+def _try_build_form_fill_steps(command: str) -> Optional[List[Dict[str, Any]]]:
+    cmd = (command or "").strip()
+    if not cmd:
+        return None
+
+    lower = cmd.lower()
+    if not any(term in lower for term in ["fill", "form", "apply", "submit"]):
+        return None
+
+    # Extract field/value pairs like "name John" or "email john@x.com"
+    pairs: List[Dict[str, str]] = []
+    pattern = r"\b(?P<label>name|email|phone|mobile|address|city|state|zip|postal|company|website|username|password)\s+(?P<value>[^,;\n]+)"
+    for match in re.finditer(pattern, cmd, flags=re.IGNORECASE):
+        label = (match.group("label") or "").strip()
+        value = (match.group("value") or "").strip()
+        if label and value:
+            pairs.append({"label": label, "value": value})
+
+    if not pairs:
+        return None
+
+    steps: List[Dict[str, Any]] = []
+    for pair in pairs:
+        label = pair["label"].title()
+        steps.extend([
+            {
+                "action": "click_element",
+                "target": label,
+                "requires_vision_targeting": True,
+            },
+            {"action": "wait", "ms": 300},
+            {"action": "type_text", "content": pair["value"]},
+            {"action": "wait", "ms": 200},
+        ])
+
+    if "submit" in lower:
+        steps.append({
+            "action": "click_element",
+            "target": "Submit",
+            "requires_vision_targeting": True,
+        })
+
+    return steps
 
 
 def _try_build_browser_settings_steps(
@@ -154,6 +209,23 @@ def _try_build_browser_settings_steps(
     return steps
 
 
+def _should_skip_cache(command: str) -> bool:
+    cmd = (command or "").lower()
+    if not cmd:
+        return False
+
+    if any(term in cmd for term in ["whatsapp", "telegram", "discord", "slack"]):
+        return True
+
+    if "email" in cmd or "mail" in cmd:
+        return True
+
+    if "login" in cmd or "sign in" in cmd:
+        return True
+
+    return False
+
+
 def _extract_message_parts(command: str) -> Optional[Dict[str, str]]:
     cmd = (command or "").strip()
     if not cmd:
@@ -198,6 +270,10 @@ def _try_build_messaging_steps(command: str) -> Optional[List[Dict[str, Any]]]:
     if not parts:
         return None
 
+    tokens = re.findall(r"[a-z0-9]+", lower)
+    has_app_pair = "app" in tokens and any(p in tokens for p in ["whatsapp", "telegram", "discord", "slack"])
+    prefer_desktop = "desktop" in tokens or "application" in tokens or has_app_pair
+
     config = {
         "whatsapp": {
             "exe": "whatsapp.exe",
@@ -225,14 +301,23 @@ def _try_build_messaging_steps(command: str) -> Optional[List[Dict[str, Any]]]:
     if not cfg:
         return None
 
-    steps: List[Dict[str, Any]] = [
-        {
-            "action": "open_app",
-            "target": cfg["exe"],
-            "fallback_url": cfg["fallback"],
-        },
-        {"action": "wait", "ms": 2000},
-    ]
+    steps: List[Dict[str, Any]] = []
+
+    if prefer_desktop:
+        steps.extend([
+            {
+                "action": "open_app",
+                "target": cfg["exe"],
+                "fallback_url": cfg["fallback"],
+            },
+            {"action": "wait", "ms": 2000},
+        ])
+    else:
+        steps.extend([
+            {"action": "open_app", "target": "chrome.exe"},
+            {"action": "navigate", "url": cfg["fallback"]},
+            {"action": "wait", "ms": 2200},
+        ])
 
     if cfg.get("search"):
         steps.append({"action": "hotkey", "content": cfg["search"]})
@@ -359,17 +444,35 @@ def _try_build_login_steps(command: str) -> Optional[List[Dict[str, Any]]]:
         "email": ("outlook.exe", "https://outlook.office.com/mail/"),
     }
 
+    tokens = re.findall(r"[a-z0-9]+", lower)
+    has_app_pair = "app" in tokens and any(
+        p in tokens for p in ["whatsapp", "telegram", "discord", "slack", "outlook", "gmail", "email"]
+    )
+    prefer_desktop = "desktop" in tokens or "application" in tokens or has_app_pair
     exe, fallback = login_targets.get(platform, ("chrome.exe", ""))
 
-    return [
-        {"action": "open_app", "target": exe, "fallback_url": fallback},
-        {"action": "wait", "ms": 2000},
+    steps: List[Dict[str, Any]] = []
+    if prefer_desktop:
+        steps.extend([
+            {"action": "open_app", "target": exe, "fallback_url": fallback},
+            {"action": "wait", "ms": 2000},
+        ])
+    else:
+        steps.extend([
+            {"action": "open_app", "target": "chrome.exe"},
+            {"action": "navigate", "url": fallback},
+            {"action": "wait", "ms": 2200},
+        ])
+
+    steps.extend([
         {"action": "click_element", "target": "Email", "requires_vision_targeting": True},
         {"action": "type_text", "content": creds.get("email", "")},
         {"action": "press_key", "content": "tab"},
         {"action": "type_text", "content": creds.get("password", "")},
         {"action": "press_key", "content": "enter"},
-    ]
+    ])
+
+    return steps
 
 
 async def plan_command(
@@ -416,7 +519,7 @@ async def plan_command(
     context = get_context_for_llm(session_id)
 
     try:
-        entertainment = _try_build_entertainment_steps(command)
+        entertainment = _try_build_entertainment_steps(command, context)
         if entertainment:
             logger.info(f"[PLANNER] Using deterministic entertainment plan ({len(entertainment)} steps)")
             update_session(session_id, command, entertainment[0])
@@ -459,6 +562,15 @@ async def plan_command(
             return email_steps
     except Exception as e:
         logger.warning(f"[PLANNER] Email planner failed: {e}, continuing with LLM...")
+
+    try:
+        form_steps = _try_build_form_fill_steps(command)
+        if form_steps:
+            logger.info(f"[PLANNER] Using deterministic form fill plan ({len(form_steps)} steps)")
+            update_session(session_id, command, form_steps[0])
+            return form_steps
+    except Exception as e:
+        logger.warning(f"[PLANNER] Form fill planner failed: {e}, continuing with LLM...")
     
     # ===== Step 1: Check Contextual Commands =====
     if is_contextual_command(command):
@@ -621,7 +733,11 @@ async def plan_command(
     
     # ===== Step 2: Check Plan Cache =====
     cache = get_plan_cache()
-    cached_plan = cache.get(command)
+    if _should_skip_cache(command):
+        cache.invalidate(command)
+        cached_plan = None
+    else:
+        cached_plan = cache.get(command)
     if cached_plan:
         logger.info(f"[PLANNER] CACHE HIT! Skipping LLM call")
         logger.info(f"[PLANNER] Returning {len(cached_plan)} cached steps")
@@ -657,7 +773,7 @@ async def plan_command(
         logger.info(f"[PLANNER]   Step {i+1}: {step.get('action')} | {step}")
     
     # ===== Step 6: Cache Successful Plan =====
-    if executor_steps and len(executor_steps) > 0:
+    if executor_steps and len(executor_steps) > 0 and not _should_skip_cache(command):
         cache.put(command, executor_steps)
     
     # ===== Step 7: Update Context =====

@@ -28,3 +28,7 @@ wmi
 
 # TTS
 edge-tts
+
+# Computer Vision & OCR
+opencv-python
+easyocr

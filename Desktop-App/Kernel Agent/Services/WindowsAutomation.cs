@@ -15,6 +15,9 @@ namespace Kernel_Agent.Services
 {
     public class WindowsAutomation
     {
+        private readonly bool _naturalExecution;
+        private readonly Random _rng = new Random();
+
         // ===== Win32 API Imports =====
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -49,6 +52,9 @@ namespace Kernel_Agent.Services
         
         [DllImport("user32.dll")]
         private static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
         
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
@@ -57,6 +63,13 @@ namespace Kernel_Agent.Services
         private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT
+        {
+            public int X;
+            public int Y;
+        }
         
         // Message constants for button clicks
         private const uint WM_COMMAND = 0x0111;
@@ -111,8 +124,49 @@ namespace Kernel_Agent.Services
             { "powerpnt.exe", new[] {
                 @"C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE",
                 @"C:\Program Files (x86)\Microsoft Office\root\Office16\POWERPNT.EXE"
+            }},
+            { "whatsapp.exe", new[] {
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\WhatsApp\WhatsApp.exe"),
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\WhatsApp\app-0.0.0\WhatsApp.exe"),
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Programs\WhatsApp\WhatsApp.exe"),
+                @"C:\Program Files\WhatsApp\WhatsApp.exe"
+            }},
+            { "telegram.exe", new[] {
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\Telegram Desktop\Telegram.exe"),
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Telegram Desktop\Telegram.exe")
+            }},
+            { "discord.exe", new[] {
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Discord\Update.exe"),
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\Discord\app-1.0.0\Discord.exe")
+            }},
+            { "slack.exe", new[] {
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\slack\slack.exe"),
+                @"C:\Program Files\Slack\slack.exe"
             }}
         };
+
+        public WindowsAutomation()
+        {
+            _naturalExecution = IsNaturalExecutionEnabled();
+        }
+
+        private static bool IsNaturalExecutionEnabled()
+        {
+            var raw = Environment.GetEnvironmentVariable("NATURAL_EXECUTION");
+            var style = Environment.GetEnvironmentVariable("EXECUTION_STYLE");
+            if (!string.IsNullOrWhiteSpace(style) &&
+                style.Trim().Equals("jarvis", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(raw))
+            {
+                return raw.Trim().Equals("true", StringComparison.OrdinalIgnoreCase) || raw.Trim() == "1";
+            }
+
+            return false;
+        }
 
         // ===== OPEN APPLICATION =====
         public bool OpenApplication(string exeName)
@@ -122,6 +176,47 @@ namespace Kernel_Agent.Services
                 System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opening: {exeName}");
                 
                 string processName = exeName.Replace(".exe", "").Replace(".EXE", "");
+
+                try
+                {
+                    var existing = Process.GetProcessesByName(processName)
+                        .FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
+                    if (existing != null)
+                    {
+                        ShowWindow(existing.MainWindowHandle, SW_RESTORE);
+                        SetForegroundWindow(existing.MainWindowHandle);
+                        System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Focused existing app: {processName}");
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Focus existing app failed: {ex.Message}");
+                }
+
+                if (processName.Equals("whatsapp", StringComparison.OrdinalIgnoreCase))
+                {
+                    var customPath = Environment.GetEnvironmentVariable("WHATSAPP_EXE_PATH") ?? "";
+                    if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+                    {
+                        Process.Start(new ProcessStartInfo { FileName = customPath, UseShellExecute = true });
+                        System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opened WhatsApp via WHATSAPP_EXE_PATH: {customPath}");
+                        return WaitForAppReady(processName);
+                    }
+
+                    var aumid = Environment.GetEnvironmentVariable("WHATSAPP_AUMID") ?? "";
+                    if (!string.IsNullOrWhiteSpace(aumid))
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = "explorer.exe",
+                            Arguments = $"shell:AppsFolder\\{aumid}",
+                            UseShellExecute = true
+                        });
+                        System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Opened WhatsApp via AUMID: {aumid}");
+                        return WaitForAppReady(processName);
+                    }
+                }
                 
                 // Special handling for Chrome - open with default profile to skip profile picker
                 if (exeName.ToLowerInvariant().Contains("chrome"))
@@ -466,7 +561,65 @@ namespace Kernel_Agent.Services
 
         public void TypeIntoApp(string text)
         {
-            System.Windows.Forms.SendKeys.SendWait(text);
+            if (!_naturalExecution)
+            {
+                System.Windows.Forms.SendKeys.SendWait(text);
+                return;
+            }
+
+            TypeIntoAppHumanized(text);
+        }
+
+        private void TypeIntoAppHumanized(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            foreach (var ch in text)
+            {
+                if (ch == '\n' || ch == '\r')
+                {
+                    System.Windows.Forms.SendKeys.SendWait("{ENTER}");
+                    Thread.Sleep(_rng.Next(80, 160));
+                    continue;
+                }
+
+                if (ch == '\t')
+                {
+                    System.Windows.Forms.SendKeys.SendWait("{TAB}");
+                    Thread.Sleep(_rng.Next(80, 160));
+                    continue;
+                }
+
+                System.Windows.Forms.SendKeys.SendWait(EscapeSendKeysChar(ch));
+
+                int delay = char.IsWhiteSpace(ch)
+                    ? _rng.Next(60, 140)
+                    : _rng.Next(30, 90);
+
+                if (_rng.NextDouble() < 0.08)
+                {
+                    delay += _rng.Next(80, 180);
+                }
+
+                Thread.Sleep(delay);
+            }
+        }
+
+        private static string EscapeSendKeysChar(char ch)
+        {
+            if (ch == '{') return "{{}";
+            if (ch == '}') return "{}}";
+
+            const string special = "+^%~()[]";
+            if (special.Contains(ch))
+            {
+                return "{" + ch + "}";
+            }
+
+            return ch.ToString();
         }
 
         public void OpenAndType(string exeName, string processName, string text)
@@ -729,7 +882,7 @@ namespace Kernel_Agent.Services
         public void Click(int x, int y)
         {
             System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Click at ({x}, {y})");
-            SetCursorPos(x, y);
+            MoveMouseInternal(x, y);
             mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
             mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
         }
@@ -737,10 +890,10 @@ namespace Kernel_Agent.Services
         public void DoubleClick(int x, int y)
         {
             System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Double click at ({x}, {y})");
-            SetCursorPos(x, y);
+            MoveMouseInternal(x, y);
             mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
             mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
-            Thread.Sleep(50);
+            Thread.Sleep(_naturalExecution ? _rng.Next(60, 120) : 50);
             mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
             mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
         }
@@ -748,7 +901,7 @@ namespace Kernel_Agent.Services
         public void RightClick(int x, int y)
         {
             System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Right click at ({x}, {y})");
-            SetCursorPos(x, y);
+            MoveMouseInternal(x, y);
             mouse_event(MOUSEEVENTF_RIGHTDOWN, x, y, 0, UIntPtr.Zero);
             mouse_event(MOUSEEVENTF_RIGHTUP, x, y, 0, UIntPtr.Zero);
         }
@@ -756,7 +909,35 @@ namespace Kernel_Agent.Services
         public void MoveMouse(int x, int y)
         {
             System.Diagnostics.Debug.WriteLine($"[AUTOMATION] Move mouse to ({x}, {y})");
-            SetCursorPos(x, y);
+            MoveMouseInternal(x, y);
+        }
+
+        private void MoveMouseInternal(int x, int y)
+        {
+            if (!_naturalExecution)
+            {
+                SetCursorPos(x, y);
+                return;
+            }
+
+            if (!GetCursorPos(out var start))
+            {
+                SetCursorPos(x, y);
+                return;
+            }
+
+            int steps = _rng.Next(12, 20);
+            for (int i = 1; i <= steps; i++)
+            {
+                double t = i / (double)steps;
+                double eased = t * t * (3 - 2 * t); // smoothstep
+                int nx = start.X + (int)((x - start.X) * eased);
+                int ny = start.Y + (int)((y - start.Y) * eased);
+                SetCursorPos(nx, ny);
+                Thread.Sleep(_rng.Next(5, 14));
+            }
+
+            Thread.Sleep(_rng.Next(20, 60));
         }
 
         public void Scroll(string direction, int amount = 3)

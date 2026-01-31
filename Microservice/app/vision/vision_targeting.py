@@ -18,7 +18,7 @@ async def find_click_target(
     goal_context: str = ""
 ) -> Optional[Dict[str, Any]]:
     """
-    Use vision to find a clickable target with retry logic.
+    Use vision to find a clickable target with OpenCV/EasyOCR fallback to Gemini.
     
     Args:
         screenshot_base64: Base64 encoded screenshot
@@ -28,6 +28,17 @@ async def find_click_target(
     Returns:
         {"x": int, "y": int, "confidence": float, "element": str} or None
     """
+    # Try OpenCV/EasyOCR first for UI elements
+    try:
+        from app.vision.opencv_detector import find_click_target_opencv
+        opencv_result = find_click_target_opencv(screenshot_base64, target_description)
+        if opencv_result:
+            logger.info(f"[TARGETING] OpenCV found '{target_description}' at ({opencv_result['x']}, {opencv_result['y']})")
+            return opencv_result
+    except Exception as e:
+        logger.warning(f"[TARGETING] OpenCV detection failed: {e}")
+
+    # Fallback to Gemini vision
     from app.vision.vision_analyzer import get_vision_analyzer
     from app.core.retry import retry_with_backoff
     
@@ -60,10 +71,11 @@ async def find_click_target(
             result = _parse_targeting_response(response.text)
             
             if result and result.get("found"):
-                logger.info(f"[TARGETING] Found '{target_description}' at ({result['x']}, {result['y']})")
+                logger.info(f"[TARGETING] Gemini found '{target_description}' at ({result['x']}, {result['y']})")
+                result["method"] = "gemini"
                 return result
             else:
-                logger.warning(f"[TARGETING] Could not find: {target_description}")
+                logger.warning(f"[TARGETING] Gemini could not find: {target_description}")
                 return None
         return None
     
@@ -76,7 +88,7 @@ async def find_click_target(
             max_delay=30.0
         )
     except Exception as e:
-        logger.error(f"[TARGETING] Vision error after retries: {e}")
+        logger.error(f"[TARGETING] Gemini error after retries: {e}")
         return None
 
 

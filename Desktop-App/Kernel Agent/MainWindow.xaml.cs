@@ -143,11 +143,11 @@ namespace Kernel_Agent
                         _ = Task.Run(async () => await HandleAuthSuccessAsync(token));
                     };
 
-                    BrainConnectionService.Instance.OnActionPlanReceived += (originalCommand, stepsJson) =>
+                    BrainConnectionService.Instance.OnActionPlanReceived += (originalCommand, stepsJson, confidence) =>
                     {
                         _ = Task.Run(async () =>
                         {
-                            await ExecuteActionPlanAsync(originalCommand, stepsJson);
+                            await ExecuteActionPlanAsync(originalCommand, stepsJson, confidence);
                         });
                     };
 
@@ -227,7 +227,7 @@ namespace Kernel_Agent
             }
         }
 
-        private async Task ExecuteActionPlanAsync(string? originalCommand, string stepsJson)
+        private async Task ExecuteActionPlanAsync(string? originalCommand, string stepsJson, double? confidence)
         {
             if (string.IsNullOrWhiteSpace(stepsJson))
                 return;
@@ -249,6 +249,7 @@ namespace Kernel_Agent
                     return;
 
                 _smartExecutor.SetOriginalGoal(originalCommand ?? "");
+                _smartExecutor.SetPlanConfidence(confidence);
 
                 ShowStepProgress(totalSteps, "Starting...");
 

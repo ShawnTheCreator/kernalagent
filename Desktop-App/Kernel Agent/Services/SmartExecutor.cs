@@ -26,8 +26,10 @@ namespace Kernel_Agent.Services
         private readonly ContextManager _context;    // NEW: Context tracking
         private const int MAX_RETRIES = 3;
         private const int BASE_DELAY_MS = 100;
+        private const double RECOVERY_CONFIDENCE_THRESHOLD = 0.8;
         private string _currentGoal = "";  // Track original command for recovery
         private string _lastOpenedApp = ""; // Track last opened app for focus before typing
+        private double? _planConfidence = null;
 
         private const int DEFAULT_EXPECT_TIMEOUT_MS = 4000;
 
@@ -74,6 +76,33 @@ namespace Kernel_Agent.Services
         public void SetOriginalGoal(string goal)
         {
             _currentGoal = goal;
+        }
+
+        public void SetPlanConfidence(double? confidence)
+        {
+            _planConfidence = confidence;
+        }
+
+        private bool ShouldAttemptRecovery()
+        {
+            if (!IsVisionAllowed())
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(_currentGoal))
+            {
+                return false;
+            }
+
+            // Skip recovery if LLM confidence was high (>0.85)
+            if (_planConfidence > 0.85)
+            {
+                Debug.WriteLine($"[EXECUTOR] Skipping recovery due to high plan confidence: {_planConfidence:F2}");
+                return false;
+            }
+
+            return true;
         }
 
         private static VisionMode GetVisionMode()
@@ -340,7 +369,7 @@ namespace Kernel_Agent.Services
                             // Unknown dialog - call vision recovery
                             Debug.WriteLine($"[EXECUTOR] Unknown dialog, calling vision recovery...");
                             
-                            if (!string.IsNullOrEmpty(_currentGoal) && IsVisionAllowed())
+                            if (!string.IsNullOrEmpty(_currentGoal) && ShouldAttemptRecovery())
                             {
                                 _context.RefreshContext();
                                 var openedApps = string.IsNullOrEmpty(_lastOpenedApp) ? Array.Empty<string>() : new[] { _lastOpenedApp };
@@ -375,7 +404,7 @@ namespace Kernel_Agent.Services
                     Debug.WriteLine($"[EXECUTOR] Action failed: {actionResult.Action}, attempting vision recovery...");
                     
                     // Attempt vision-based recovery
-                    if (!string.IsNullOrEmpty(_currentGoal) && IsVisionAllowed())
+                    if (!string.IsNullOrEmpty(_currentGoal) && ShouldAttemptRecovery())
                     {
                         _context.RefreshContext();
                         var openedApps = string.IsNullOrEmpty(_lastOpenedApp) ? Array.Empty<string>() : new[] { _lastOpenedApp };
@@ -759,6 +788,8 @@ namespace Kernel_Agent.Services
                             if (!string.IsNullOrWhiteSpace(fallbackUrl))
                             {
                                 Debug.WriteLine($"[EXECUTOR] App open failed, falling back to web: {fallbackUrl}");
+                                _automation.PressKey("enter");
+                                _automation.PressKey("escape");
                                 if (_automation.OpenApplication("chrome.exe"))
                                 {
                                     await Task.Delay(800);

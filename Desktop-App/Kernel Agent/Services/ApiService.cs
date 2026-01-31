@@ -546,6 +546,10 @@ namespace Kernel_Agent.Services
                     // Use SmartExecutor for retry logic, timing, and VISION RECOVERY
                     var executor = new SmartExecutor();
                     executor.SetOriginalGoal(commandText);  // Pass original command for vision recovery
+                    if (root.TryGetProperty("confidence", out var confEl) && confEl.ValueKind == JsonValueKind.Number)
+                    {
+                        executor.SetPlanConfidence(confEl.GetDouble());
+                    }
                     var result = await executor.ExecutePlanAsync(stepsElement);
                     
                     if (!result.Success)

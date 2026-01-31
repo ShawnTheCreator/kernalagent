@@ -16,6 +16,18 @@ import time
 import logging
 from datetime import datetime
 
+# ===== VISION INTEGRATION =====
+from app.vision.opencv_detector import (
+    analyze_ui_comprehensive,
+    detect_buttons,
+    detect_text_boxes,
+    detect_contours_advanced,
+    match_template_advanced,
+    detect_color_changes,
+    find_click_target_opencv,
+    base64_to_cv2
+)
+
 # ===== MEMORY INTEGRATION =====
 from app.db.memory_bridge import (
     log_event,
@@ -67,6 +79,37 @@ class MemoryEmbeddingRebuildRequest(BaseModel):
     force: bool = False
 
 
+# ===== VISION REQUEST MODELS =====
+
+class VisionAnalysisRequest(BaseModel):
+    """Request for vision-based UI analysis."""
+    image_b64: str
+    target_description: Optional[str] = None
+    analysis_type: str = "comprehensive"  # comprehensive, buttons, text_boxes, contours
+
+
+class TemplateMatchRequest(BaseModel):
+    """Request for template matching."""
+    image_b64: str
+    template_b64: str
+    threshold: float = 0.8
+    scale_invariance: bool = True
+
+
+class VisualVerificationRequest(BaseModel):
+    """Request for visual verification (before/after)."""
+    image_before_b64: str
+    image_after_b64: str
+    region: Optional[List[int]] = None  # [x, y, x2, y2]
+
+
+class ClickTargetRequest(BaseModel):
+    """Request for finding click targets."""
+    image_b64: str
+    target_description: str
+    element_type: str = "any"  # any, button, text_box
+
+
 class ActionStep(BaseModel):
     """Legacy action format for backward compatibility with C#."""
     action: str
@@ -92,6 +135,7 @@ class PlanResponse(BaseModel):
     source: Optional[str] = None  # "gemini" or "deterministic"
     processing_time_ms: Optional[int] = None
     timestamp: Optional[str] = None
+    confidence: Optional[float] = None
 
 
 # ===== MEMORY INTEGRATION FUNCTIONS =====
@@ -927,6 +971,142 @@ async def agent_status():
     }
 
 
+# ===== VISION API ENDPOINTS =====
+
+@router.post("/vision/analyze")
+async def analyze_vision(request: VisionAnalysisRequest) -> Dict[str, Any]:
+    """
+    Comprehensive UI analysis using advanced OpenCV detection.
+    
+    Returns:
+        Complete UI analysis with buttons, text boxes, contours, and text elements
+    """
+    try:
+        if request.analysis_type == "comprehensive":
+            return analyze_ui_comprehensive(request.image_b64, request.target_description)
+        
+        img = base64_to_cv2(request.image_b64)
+        if img is None:
+            raise HTTPException(status_code=400, detail="Invalid image data")
+        
+        results = {"image_size": {"width": img.shape[1], "height": img.shape[0]}}
+        
+        if request.analysis_type == "buttons":
+            results["buttons"] = detect_buttons(img)
+        elif request.analysis_type == "text_boxes":
+            results["text_boxes"] = detect_text_boxes(img)
+        elif request.analysis_type == "contours":
+            results["contours"] = detect_contours_advanced(img)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown analysis type: {request.analysis_type}")
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"[VISION_API] Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/vision/match-template")
+async def match_template_vision(request: TemplateMatchRequest) -> Dict[str, Any]:
+    """
+    Advanced template matching with scale invariance.
+    
+    Returns:
+        List of template matches with coordinates and confidence
+    """
+    try:
+        img = base64_to_cv2(request.image_b64)
+        template = base64_to_cv2(request.template_b64)
+        
+        if img is None or template is None:
+            raise HTTPException(status_code=400, detail="Invalid image or template data")
+        
+        matches = match_template_advanced(
+            img, template, 
+            threshold=request.threshold,
+            scale_invariance=request.scale_invariance
+        )
+        
+        return {
+            "matches": matches,
+            "total_matches": len(matches),
+            "template_size": {"width": template.shape[1], "height": template.shape[0]}
+        }
+        
+    except Exception as e:
+        logger.error(f"[VISION_API] Template matching failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/vision/verify-changes")
+async def verify_visual_changes(request: VisualVerificationRequest) -> Dict[str, Any]:
+    """
+    Detect visual changes between before/after images.
+    
+    Returns:
+        Change analysis with significant regions and metrics
+    """
+    try:
+        img_before = base64_to_cv2(request.image_before_b64)
+        img_after = base64_to_cv2(request.image_after_b64)
+        
+        if img_before is None or img_after is None:
+            raise HTTPException(status_code=400, detail="Invalid image data")
+        
+        region = None
+        if request.region and len(request.region) == 4:
+            region = tuple(request.region)
+        
+        changes = detect_color_changes(img_before, img_after, region)
+        
+        return {
+            "changes": changes,
+            "verification_passed": changes["significant_change"],
+            "change_summary": {
+                "avg_difference": changes["avg_color_difference"],
+                "max_difference": changes["max_color_difference"],
+                "change_percentage": changes["change_percentage"]
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"[VISION_API] Visual verification failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/vision/find-target")
+async def find_click_target_vision(request: ClickTargetRequest) -> Dict[str, Any]:
+    """
+    Find clickable targets using advanced OpenCV detection.
+    
+    Returns:
+        Target coordinates with confidence and method used
+    """
+    try:
+        result = find_click_target_opencv(
+            request.image_b64,
+            request.target_description,
+            request.element_type
+        )
+        
+        if result:
+            return {
+                "target_found": True,
+                "result": result,
+                "method": result.get("method", "opencv")
+            }
+        else:
+            return {
+                "target_found": False,
+                "message": "Target not found with OpenCV, will fall back to Gemini"
+            }
+        
+    except Exception as e:
+        logger.error(f"[VISION_API] Target finding failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ===== LLM-FIRST ARCHITECTURE (v2) =====
 
 @router.post("/plan/v2", response_model=PlanResponse)
@@ -960,6 +1140,14 @@ async def get_action_plan_v2(request: PlanRequest):
                 active_app = request.context.get("active_app")
                 if isinstance(active_app, str) and active_app:
                     session.active_app = active_app.replace(".exe", "")
+
+                open_apps = request.context.get("open_apps")
+                if isinstance(open_apps, list):
+                    session.open_apps = [str(app).lower() for app in open_apps if str(app).strip()]
+
+                ui_elements = request.context.get("ui_elements")
+                if isinstance(ui_elements, list):
+                    session.ui_elements = [str(el) for el in ui_elements if str(el).strip()]
             except Exception as e:
                 logger.warning(f"[v2] Context sync failed: {e}")
 
@@ -987,6 +1175,7 @@ async def get_action_plan_v2(request: PlanRequest):
                     }
                 ],
                 source=source,
+                confidence=brain_output.confidence,
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
         
@@ -1013,6 +1202,7 @@ async def get_action_plan_v2(request: PlanRequest):
                 session_id=session_id,
                 steps=step_dicts,
                 source="llm_first",
+                confidence=brain_output.confidence,
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
         
@@ -1030,6 +1220,7 @@ async def get_action_plan_v2(request: PlanRequest):
                     }
                 ],
                 source=source,
+                confidence=brain_output.confidence,
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
     
