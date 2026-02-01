@@ -87,12 +87,19 @@ class ContinuousVoiceRecognizer:
         
         # Initialize recognizer
         if SR_AVAILABLE:
-            self.recognizer = sr.Recognizer()
-            self.recognizer.energy_threshold = 300
-            self.recognizer.dynamic_energy_threshold = True
-            self.recognizer.pause_threshold = 0.8  # Seconds of silence to consider phrase complete
-            self.microphone = sr.Microphone()
-            logger.info("[VOICE] ✓ ContinuousVoiceRecognizer initialized")
+            try:
+                self.recognizer = sr.Recognizer()
+                self.recognizer.energy_threshold = 300
+                self.recognizer.dynamic_energy_threshold = True
+                self.recognizer.pause_threshold = 0.8  # Seconds of silence to consider phrase complete
+                self.microphone = sr.Microphone()
+                logger.info("[VOICE] ✓ ContinuousVoiceRecognizer initialized with microphone")
+            except Exception as e:
+                # PyAudio not installed or microphone not available
+                self.recognizer = sr.Recognizer()
+                self.microphone = None
+                logger.warning(f"[VOICE] Microphone not available (PyAudio not installed?): {e}")
+                logger.warning("[VOICE] Voice recognition will be limited. Install PyAudio for full support.")
         else:
             self.recognizer = None
             self.microphone = None
@@ -270,6 +277,12 @@ class ContinuousVoiceRecognizer:
         """Start continuous voice recognition."""
         if not SR_AVAILABLE:
             logger.error("[VOICE] Cannot start - speech_recognition not available")
+            return False
+        
+        if self.microphone is None:
+            logger.error("[VOICE] Cannot start - microphone not available (PyAudio not installed)")
+            if self.on_error:
+                self.on_error("Microphone not available - PyAudio not installed for Python 3.14")
             return False
         
         if self._stop_listening_func:

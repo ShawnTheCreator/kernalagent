@@ -53,6 +53,14 @@ def load_model():
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
         from peft import PeftModel
+        from huggingface_hub import try_to_load_from_cache
+        
+        # Check if base model is already cached - skip if not to avoid blocking startup
+        cached_config = try_to_load_from_cache(BASE_MODEL, "config.json")
+        if cached_config is None:
+            logger.info("ℹ️ Gemma base model not cached, skipping to avoid blocking startup")
+            logger.info("   Run 'huggingface-cli download google/gemma-2b' to download it")
+            return None, None
         
         logger.info(f"Loading fine-tuned Gemma from {MODEL_DIR}")
         
@@ -65,12 +73,13 @@ def load_model():
         # Load tokenizer
         _tokenizer = AutoTokenizer.from_pretrained(str(MODEL_DIR))
         
-        # Load base model
+        # Load base model (from cache only, no download)
         base_model = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL,
             torch_dtype=dtype,
             device_map="auto" if device == "cuda" else None,
             low_cpu_mem_usage=True,
+            local_files_only=True,  # Don't download, use cached only
         )
         
         if device == "cpu":

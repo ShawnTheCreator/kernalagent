@@ -48,12 +48,14 @@ class FloatingWidget(QWidget):
     def init_ui(self):
         """Initialize the UI components"""
         # Window flags: frameless, always on top, tool window
+        # Note: Avoid WA_TranslucentBackground on Windows with threading
         self.setWindowFlags(
             Qt.FramelessWindowHint | 
             Qt.WindowStaysOnTopHint | 
             Qt.Tool
         )
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        # Use solid background instead of translucent to avoid UpdateLayeredWindowIndirect errors
+        self.setStyleSheet("background-color: #1a1a2e; border-radius: 15px;")
         
         # Fixed size for the floating widget
         self.setFixedSize(200, 120)
