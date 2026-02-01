@@ -13,7 +13,7 @@ pytest-asyncio
 groq
 SpeechRecognition
 vosk
-pyaudio; python_version < "3.13"
+pyaudio; python_version < "3.13" and sys_platform == "win32"
 
 # Janitor Agent
 watchdog
@@ -23,8 +23,8 @@ requests
 
 # Sentinel Agent
 numpy
-pywin32
-wmi
+pywin32; sys_platform == "win32"
+wmi; sys_platform == "win32"
 
 # TTS
 edge-tts
