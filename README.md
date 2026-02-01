@@ -6,8 +6,8 @@
 <br />
 <div align="center">
   <a href="https://github.com/ShawnTheCreator/kernalagent">
-    <img src="<img width="698" height="376" alt="image" src="https://github.com/user-attachments/assets/41d8a1ca-9c62-47cd-8505-8b7c00649e1f" />
-" alt="Logo" width="80" height="80">
+    <img width="698" height="376" alt="image" src="https://github.com/user-attachments/assets/55e7cd94-7579-497f-9fb0-d2ff82dd7cd2" />
+
   </a>
 
   <h3 align="center">Kernel Agent</h3>
