@@ -5,5 +5,5 @@ google-genai
 pillow
 python-dotenv
 psutil
-wmi
-pywin32
+wmi; sys_platform == "win32"
+pywin32; sys_platform == "win32"
