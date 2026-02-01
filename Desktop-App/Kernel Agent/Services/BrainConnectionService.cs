@@ -413,5 +413,26 @@ namespace Kernel_Agent.Services
             OnConnectionStateChanged?.Invoke(false);
             Debug.WriteLine("[BRAIN] Disconnected");
         }
+        
+        /// <summary>
+        /// Send window state change to Python brain (for floating widget).
+        /// </summary>
+        /// <param name="state">"minimized" or "restored"</param>
+        public async Task SendWindowStateAsync(string state)
+        {
+            if (!_isConnected)
+            {
+                Debug.WriteLine($"[BRAIN] Not connected, cannot send window state: {state}");
+                return;
+            }
+            
+            await SendMessageAsync(new
+            {
+                type = "window_state",
+                state = state
+            });
+            
+            Debug.WriteLine($"[BRAIN] Sent window state: {state}");
+        }
     }
 }

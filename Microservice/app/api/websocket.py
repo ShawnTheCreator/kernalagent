@@ -406,6 +406,33 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None, clien
                         "title": "Running Skill",
                         "description": f"Executing skill: {skill_id}"
                     })
+            
+            # Handle window state changes from C# (minimize/restore)
+            if msg_type == "window_state":
+                state = data.get("state", "")
+                print(f"[WS] Window state changed: {state}")
+                
+                try:
+                    from app.gui.floating_widget import get_widget_manager, init_floating_widget
+                    widget_manager = get_widget_manager()
+                    
+                    if state == "minimized":
+                        # Lazily start the widget if not already running
+                        if not widget_manager._running:
+                            print("[WS] Starting floating widget for the first time...")
+                            init_floating_widget()
+                        
+                        print("[WS] Showing floating widget")
+                        widget_manager.show()
+                    elif state == "restored":
+                        print("[WS] Hiding floating widget")
+                        widget_manager.hide()
+                except ImportError:
+                    print("[WS] Floating widget not available (PyQt5 not installed)")
+                except Exception as e:
+                    print(f"[WS] Error handling window state: {e}")
+                    import traceback
+                    traceback.print_exc()
     
     except WebSocketDisconnect:
         await manager.disconnect(websocket)

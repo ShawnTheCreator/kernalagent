@@ -5,7 +5,6 @@ Falls back to Gemini if OpenCV/EasyOCR can't find the target.
 
 import cv2
 import numpy as np
-import easyocr
 import base64
 import logging
 from typing import List, Dict, Any, Optional, Tuple
@@ -14,15 +13,32 @@ import io
 
 logger = logging.getLogger(__name__)
 
-# Lazy-load EasyOCR to avoid startup delay
+# Lazy-load EasyOCR to avoid startup delay (torch is heavy)
 _reader = None
+_easyocr_available = None
 
-def get_ocr_reader() -> easyocr.Reader:
-    global _reader
+def get_ocr_reader():
+    """Lazily load EasyOCR reader to avoid blocking startup with torch initialization."""
+    global _reader, _easyocr_available
+    
+    if _easyocr_available is False:
+        return None
+        
     if _reader is None:
-        logger.info("[OPENCV] Initializing EasyOCR reader...")
-        _reader = easyocr.Reader(['en'], gpu=False)
-        logger.info("[OPENCV] EasyOCR initialized")
+        try:
+            import easyocr
+            logger.info("[OPENCV] Initializing EasyOCR reader (this may take a moment)...")
+            _reader = easyocr.Reader(['en'], gpu=False)
+            _easyocr_available = True
+            logger.info("[OPENCV] EasyOCR initialized successfully")
+        except ImportError:
+            logger.warning("[OPENCV] EasyOCR not installed - OCR features disabled")
+            _easyocr_available = False
+            return None
+        except Exception as e:
+            logger.warning(f"[OPENCV] EasyOCR initialization failed: {e}")
+            _easyocr_available = False
+            return None
     return _reader
 
 

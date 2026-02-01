@@ -1735,6 +1735,167 @@ namespace Kernel_Agent.Services
                         result.Success = true;
                     }
                     break;
+
+                // ===== BEAST-LEVEL KEYBOARD CONTROL =====
+                case "type_fast":
+                    if (step.TryGetProperty("text", out var typeTextEl))
+                    {
+                        string typeText = typeTextEl.GetString() ?? "";
+                        int delayMs = step.TryGetProperty("delay_ms", out var delayEl) ? 
+                            delayEl.GetInt32() : 10;
+                        result.Success = PowerfulExecutor.TypeFast(typeText, delayMs);
+                    }
+                    break;
+
+
+                case "hold_key":
+                    if (step.TryGetProperty("key", out var holdKeyEl) && 
+                        step.TryGetProperty("duration_ms", out var durationEl))
+                    {
+                        string holdKey = holdKeyEl.GetString() ?? "";
+                        int duration = durationEl.GetInt32();
+                        result.Success = PowerfulExecutor.HoldKey(holdKey, duration);
+                    }
+                    break;
+
+
+                // ===== BEAST-LEVEL MOUSE CONTROL =====
+
+                case "click_mouse":
+                    int clickX = step.TryGetProperty("x", out var clickXEl) ? clickXEl.GetInt32() : -1;
+                    int clickY = step.TryGetProperty("y", out var clickYEl) ? clickYEl.GetInt32() : -1;
+                    string clickButton = step.TryGetProperty("button", out var btnEl) ? 
+                        (btnEl.GetString() ?? "left") : "left";
+                    result.Success = PowerfulExecutor.ClickMouse(clickX, clickY, clickButton);
+                    break;
+
+
+                // ===== WINDOW CONTROL =====
+
+
+                case "close_window":
+                    if (step.TryGetProperty("process_name", out var closeProcEl))
+                    {
+                        string closeProc = closeProcEl.GetString() ?? "";
+                        result.Success = PowerfulExecutor.CloseWindow(closeProc);
+                    }
+                    break;
+
+                // ===== REGISTRY & SYSTEM CONFIG =====
+                case "get_registry":
+                    if (step.TryGetProperty("path", out var regPathEl) && 
+                        step.TryGetProperty("value", out var regValEl))
+                    {
+                        string regPath = regPathEl.GetString() ?? "";
+                        string regVal = regValEl.GetString() ?? "";
+                        string regResult = PowerfulExecutor.GetRegistryValue(regPath, regVal);
+                        result.Success = !string.IsNullOrEmpty(regResult);
+                        result.Details = regResult;
+                    }
+                    break;
+
+                case "set_registry":
+                    if (step.TryGetProperty("path", out var setRegPathEl) && 
+                        step.TryGetProperty("value", out var setRegValEl) &&
+                        step.TryGetProperty("data", out var setDataEl))
+                    {
+                        string setRegPath = setRegPathEl.GetString() ?? "";
+                        string setRegVal = setRegValEl.GetString() ?? "";
+                        string setData = setDataEl.GetString() ?? "";
+                        result.Success = PowerfulExecutor.SetRegistryValue(setRegPath, setRegVal, setData);
+                    }
+                    break;
+
+                // ===== WEB AUTOMATION =====
+                case "fetch_web":
+                    if (step.TryGetProperty("url", out var fetchUrlEl))
+                    {
+                        string url = fetchUrlEl.GetString() ?? "";
+                        var webTask = PowerfulExecutor.FetchWebPage(url);
+                        webTask.Wait(10000);
+                        string webContent = webTask.Result;
+                        result.Success = !string.IsNullOrEmpty(webContent);
+                        result.Details = webContent;
+                    }
+                    break;
+
+                case "send_web_request":
+                    if (step.TryGetProperty("url", out var reqUrlEl))
+                    {
+                        string reqUrl = reqUrlEl.GetString() ?? "";
+                        string reqMethod = step.TryGetProperty("method", out var methodEl) ? 
+                            (methodEl.GetString() ?? "GET") : "GET";
+                        string reqBody = step.TryGetProperty("body", out var bodyEl) ? 
+                            (bodyEl.GetString() ?? null) : null;
+                        var webReqTask = PowerfulExecutor.SendWebRequest(reqUrl, reqMethod, reqBody);
+                        webReqTask.Wait(10000);
+                        result.Success = webReqTask.Result;
+                    }
+                    break;
+
+                // ===== ENVIRONMENT & SYSTEM =====
+                case "get_env_var":
+                    if (step.TryGetProperty("name", out var envNameEl))
+                    {
+                        string envName = envNameEl.GetString() ?? "";
+                        string envValue = PowerfulExecutor.GetEnvVariable(envName);
+                        result.Success = !string.IsNullOrEmpty(envValue);
+                        result.Details = envValue;
+                    }
+                    break;
+
+                case "set_env_var":
+                    if (step.TryGetProperty("name", out var setEnvNameEl) && 
+                        step.TryGetProperty("value", out var setEnvValEl))
+                    {
+                        string setEnvName = setEnvNameEl.GetString() ?? "";
+                        string setEnvVal = setEnvValEl.GetString() ?? "";
+                        result.Success = PowerfulExecutor.SetEnvVariable(setEnvName, setEnvVal);
+                    }
+                    break;
+
+                case "run_command":
+                    if (step.TryGetProperty("command", out var cmdEl))
+                    {
+                        string cmd = cmdEl.GetString() ?? "";
+                        string cmdArgs = step.TryGetProperty("args", out var argsEl) ? 
+                            (argsEl.GetString() ?? "") : "";
+                        var cmdTask = PowerfulExecutor.RunCommand(cmd, cmdArgs);
+                        cmdTask.Wait(10000);
+                        result.Success = !string.IsNullOrEmpty(cmdTask.Result);
+                        result.Details = cmdTask.Result;
+                    }
+                    break;
+
+                case "system_info":
+                    string sysInfo = PowerfulExecutor.GetSystemInfo();
+                    result.Success = !string.IsNullOrEmpty(sysInfo);
+                    result.Details = sysInfo;
+                    break;
+
+                // ===== EXTENDED CLIPBOARD =====
+                case "get_clipboard":
+                    string clipboardText = PowerfulExecutor.GetClipboardText();
+                    result.Success = !string.IsNullOrEmpty(clipboardText);
+                    result.Details = clipboardText;
+                    break;
+
+                case "set_clipboard":
+                    if (step.TryGetProperty("text", out var clipTextEl))
+                    {
+                        string clipText = clipTextEl.GetString() ?? "";
+                        result.Success = PowerfulExecutor.SetClipboardText(clipText);
+                    }
+                    break;
+
+                // ===== NOTIFICATIONS =====
+                case "show_notification":
+                    string notifTitle = step.TryGetProperty("title", out var titleEl) ? 
+                        (titleEl.GetString() ?? "Kernel") : "Kernel";
+                    string notifMsg = step.TryGetProperty("message", out var msgEl) ? 
+                        (msgEl.GetString() ?? "") : "";
+                    result.Success = PowerfulExecutor.ShowNotification(notifTitle, notifMsg);
+                    break;
                 
                 default:
                     result.Success = false;
@@ -1799,9 +1960,6 @@ namespace Kernel_Agent.Services
                     break;
                     
                 case "click":
-                case "double_click":
-                    await Task.Delay(300);  // Small fixed delay after clicking
-                    break;
                     
                 default:
                     await Task.Delay(BASE_DELAY_MS);

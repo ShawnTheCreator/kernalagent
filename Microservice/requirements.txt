@@ -32,3 +32,6 @@ edge-tts
 # Computer Vision & OCR
 opencv-python
 easyocr
+
+# GUI (Floating Widget)
+PyQt5>=5.15.0

@@ -147,6 +147,7 @@ async def startup_event():
         logger.info(f"   - Frame Differ: ✅")
         logger.info(f"   - Vision: {'✅ ENABLED' if settings.ENABLE_VISION else '❌ DISABLED'}")
         logger.info(f"   - Structured Outputs: {'✅ ENABLED' if settings.ENABLE_STRUCTURED_OUTPUT else '❌ DISABLED'}")
+        logger.info(f"   - Floating Widget: ✅ (lazy-loaded when minimized)")
         
     except Exception as e:
         logger.error(f"❌ Failed to initialize Gemini 3 components: {e}")

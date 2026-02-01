@@ -20,7 +20,6 @@ namespace Kernel_Agent
 {
     public sealed partial class MainWindow : Window
     {
-        private OrbOverlayWindow? _orbOverlayWindow;
         private bool _isRecording = false;
         private string _loginDeviceId = Guid.NewGuid().ToString();
         
@@ -1370,62 +1369,38 @@ namespace Kernel_Agent
             {
                 if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Minimized)
                 {
-                    // Create and show the floating orb overlay
-                    if (_orbOverlayWindow == null)
+                    // Send window state to Python brain for floating widget
+                    _ = Task.Run(async () =>
                     {
-                        _orbOverlayWindow = new OrbOverlayWindow();
-                        
-                        // Wire up orb events
-                        _orbOverlayWindow.OnExpandRequested += () =>
+                        try
                         {
-                            // Restore main window
-                            DispatcherQueue.TryEnqueue(() =>
-                            {
-                                this.Activate();
-                                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                                var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-                                var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-                                if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p)
-                                {
-                                    p.Restore();
-                                }
-                            });
-                        };
-                        
-                        _orbOverlayWindow.OnExitRequested += () =>
+                            await BrainConnectionService.Instance.SendWindowStateAsync("minimized");
+                        }
+                        catch (Exception ex)
                         {
-                            // Close entire application
-                            DispatcherQueue.TryEnqueue(() =>
-                            {
-                                _orbOverlayWindow?.Close();
-                                _orbOverlayWindow = null;
-                                this.Close();
-                            });
-                        };
-                    }
-                    
-                    try 
-                    {
-                        _orbOverlayWindow.Activate();
-                        _orbOverlayWindow.MoveToTopCenter();
-                    } 
-                    catch (Exception ex) 
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error activating Orb: {ex.Message}");
-                        // Re-create if disposed/closed unexpectedly
-                        _orbOverlayWindow = new OrbOverlayWindow();
-                        _orbOverlayWindow.MoveToTopCenter();
-                        _orbOverlayWindow.Activate();
-                    }
+                            System.Diagnostics.Debug.WriteLine($"Error sending minimize state: {ex.Message}");
+                        }
+                    });
 
                     // Start orb voice mode (always-on listening)
                     _ = Task.Run(StartOrbVoiceModeAsync);
                 }
                 else
                 {
+                    // Send restored state to Python brain
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await BrainConnectionService.Instance.SendWindowStateAsync("restored");
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error sending restored state: {ex.Message}");
+                        }
+                    });
+
                     _ = Task.Run(StopOrbVoiceModeAsync);
-                    _orbOverlayWindow?.Close();
-                    _orbOverlayWindow = null;
                 }
             }
         }
@@ -1434,8 +1409,6 @@ namespace Kernel_Agent
         {
             try
             {
-                if (_orbOverlayWindow == null) return;
-
                 _orbVoiceCts?.Cancel();
                 _orbVoiceCts = new CancellationTokenSource();
 
@@ -1453,11 +1426,8 @@ namespace Kernel_Agent
 
                 await _continuousSpeechService.ConnectAsync();
                 await _continuousSpeechService.StartListeningAsync(alwaysListening: true, silenceTimeout: 1.5f);
-
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    try { _orbOverlayWindow?.SetListening(); } catch { }
-                });
+                
+                System.Diagnostics.Debug.WriteLine("[ORB-VOICE] Started listening in minimized mode");
             }
             catch (Exception ex)
             {
@@ -1485,72 +1455,33 @@ namespace Kernel_Agent
 
         private void ContinuousSpeech_OnStateChanged(VoiceState state)
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                try
-                {
-                    if (_orbOverlayWindow == null) return;
-
-                    switch (state)
-                    {
-                        case VoiceState.Listening:
-                            _orbOverlayWindow.SetListening();
-                            break;
-                        case VoiceState.Processing:
-                            _orbOverlayWindow.SetProcessing();
-                            break;
-                        case VoiceState.Idle:
-                        case VoiceState.Stopped:
-                        case VoiceState.Disconnected:
-                        default:
-                            _orbOverlayWindow.StartIdleAnimation();
-                            break;
-                    }
-                }
-                catch
-                {
-                }
-            });
+            // Voice state changes are now handled by Python floating widget
+            System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] State changed: {state}");
         }
 
         private void ContinuousSpeech_OnCommand(string command)
         {
             if (string.IsNullOrWhiteSpace(command)) return;
 
-            // When minimized, we execute but show output on orb via animation + log to timeline.
+            // When minimized, we execute commands via the agent
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    DispatcherQueue.TryEnqueue(() =>
-                    {
-                        try { _orbOverlayWindow?.SetProcessing(); } catch { }
-                    });
-
+                    System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] Executing command: {command}");
                     await ExecuteAgentCommand(command);
-
-                    DispatcherQueue.TryEnqueue(() =>
-                    {
-                        try { _orbOverlayWindow?.ShowSuccess(); } catch { }
-                    });
+                    System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] Command completed");
                 }
-                catch
+                catch (Exception ex)
                 {
-                    DispatcherQueue.TryEnqueue(() =>
-                    {
-                        try { _orbOverlayWindow?.StartIdleAnimation(); } catch { }
-                    });
+                    System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] Command failed: {ex.Message}");
                 }
             });
         }
 
         private void ContinuousSpeech_OnError(string message)
         {
-            System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] {message}");
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                try { _orbOverlayWindow?.StartIdleAnimation(); } catch { }
-            });
+            System.Diagnostics.Debug.WriteLine($"[ORB-VOICE] Error: {message}");
         }
 
         #region Step Progress UI

@@ -35,6 +35,9 @@ services:
     buildFilter:
       paths:
         - Backend/**
+    scaling:
+      minInstances: 1
+      maxInstances: 2
 
   # AI Microservice (Python/FastAPI)
   - type: web
@@ -58,6 +61,9 @@ services:
     buildFilter:
       paths:
         - Microservice/**
+    scaling:
+      minInstances: 1
+      maxInstances: 3
 
   # Frontend (Next.js)
   - type: web
@@ -78,3 +84,6 @@ services:
     buildFilter:
       paths:
         - Frontend/**
+    scaling:
+      minInstances: 1
+      maxInstances: 2
