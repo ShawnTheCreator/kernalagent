@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/
+models/
+training_data/
+Lib/
+scripts/
+tests/
+transactions.json
+*.json
+!requirements.txt
+
+# Test files
+test_*.py
+*_test.py
+check_*.py
+debug_*.py
+verify_*.py
+seed_*.py
+honest_*.py
+quick_*.py
+run_*.py
+sentinel_demo.py
+standalone_*.py
+create_*.py
+
+# Documentation
+*.md
+!README.md
+
+# Firebase
+firestore.rules
+*.json
+!package.json
+!tsconfig.json

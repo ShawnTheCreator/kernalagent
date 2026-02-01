@@ -1,0 +1,89 @@
+# Render Blueprint for Kernal Agent
+# This file defines all services for automatic deployment to Render.com
+# See: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API (.NET 10)
+  - type: web
+    name: kernalagent-backend
+    runtime: docker
+    dockerfilePath: ./Backend/KernalAgentBackend/Dockerfile
+    dockerContext: ./Backend/KernalAgentBackend
+    envVars:
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:8080
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "8080"
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DOTNET_RUNNING_IN_CONTAINER
+        value: "true"
+      - key: PORT
+        value: "8080"
+      - key: JWT_KEY
+        generateValue: true  # Render will auto-generate a secure key
+      - key: JWT_ISSUER
+        value: KernalAgentBackend
+      - key: JWT_AUDIENCE
+        value: KernalAgentFrontend
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Set manually in Render dashboard after getting frontend URL
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false  # Add Firebase credentials manually in Render dashboard
+    healthCheckPath: /
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - Backend/**
+    scaling:
+      minInstances: 1
+      maxInstances: 2
+
+  # AI Microservice (Python/FastAPI)
+  - type: web
+    name: kernalagent-microservice
+    runtime: docker
+    dockerfilePath: ./Microservice/Dockerfile
+    dockerContext: ./Microservice
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in Render dashboard (from Google AI Studio)
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "8000"
+      - key: MODEL_ID
+        value: gemini-2.5-flash
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false  # Optional: set if using Firebase in microservice
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - Microservice/**
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+
+  # Frontend (Next.js)
+  - type: web
+    name: kernalagent-frontend
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    rootDir: Frontend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false  # Set to backend URL after deployment (e.g., https://kernalagent-backend.onrender.com/api)
+      - key: NEXT_PUBLIC_WS_URL
+        sync: false  # Set to microservice WebSocket URL (e.g., wss://kernalagent-microservice.onrender.com/ws/stream)
+    healthCheckPath: /
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - Frontend/**
+    scaling:
+      minInstances: 1
+      maxInstances: 2
