@@ -10,7 +10,7 @@ if (-not (Test-Path $tempDir)) {
     mkdir $tempDir | Out-Null
 }
 
-Write-Host "🧪 Testing Kernel Advanced Actions" -ForegroundColor Cyan
+Write-Host "Testing Kernel Advanced Actions" -ForegroundColor Cyan
 Write-Host "=================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -23,14 +23,14 @@ function Test-Action {
             -ErrorAction Stop
         
         if ($result.success) {
-            Write-Host "✓ $name" -ForegroundColor Green
+            Write-Host "  OK - $name" -ForegroundColor Green
             return $true
         } else {
-            Write-Host "✗ $name - $($result.error)" -ForegroundColor Red
+            Write-Host "  FAIL - $name" -ForegroundColor Red
             return $false
         }
     } catch {
-        Write-Host "✗ $name - Connection error" -ForegroundColor Red
+        Write-Host "  FAIL - $name" -ForegroundColor Red
         return $false
     }
 }
